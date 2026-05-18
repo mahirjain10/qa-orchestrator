@@ -7,8 +7,11 @@ import (
 	"qa-orchestrator/packages/agents/executor"
 	"qa-orchestrator/packages/agents/planner"
 	"qa-orchestrator/packages/agents/recovery"
-	"qa-orchestrator/packages/agents/types"
+	agentstypes "qa-orchestrator/packages/agents/types"
 	"qa-orchestrator/packages/agents/validator"
+	sharedtypes "qa-orchestrator/packages/shared/types"
+	"qa-orchestrator/packages/storage/artifact"
+	"qa-orchestrator/packages/storage/trace"
 )
 
 type FlowOutcome string
@@ -20,62 +23,81 @@ const (
 )
 
 type ExecutionResult struct {
-	FlowID     string
-	Outcome    FlowOutcome
-	Steps      []*types.StepResult
-	Errors     []string
-	DurationMs int64
-	Retries    int
+	FlowID      string
+	Outcome     FlowOutcome
+	Steps       []*agentstypes.StepResult
+	Errors      []string
+	DurationMs  int64
+	Retries     int
+	ArtifactIDs []string
 }
 
 type AgentEngine struct {
-	planner   *planner.Planner
-	executor  *executor.Executor
-	validator *validator.Validator
-	recovery  *recovery.Recovery
+	planner     *planner.Planner
+	executor    *executor.Executor
+	validator   *validator.Validator
+	recovery    *recovery.Recovery
+	traceStore  *trace.TraceStore
+	artifactStore *artifact.ArtifactStore
 }
 
 func NewAgentEngine() *AgentEngine {
 	return &AgentEngine{
-		planner:   planner.NewPlanner(),
-		executor:  executor.NewExecutor(executor.NewMockToolRegistry()),
-		validator: validator.NewValidator(),
-		recovery:  recovery.NewRecovery(nil),
+		planner:     planner.NewPlanner(),
+		executor:    executor.NewExecutor(executor.NewMockToolRegistry()),
+		validator:   validator.NewValidator(),
+		recovery:    recovery.NewRecovery(nil),
 	}
 }
 
 func NewAgentEngineWithRegistry(registry executor.ToolRegistry) *AgentEngine {
 	return &AgentEngine{
-		planner:   planner.NewPlanner(),
-		executor:  executor.NewExecutor(registry),
-		validator: validator.NewValidator(),
-		recovery:  recovery.NewRecovery(nil),
+		planner:     planner.NewPlanner(),
+		executor:    executor.NewExecutor(registry),
+		validator:   validator.NewValidator(),
+		recovery:    recovery.NewRecovery(nil),
 	}
 }
 
-func (e *AgentEngine) RunFlow(runID string, flow types.Flow) *ExecutionResult {
+func NewAgentEngineWithStores(registry executor.ToolRegistry, traceStore *trace.TraceStore, artifactStore *artifact.ArtifactStore) *AgentEngine {
+	return &AgentEngine{
+		planner:       planner.NewPlanner(),
+		executor:      executor.NewExecutor(registry),
+		validator:     validator.NewValidator(),
+		recovery:      recovery.NewRecovery(nil),
+		traceStore:    traceStore,
+		artifactStore: artifactStore,
+	}
+}
+
+func (e *AgentEngine) RunFlow(runID string, flow sharedtypes.Flow) *ExecutionResult {
 	start := time.Now()
 	result := &ExecutionResult{
 		FlowID:  flow.ID,
 		Outcome: OutcomePass,
-		Steps:   []*types.StepResult{},
+		Steps:   []*agentstypes.StepResult{},
 		Errors:  []string{},
 	}
 
-	ctx := &types.ExecutionContext{
+	ctx := &agentstypes.ExecutionContext{
 		RunID:  runID,
 		FlowID: flow.ID,
 		Goal:   flow.Goal,
 		Steps:  flow.Steps,
 	}
 
+	trace.EmitLifecycleEvent(e.traceStore, runID, flow.ID, sharedtypes.RunStateRunning, map[string]any{"goal": flow.Goal})
+
 	plan, err := e.planner.CreatePlan(ctx)
 	if err != nil {
 		result.Outcome = OutcomeFail
 		result.Errors = append(result.Errors, fmt.Sprintf("failed to create plan: %v", err))
+		trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "failed", err.Error())
 		return result
 	}
 	ctx.Plan = plan
+
+	trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "plan_created", fmt.Sprintf("created plan with %d steps", len(plan.Steps)))
 
 	for !e.planner.ShouldStop(plan) {
 		planStep := e.planner.GetNextStep(plan)
@@ -83,16 +105,22 @@ func (e *AgentEngine) RunFlow(runID string, flow types.Flow) *ExecutionResult {
 			break
 		}
 
+		e.saveCheckpoint(runID, ctx, planStep)
 		stepResult := e.executeAndValidate(ctx, planStep)
 		result.Steps = append(result.Steps, stepResult)
 
 		if !stepResult.Success {
+			trace.EmitRecoveryAction(e.traceStore, runID, flow.ID, nil, stepResult)
 			decision := e.handleFailure(ctx, stepResult, result)
+			trace.EmitRecoveryAction(e.traceStore, runID, flow.ID, decision, stepResult)
+
 			switch decision.Action {
-			case types.RecoveryActionRetry:
+			case agentstypes.RecoveryActionRetry:
 				result.Retries++
+				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "recovery", "retry", decision.Reason)
 				continue
-			case types.RecoveryActionReplan:
+			case agentstypes.RecoveryActionReplan:
+				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "recovery", "replan", decision.Reason)
 				newPlan, replanErr := e.planner.CreatePlan(ctx)
 				if replanErr != nil {
 					result.Outcome = OutcomeFail
@@ -102,13 +130,15 @@ func (e *AgentEngine) RunFlow(runID string, flow types.Flow) *ExecutionResult {
 				plan = newPlan
 				ctx.Plan = plan
 				continue
-			case types.RecoveryActionSkip:
+			case agentstypes.RecoveryActionSkip:
 				e.planner.UpdatePlan(plan, planStep.StepIndex, true, decision.Reason)
 				e.planner.Advance(plan)
+				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "recovery", "skip", decision.Reason)
 				continue
-			case types.RecoveryActionFail:
+			case agentstypes.RecoveryActionFail:
 				result.Outcome = OutcomeFail
 				result.Errors = append(result.Errors, decision.Reason)
+				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "recovery", "fail", decision.Reason)
 				goto done
 			}
 		}
@@ -122,13 +152,21 @@ done:
 		result.Outcome = OutcomeFail
 	}
 
+	if result.Outcome == OutcomePass {
+		trace.EmitLifecycleEvent(e.traceStore, runID, flow.ID, sharedtypes.RunStateCompleted, map[string]any{"duration_ms": result.DurationMs})
+	} else {
+		trace.EmitLifecycleEvent(e.traceStore, runID, flow.ID, sharedtypes.RunStateFailed, map[string]any{"errors": result.Errors})
+	}
+
 	return result
 }
 
-func (e *AgentEngine) executeAndValidate(ctx *types.ExecutionContext, planStep *types.PlanStep) *types.StepResult {
+func (e *AgentEngine) executeAndValidate(ctx *agentstypes.ExecutionContext, planStep *agentstypes.PlanStep) *agentstypes.StepResult {
 	stepResult := e.executor.ExecuteStep(planStep)
 	obs := e.validator.CreateObservation(stepResult)
 	ctx.Observations = append(ctx.Observations, *obs)
+
+	trace.EmitStepExecution(e.traceStore, ctx.RunID, ctx.FlowID, stepResult)
 
 	step := findStepByID(ctx.Steps, planStep.StepID)
 	if step != nil && len(step.Assertions) > 0 {
@@ -142,7 +180,7 @@ func (e *AgentEngine) executeAndValidate(ctx *types.ExecutionContext, planStep *
 	return stepResult
 }
 
-func findStepByID(steps []types.Step, stepID string) *types.Step {
+func findStepByID(steps []sharedtypes.Step, stepID string) *sharedtypes.Step {
 	for _, step := range steps {
 		if step.ID == stepID {
 			return &step
@@ -151,18 +189,18 @@ func findStepByID(steps []types.Step, stepID string) *types.Step {
 	return nil
 }
 
-func (e *AgentEngine) handleFailure(ctx *types.ExecutionContext, stepResult *types.StepResult, result *ExecutionResult) *types.RecoveryDecision {
+func (e *AgentEngine) handleFailure(ctx *agentstypes.ExecutionContext, stepResult *agentstypes.StepResult, result *ExecutionResult) *agentstypes.RecoveryDecision {
 	decision := e.recovery.Decide(stepResult.Error, stepResult, ctx)
 
 	if e.recovery.ShouldEscalate(decision, result.Retries) {
-		decision.Action = types.RecoveryActionFail
+		decision.Action = agentstypes.RecoveryActionFail
 		decision.Reason = fmt.Sprintf("max retries (%d) exceeded", result.Retries)
 	}
 
 	return decision
 }
 
-func (e *AgentEngine) RunFlowWithRetry(runID string, flow types.Flow, maxRetries int) *ExecutionResult {
+func (e *AgentEngine) RunFlowWithRetry(runID string, flow sharedtypes.Flow, maxRetries int) *ExecutionResult {
 	var lastResult *ExecutionResult
 
 	for attempt := 0; attempt <= maxRetries; attempt++ {
@@ -202,4 +240,43 @@ func (e *AgentEngine) RegisterTool(name string, fn func(params map[string]any) (
 	if mockRegistry, ok := registry.(*executor.MockToolRegistry); ok {
 		mockRegistry.Register(name, fn)
 	}
+}
+
+func (e *AgentEngine) SetTraceStore(store *trace.TraceStore) {
+	e.traceStore = store
+}
+
+func (e *AgentEngine) SetArtifactStore(store *artifact.ArtifactStore) {
+	e.artifactStore = store
+}
+
+func (e *AgentEngine) saveCheckpoint(runID string, ctx *agentstypes.ExecutionContext, planStep *agentstypes.PlanStep) {
+	if ctx.Plan == nil {
+		return
+	}
+	payload := map[string]any{
+		"current_step": planStep.StepID,
+		"step_index":   planStep.StepIndex,
+	}
+	for i, obs := range ctx.Observations {
+		payload[fmt.Sprintf("obs_%d", i)] = obs.State
+	}
+	trace.EmitCheckpoint(e.traceStore, runID, &sharedtypes.Checkpoint{
+		FlowID:    ctx.FlowID,
+		StepID:    planStep.StepID,
+		StepIndex: planStep.StepIndex,
+		Payload:   payload,
+	})
+}
+
+func (e *AgentEngine) EmitArtifact(runID, flowID string, artifactType artifact.ArtifactType, filename string, data []byte, metadata map[string]any) string {
+	if e.artifactStore == nil {
+		return ""
+	}
+	artifact, err := e.artifactStore.Save(runID, flowID, artifactType, filename, data, metadata)
+	if err != nil {
+		return ""
+	}
+	trace.EmitArtifactEvent(e.traceStore, runID, flowID, string(artifactType), artifact.Path, metadata)
+	return artifact.ArtifactID
 }

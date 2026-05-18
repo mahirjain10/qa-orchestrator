@@ -2,6 +2,7 @@ package tools
 
 import (
 	"fmt"
+	"sync"
 
 	"qa-orchestrator/packages/browser-runtime"
 )
@@ -9,6 +10,7 @@ import (
 type Tool func(params map[string]any) (any, error)
 
 type ToolRegistry struct {
+	mu    sync.RWMutex
 	tools map[string]Tool
 }
 

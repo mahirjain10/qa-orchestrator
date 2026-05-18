@@ -9,7 +9,9 @@ import (
 	"qa-orchestrator/apps/tui/internal/components"
 	"qa-orchestrator/apps/tui/internal/state"
 	"qa-orchestrator/packages/shared/types"
+	"qa-orchestrator/packages/storage/artifact"
 	"qa-orchestrator/packages/storage/session"
+	"qa-orchestrator/packages/storage/trace"
 )
 
 var (
@@ -33,6 +35,11 @@ type MainScreen struct {
 	campaignList *components.CampaignListModel
 	runPanel     *components.RunPanelModel
 	flowStatus   *components.FlowStatusModel
+	tracePanel   *components.TracePanelModel
+	artifactPanel *components.ArtifactPanelModel
+
+	traceStore    *trace.TraceStore
+	artifactStore *artifact.ArtifactStore
 
 	command string
 	msg     string
@@ -43,14 +50,23 @@ func NewMainScreen(store *session.SessionStore) *MainScreen {
 	handlers := NewCommandHandlers(store)
 
 	return &MainScreen{
-		state:         appState,
-		handlers:      handlers,
+		state:          appState,
+		handlers:       handlers,
 		campaignList:  components.NewCampaignListModel(),
 		runPanel:      components.NewRunPanelModel(),
 		flowStatus:    components.NewFlowStatusModel(),
+		tracePanel:    components.NewTracePanelModel(),
+		artifactPanel: components.NewArtifactPanelModel(),
 		command:       "",
 		msg:           "Press ENTER to select a run, or type a command",
 	}
+}
+
+func NewMainScreenWithStores(store *session.SessionStore, traceStore *trace.TraceStore, artifactStore *artifact.ArtifactStore) *MainScreen {
+	screen := NewMainScreen(store)
+	screen.traceStore = traceStore
+	screen.artifactStore = artifactStore
+	return screen
 }
 
 func (m *MainScreen) Init() tea.Cmd {
@@ -138,6 +154,14 @@ func (m *MainScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.state.SetView(state.ViewFlowStatus)
 			m.refreshFlowStatus()
 
+		case "t":
+			m.state.SetView(state.ViewTraces)
+			m.refreshTraces()
+
+		case "a":
+			m.state.SetView(state.ViewArtifacts)
+			m.refreshArtifacts()
+
 		case "Escape":
 			m.state.SetView(state.ViewCampaignList)
 		}
@@ -159,6 +183,10 @@ func (m *MainScreen) View() string {
 	currentView := m.state.GetView()
 	if currentView == state.ViewFlowStatus {
 		content = m.flowStatus.View()
+	} else if currentView == state.ViewTraces {
+		content = m.tracePanel.View()
+	} else if currentView == state.ViewArtifacts {
+		content = m.artifactPanel.View()
 	} else {
 		leftPanel := lipgloss.JoinVertical(
 			lipgloss.Left,
@@ -178,7 +206,7 @@ func (m *MainScreen) View() string {
 		)
 	}
 
-	footer := helpStyle.Render(" ↑↓ Navigate  Enter Select  Space Pause/Resume  x Cancel  r Refresh  f Flows  q Quit")
+	footer := helpStyle.Render(" ↑↓ Navigate  Enter Select  Space Pause/Resume  x Cancel  r Refresh  f Flows  t Traces  a Artifacts  q Quit")
 
 	return mainStyle.Render(
 		lipgloss.JoinVertical(
@@ -211,5 +239,25 @@ func (m *MainScreen) refreshFlowStatus() {
 	sess, err := m.handlers.GetRunStatus(m.state.GetCurrentRunID())
 	if err == nil && sess != nil {
 		m.flowStatus.SetFlows(sess.Flows)
+	}
+}
+
+func (m *MainScreen) refreshTraces() {
+	runID := m.state.GetCurrentRunID()
+	if runID != "" && m.traceStore != nil {
+		events, err := m.traceStore.GetRecent(runID, 50)
+		if err == nil {
+			m.tracePanel.SetEvents(events)
+		}
+	}
+}
+
+func (m *MainScreen) refreshArtifacts() {
+	runID := m.state.GetCurrentRunID()
+	if runID != "" && m.artifactStore != nil {
+		artifacts, err := m.artifactStore.GetByRunID(runID)
+		if err == nil {
+			m.artifactPanel.SetArtifacts(artifacts)
+		}
 	}
 }

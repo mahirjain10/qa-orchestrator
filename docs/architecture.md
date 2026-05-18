@@ -308,6 +308,61 @@ Suggested custom-tool lifecycle:
 3. Run controlled scenario validation
 4. Approve and add to tool registry
 
+## Suggested folder structure
+
+```text
+qa-orchestrator/
+├── apps/
+│   └── tui/
+│       ├── cmd/
+│       │   └── main.go
+│       │
+│       └── internal/
+│           ├── screens/
+│           ├── components/
+│           ├── commands/
+│           └── state/
+│
+├── packages/
+│   ├── orchestrator/
+│   ├── agents/
+│   ├── tools/
+│   ├── browser-runtime/
+│   ├── storage/
+│   ├── reporting/
+│   └── shared/
+├── campaigns/
+├── artifacts/
+├── bin/
+│   ├── qa-orchestrator
+│   └── ...
+│
+├── logs/
+│   └── runs/
+│       └── 2026-05/
+│           ├── run-001.jsonl
+│           ├── run-002.jsonl
+│           └── ...
+│
+├── docs/
+│   ├── run-summaries/
+│   │   ├── run-001.md
+│   │   ├── run-002.md
+│   │   └── ...
+│   │
+│   ├── architecture.md
+│   ├── phases.md
+│   ├── CURRENT.md
+│   └── LOG_CONVENTIONS.md
+│
+├── agents.md
+├── go.mod
+├── go.sum
+├── Makefile
+├── .gitignore
+└── README.md
+```
+
 ## MVP scope
 
 The smallest strong version of this project should include:

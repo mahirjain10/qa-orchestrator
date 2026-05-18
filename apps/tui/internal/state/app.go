@@ -13,6 +13,8 @@ const (
 	ViewCampaignList View = "campaign_list"
 	ViewActiveRun    View = "active_run"
 	ViewFlowStatus   View = "flow_status"
+	ViewTraces       View = "traces"
+	ViewArtifacts    View = "artifacts"
 )
 
 type AppState struct {
