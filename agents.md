@@ -18,6 +18,29 @@ This is a terminal-based AI coding/orchestration project.
 - Update `docs/CURRENT.md`.
 - Stop and wait for the next instruction.
 
+## Execution mode
+
+Before executing any flow, check the `mode` field in the campaign YAML.
+
+- `guided` — follow the predefined steps exactly. Do not generate steps.
+- `autonomous` — the planner generates step sequence from the flow goal using the LLM.
+- If a flow has a goal but no steps, treat it as `autonomous`.
+- If a flow is `guided` and has no steps, reject it — it is an invalid campaign.
+
+## YAML validation rules
+
+Before any run is created, validate the campaign file:
+
+- `name`, `version`, `config`, and `flows` are required.
+- Each flow must have `id`, `goal`, `mode`, `priority`, and `depends_on`.
+- `mode` must be `guided` or `autonomous`.
+- `id` must be unique across all flows.
+- All `depends_on` references must point to existing flow IDs.
+- No circular dependencies allowed.
+- `guided` flows must have a non-empty `steps` list.
+- `autonomous` flows may omit `steps`.
+- Reject the campaign with a clear error message if any rule fails.
+
 ## Required output order
 1. Make changes.
 2. Compile successfully. If it fails, fix and compile again.
@@ -36,11 +59,16 @@ This is a terminal-based AI coding/orchestration project.
 - Prefer small, focused changes.
 
 ## Summary Edit Protocol
-- Only write/edit to your own current session's summary/log
-- Never touch another agent's summaries (past or present) without explicit permission
-- Request permission before any edit to someone else's summary
-- Show exact changes before touching it
-- Wait for user confirmation before proceeding
+- Only write/edit to your own current session's summary/log.
+- Never touch another agent's summaries (past or present) without explicit permission.
+- Request permission before any edit to someone else's summary.
+- Show exact changes before touching it.
+- Wait for user confirmation before proceeding.
 
 ## Conventions
 - Everything you need to know about templates, file naming, log format, and slice strategy lives in `docs/LOG_CONVENTIONS.md`. Read it before writing any log, summary, or updating CURRENT.md.
+
+## Template files
+- Run log template: `logs/runs/run-log_TEMPLATE.jsonl`
+- Run summary template: `docs/run-summaries/run_summary_TEMPLATE.md`
+- Current file template: `docs/CURRENT_TEMPLATE.md`
