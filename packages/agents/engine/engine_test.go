@@ -1,9 +1,15 @@
 package engine
 
 import (
+	"context"
 	"testing"
+	"time"
 
+	"qa-orchestrator/packages/agents/executor"
 	"qa-orchestrator/packages/agents/types"
+	browsertools "qa-orchestrator/packages/browser-runtime/tools"
+	"qa-orchestrator/packages/runtime"
+	sharedtypes "qa-orchestrator/packages/shared/types"
 )
 
 func TestAgentEngineRunFlowSuccess(t *testing.T) {
@@ -69,8 +75,8 @@ func TestAgentEngineRunFlowWithAssertion(t *testing.T) {
 		Goal: "Test assertions",
 		Steps: []types.Step{
 			{
-				ID:   "step1",
-				Tool: "echo",
+				ID:     "step1",
+				Tool:   "echo",
 				Params: map[string]any{"value": "hello"},
 				Assertions: []types.Assertion{
 					{Type: "equals", Value: "hello"},
@@ -95,8 +101,8 @@ func TestAgentEngineRunFlowWithAssertionFailure(t *testing.T) {
 		Goal: "Test assertion failure",
 		Steps: []types.Step{
 			{
-				ID:   "step1",
-				Tool: "echo",
+				ID:     "step1",
+				Tool:   "echo",
 				Params: map[string]any{"value": "hello"},
 				Assertions: []types.Assertion{
 					{Type: "equals", Value: "world"},
@@ -192,5 +198,89 @@ func TestAgentEngineRunFlowWithDelay(t *testing.T) {
 
 	if result.DurationMs < 10 {
 		t.Errorf("DurationMs = %d, should be at least 10", result.DurationMs)
+	}
+}
+
+type mockBrowserTools struct {
+	docs []browsertools.ToolInfo
+}
+
+func (m *mockBrowserTools) ListToolsWithDocs() []browsertools.ToolInfo {
+	return m.docs
+}
+
+func TestConvertToLLMTools_UsesRegistryDocs(t *testing.T) {
+	tools := &mockBrowserTools{
+		docs: []browsertools.ToolInfo{
+			{
+				Name:        "custom_tool",
+				Description: "custom",
+				Parameters: map[string]browsertools.ParameterInfo{
+					"arg": {Type: "string", Description: "arg", Required: true},
+				},
+			},
+		},
+	}
+
+	result := convertToLLMTools(tools)
+	if len(result) != 1 {
+		t.Fatalf("expected 1 tool, got %d", len(result))
+	}
+	if result[0].Name != "custom_tool" {
+		t.Fatalf("expected custom_tool, got %s", result[0].Name)
+	}
+}
+
+type cancelAwareLLMClient struct {
+	started chan struct{}
+}
+
+func (m *cancelAwareLLMClient) Generate(ctx context.Context, prompt string) (string, error) {
+	<-ctx.Done()
+	return "", ctx.Err()
+}
+
+func (m *cancelAwareLLMClient) GenerateWithSystem(ctx context.Context, system, user string) (string, error) {
+	close(m.started)
+	<-ctx.Done()
+	return "", ctx.Err()
+}
+
+func TestAutonomousFlow_CancelsDuringGeneration(t *testing.T) {
+	registry := executor.NewMockToolRegistry()
+	llmClient := &cancelAwareLLMClient{started: make(chan struct{})}
+	engine := NewAgentEngineWithLLM(registry, llmClient, &mockBrowserTools{docs: []browsertools.ToolInfo{}})
+	lifecycle := runtime.NewLifecycleController("run_test")
+	engine.SetLifecycleController(lifecycle)
+
+	flow := types.Flow{
+		ID:   "auto-flow",
+		Mode: sharedtypes.FlowModeAutonomous,
+		Goal: "Generate one step",
+	}
+
+	done := make(chan *ExecutionResult, 1)
+	go func() {
+		done <- engine.RunFlow("run_test", flow)
+	}()
+
+	select {
+	case <-llmClient.started:
+	case <-time.After(2 * time.Second):
+		t.Fatal("LLM generation did not start")
+	}
+
+	lifecycle.RequestCancel()
+
+	select {
+	case result := <-done:
+		if result.Outcome != OutcomeSkip {
+			t.Fatalf("expected OutcomeSkip, got %s with errors %v", result.Outcome, result.Errors)
+		}
+		if len(result.Errors) == 0 {
+			t.Fatal("expected cancellation error details")
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("RunFlow did not return after cancellation")
 	}
 }

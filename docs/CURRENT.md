@@ -14,7 +14,7 @@
 - **Phase 2:** LLM Integration Package — COMPLETE
 - **Phase 3:** Iterative Autonomous Planner — COMPLETE
 - **Phase 4:** Tool Registry & Metadata — COMPLETE (hardened)
-- **Phase 5:** Agent Engine V2 (Mode Routing) — PENDING
+- **Phase 5:** Agent Engine V2 (Mode Routing) — COMPLETE (hardened)
 - **Phase 6:** TUI & Visibility — PENDING
 - **Phase 7:** Validation & Sample Campaigns — PENDING
 
@@ -32,13 +32,13 @@ qa-orchestrator/
 │   ├── shared/types/              # Core types (Session, Trace, Flow, Steering)
 │   └── storage/                   # Stores: Session, Trace, Artifact
 ├── go.mod                         # Root module
-└── docs/run-summaries/            # Up to run-020.md
+└── docs/run-summaries/            # Up to run-021.md
 ```
 
 ### Test Coverage
 - `go test ./...` verified successfully across all packages.
 
 ## Last Run
-- Run 020: 2026-05-19
+- Run 021: 2026-05-19
 - Agent: codex
-- Status: Completed Phase 4 hardening (metadata-driven tool validation + history-cache optimization); tests and compile passed.
+- Status: Hardened Phase 5 autonomous cancellation and tool metadata conversion; tests and compile passed.
