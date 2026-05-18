@@ -2,6 +2,7 @@ package engine
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -247,6 +248,24 @@ func (m *cancelAwareLLMClient) GenerateWithSystem(ctx context.Context, system, u
 	return "", ctx.Err()
 }
 
+type sequenceLLMClient struct {
+	responses []string
+	idx       int
+}
+
+func (m *sequenceLLMClient) Generate(ctx context.Context, prompt string) (string, error) {
+	return "", nil
+}
+
+func (m *sequenceLLMClient) GenerateWithSystem(ctx context.Context, system, user string) (string, error) {
+	if m.idx >= len(m.responses) {
+		return `[{"tool":"finish","params":{},"reason":"done"}]`, nil
+	}
+	resp := m.responses[m.idx]
+	m.idx++
+	return resp, nil
+}
+
 func TestAutonomousFlow_CancelsDuringGeneration(t *testing.T) {
 	registry := executor.NewMockToolRegistry()
 	llmClient := &cancelAwareLLMClient{started: make(chan struct{})}
@@ -283,6 +302,62 @@ func TestAutonomousFlow_CancelsDuringGeneration(t *testing.T) {
 		}
 	case <-time.After(3 * time.Second):
 		t.Fatal("RunFlow did not return after cancellation")
+	}
+}
+
+func TestAutonomousFlow_MultiTurnUntilFinish(t *testing.T) {
+	registry := executor.NewMockToolRegistry()
+	llmClient := &sequenceLLMClient{
+		responses: []string{
+			`[{"tool":"echo","params":{"value":"step1"},"reason":"first"}]`,
+			`[{"tool":"finish","params":{},"reason":"goal achieved"}]`,
+		},
+	}
+	engine := NewAgentEngineWithLLM(registry, nil, llmClient, &mockBrowserTools{docs: []browsertools.ToolInfo{}})
+
+	flow := types.Flow{
+		ID:   "auto-flow",
+		Mode: sharedtypes.FlowModeAutonomous,
+		Goal: "Do two turns then finish",
+	}
+
+	result := engine.RunFlow("run_test", flow)
+	if result.Outcome != OutcomePass {
+		t.Fatalf("expected pass, got %s (%v)", result.Outcome, result.Errors)
+	}
+	if len(result.Steps) != 1 {
+		t.Fatalf("expected one executed step before finish, got %d", len(result.Steps))
+	}
+	if llmClient.idx < 2 {
+		t.Fatalf("expected at least 2 LLM turns, got %d", llmClient.idx)
+	}
+}
+
+func TestGuidedFlow_ReplanFallsBackToRetry(t *testing.T) {
+	engine := NewAgentEngine()
+	attempts := 0
+	engine.RegisterTool("flaky_locator", func(params map[string]any) (any, error) {
+		attempts++
+		if attempts == 1 {
+			return nil, fmt.Errorf("locator error: element not found")
+		}
+		return "ok", nil
+	})
+
+	flow := types.Flow{
+		ID:   "guided-flow",
+		Mode: sharedtypes.FlowModeGuided,
+		Steps: []types.Step{
+			{ID: "s1", Tool: "flaky_locator", Params: map[string]any{}},
+		},
+	}
+
+	result := engine.RunFlow("run_test", flow)
+	if result.Outcome != OutcomePass {
+		t.Fatalf("expected pass, got %s (%v)", result.Outcome, result.Errors)
+	}
+	if attempts < 2 {
+		t.Fatalf("expected retry attempt, got %d attempts", attempts)
 	}
 }
 

@@ -100,6 +100,9 @@ func (p *Planner) Observe(ctx *types.ExecutionContext) *types.Observation {
 }
 
 func (p *Planner) ShouldStop(plan *types.Plan) bool {
+	if plan.IsAutonomous {
+		return false
+	}
 	return p.GetNextStep(plan) == nil
 }
 

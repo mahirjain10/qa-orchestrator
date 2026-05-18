@@ -16,12 +16,12 @@
 - **Phase 4:** Tool Registry & Metadata — COMPLETE (hardened)
 - **Phase 5:** Agent Engine V2 (Mode Routing) — COMPLETE (hardened)
 - **Phase 6:** TUI & Visibility — COMPLETE (hardened)
-- **Phase 7:** Validation & Sample Campaigns — PENDING
+- **Phase 7:** Validation & Sample Campaigns — COMPLETE (autonomous loop and guided recovery fixes applied)
 
 ### Test Coverage
 - `go test ./...` verified successfully across all packages.
 
 ## Last Run
-- Run 023: 2026-05-19
+- Run 024: 2026-05-19
 - Agent: codex
-- Status: Fixed Phase 6 cancellation/state-sync bugs (finalization on cancel, skipped-state mapping, session sync error visibility, metadata alignment). Tests and compile passed.
+- Status: Fixed Phase 7 blockers (autonomous multi-turn termination + guided replan fallback) and added regression coverage; tests and compile passed.

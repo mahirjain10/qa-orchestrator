@@ -113,6 +113,20 @@ func TestPlannerShouldStop(t *testing.T) {
 	}
 }
 
+func TestPlannerShouldStop_AutonomousWithConsumedSteps(t *testing.T) {
+	p := NewPlanner()
+	plan := &types.Plan{
+		IsAutonomous: true,
+		CurrentIdx:   1,
+		Steps: []types.PlanStep{
+			{StepIndex: 0, StepID: "s1", Tool: "echo"},
+		},
+	}
+	if p.ShouldStop(plan) {
+		t.Fatal("autonomous plan should not stop just because generated steps are consumed")
+	}
+}
+
 func TestPlannerGetProgress(t *testing.T) {
 	p := NewPlanner()
 	plan := &types.Plan{

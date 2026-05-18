@@ -225,16 +225,10 @@ func (e *AgentEngine) runGuidedFlow(runID string, flow sharedtypes.Flow, ctx *ag
 				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "recovery", "retry", decision.Reason)
 				continue
 			case agentstypes.RecoveryActionReplan:
-				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "recovery", "replan", decision.Reason)
-				e.setCurrentAgent(ctx.RunID, "planner")
-				newPlan, replanErr := e.planner.CreatePlan(ctx)
-				if replanErr != nil {
-					result.Outcome = OutcomeFail
-					result.Errors = append(result.Errors, fmt.Sprintf("failed to replan: %v", replanErr))
-					goto done
-				}
-				plan = newPlan
-				ctx.Plan = plan
+				// Guided plans are static YAML-defined steps; replanning just recreates the same plan.
+				// Downgrade to retry so locator errors can recover without resetting progress.
+				result.Retries++
+				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "recovery", "retry_instead_of_replan", decision.Reason)
 				continue
 			case agentstypes.RecoveryActionSkip:
 				e.planner.UpdatePlan(plan, planStep.StepIndex, true, decision.Reason)
@@ -340,6 +334,11 @@ func (e *AgentEngine) runAutonomousFlow(runID string, flow sharedtypes.Flow, ctx
 
 		trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "step_generated",
 			fmt.Sprintf("tool=%s params=%v reason=%s", planStep.Tool, planStep.Params, planStep.Reason))
+
+		if planStep.Tool == "finish" {
+			trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "finish_signal", "LLM signaled completion")
+			break
+		}
 
 		autonomousPlanner.AddStepToPlan(plan, planStep)
 		ctx.Plan = plan

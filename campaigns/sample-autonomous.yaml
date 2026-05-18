@@ -1,0 +1,33 @@
+name: Autonomous E2E Test Campaign
+description: End-to-end autonomous flow test with recovery scenarios
+version: "1.0"
+config:
+  timeout: 300s
+  retry_limit: 2
+  parallel_limit: 1
+
+flows:
+  - id: auth-flow
+    name: Authentication Test
+    description: Test login with various credentials
+    goal: Navigate to login page, attempt login with test credentials, and verify error handling for invalid credentials
+    mode: autonomous
+    priority: high
+    depends_on: []
+
+  - id: navigation-flow
+    name: Navigation Test
+    description: Test site navigation after auth attempt
+    goal: After auth-flow, navigate through main sections and verify elements are accessible
+    mode: autonomous
+    priority: medium
+    depends_on:
+      - auth-flow
+
+  - id: search-flow
+    name: Search Functionality Test
+    description: Test search feature
+    goal: Use search functionality and verify results display correctly
+    mode: autonomous
+    priority: low
+    depends_on: []
