@@ -1,14 +1,19 @@
 package engine
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"qa-orchestrator/packages/agents/executor"
 	"qa-orchestrator/packages/agents/planner"
 	"qa-orchestrator/packages/agents/recovery"
+	agenttools "qa-orchestrator/packages/agents/tools"
 	agentstypes "qa-orchestrator/packages/agents/types"
 	"qa-orchestrator/packages/agents/validator"
+	browsertools "qa-orchestrator/packages/browser-runtime/tools"
+	"qa-orchestrator/packages/llm"
 	"qa-orchestrator/packages/runtime"
 	sharedtypes "qa-orchestrator/packages/shared/types"
 	"qa-orchestrator/packages/storage/artifact"
@@ -24,40 +29,47 @@ const (
 )
 
 type ExecutionResult struct {
-	FlowID      string
-	Outcome     FlowOutcome
-	Steps       []*agentstypes.StepResult
-	Errors      []string
-	DurationMs  int64
-	Retries     int
-	ArtifactIDs []string
+	FlowID       string
+	Outcome      FlowOutcome
+	Steps        []*agentstypes.StepResult
+	Errors       []string
+	DurationMs   int64
+	Retries      int
+	ArtifactIDs  []string
+	IsAutonomous bool
 }
 
 type AgentEngine struct {
-	planner      *planner.Planner
-	executor     *executor.Executor
-	validator    *validator.Validator
-	recovery     *recovery.Recovery
-	traceStore   *trace.TraceStore
+	planner       *planner.Planner
+	executor      *executor.Executor
+	validator     *validator.Validator
+	recovery      *recovery.Recovery
+	traceStore    *trace.TraceStore
 	artifactStore *artifact.ArtifactStore
-	lifecycle    *runtime.LifecycleController
+	lifecycle     *runtime.LifecycleController
+	llmClient     planner.LLMClient
+	toolRegistry  executor.ToolRegistry
+	browserTools  interface {
+		ListToolsWithDocs() []browsertools.ToolInfo
+	}
 }
 
 func NewAgentEngine() *AgentEngine {
 	return &AgentEngine{
-		planner:     planner.NewPlanner(),
-		executor:    executor.NewExecutor(executor.NewMockToolRegistry()),
-		validator:   validator.NewValidator(),
-		recovery:    recovery.NewRecovery(nil),
+		planner:   planner.NewPlanner(),
+		executor:  executor.NewExecutor(executor.NewMockToolRegistry()),
+		validator: validator.NewValidator(),
+		recovery:  recovery.NewRecovery(nil),
 	}
 }
 
 func NewAgentEngineWithRegistry(registry executor.ToolRegistry) *AgentEngine {
 	return &AgentEngine{
-		planner:     planner.NewPlanner(),
-		executor:    executor.NewExecutor(registry),
-		validator:   validator.NewValidator(),
-		recovery:    recovery.NewRecovery(nil),
+		planner:      planner.NewPlanner(),
+		executor:     executor.NewExecutor(registry),
+		validator:    validator.NewValidator(),
+		recovery:     recovery.NewRecovery(nil),
+		toolRegistry: registry,
 	}
 }
 
@@ -70,22 +82,49 @@ func NewAgentEngineWithStores(registry executor.ToolRegistry, traceStore *trace.
 		traceStore:    traceStore,
 		artifactStore: artifactStore,
 		lifecycle:     runtime.NewLifecycleController(""),
+		toolRegistry:  registry,
 	}
+}
+
+func NewAgentEngineWithLLM(registry executor.ToolRegistry, llmClient planner.LLMClient, browserTools interface {
+	ListToolsWithDocs() []browsertools.ToolInfo
+}) *AgentEngine {
+	return &AgentEngine{
+		planner:      planner.NewPlanner(),
+		executor:     executor.NewExecutor(registry),
+		validator:    validator.NewValidator(),
+		recovery:     recovery.NewRecovery(nil),
+		llmClient:    llmClient,
+		toolRegistry: registry,
+		browserTools: browserTools,
+	}
+}
+
+func (e *AgentEngine) SetLLMClient(client planner.LLMClient) {
+	e.llmClient = client
+}
+
+func (e *AgentEngine) SetBrowserTools(tools interface {
+	ListToolsWithDocs() []browsertools.ToolInfo
+}) {
+	e.browserTools = tools
 }
 
 func (e *AgentEngine) RunFlow(runID string, flow sharedtypes.Flow) *ExecutionResult {
 	start := time.Now()
 	result := &ExecutionResult{
-		FlowID:  flow.ID,
-		Outcome: OutcomePass,
-		Steps:   []*agentstypes.StepResult{},
-		Errors:  []string{},
+		FlowID:       flow.ID,
+		Outcome:      OutcomePass,
+		Steps:        []*agentstypes.StepResult{},
+		Errors:       []string{},
+		IsAutonomous: flow.Mode == sharedtypes.FlowModeAutonomous,
 	}
 
 	ctx := &agentstypes.ExecutionContext{
 		RunID:  runID,
 		FlowID: flow.ID,
 		Goal:   flow.Goal,
+		Mode:   flow.Mode,
 		Steps:  flow.Steps,
 	}
 
@@ -93,13 +132,26 @@ func (e *AgentEngine) RunFlow(runID string, flow sharedtypes.Flow) *ExecutionRes
 		e.lifecycle.SetStatus(sharedtypes.RunStateRunning)
 	}
 
-	trace.EmitLifecycleEvent(e.traceStore, runID, flow.ID, sharedtypes.RunStateRunning, map[string]any{"goal": flow.Goal})
+	trace.EmitLifecycleEvent(e.traceStore, runID, flow.ID, sharedtypes.RunStateRunning, map[string]any{
+		"goal": flow.Goal,
+		"mode": string(flow.Mode),
+	})
 
 	if e.lifecycle != nil && e.lifecycle.GetStatus() == sharedtypes.RunStateCancelling {
 		result.Outcome = OutcomeSkip
 		result.Errors = append(result.Errors, "cancelled before execution")
 		return result
 	}
+
+	if flow.Mode == sharedtypes.FlowModeAutonomous {
+		return e.runAutonomousFlow(runID, flow, ctx, result, start)
+	}
+
+	return e.runGuidedFlow(runID, flow, ctx, result, start)
+}
+
+func (e *AgentEngine) runGuidedFlow(runID string, flow sharedtypes.Flow, ctx *agentstypes.ExecutionContext, result *ExecutionResult, start time.Time) *ExecutionResult {
+	trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "engine", "mode", "guided")
 
 	plan, err := e.planner.CreatePlan(ctx)
 	if err != nil {
@@ -183,6 +235,134 @@ done:
 
 	if result.Outcome == OutcomePass {
 		trace.EmitLifecycleEvent(e.traceStore, runID, flow.ID, sharedtypes.RunStateCompleted, map[string]any{"duration_ms": result.DurationMs})
+	} else {
+		trace.EmitLifecycleEvent(e.traceStore, runID, flow.ID, sharedtypes.RunStateFailed, map[string]any{"errors": result.Errors})
+	}
+
+	return result
+}
+
+func (e *AgentEngine) runAutonomousFlow(runID string, flow sharedtypes.Flow, ctx *agentstypes.ExecutionContext, result *ExecutionResult, start time.Time) *ExecutionResult {
+	if e.llmClient == nil {
+		result.Outcome = OutcomeFail
+		result.Errors = append(result.Errors, "autonomous mode requires LLM client")
+		trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "engine", "error", "LLM client not configured")
+		return result
+	}
+
+	trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "engine", "mode", "autonomous")
+
+	llmTools := convertToLLMTools(e.browserTools)
+	autonomousPlanner := planner.NewAutonomousPlanner(e.llmClient, llmTools)
+
+	plan, err := autonomousPlanner.CreatePlan(ctx)
+	if err != nil {
+		result.Outcome = OutcomeFail
+		result.Errors = append(result.Errors, fmt.Sprintf("failed to create autonomous plan: %v", err))
+		trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "failed", err.Error())
+		return result
+	}
+	ctx.Plan = plan
+
+	trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "autonomous_plan_created", "starting iterative step generation")
+
+	maxAutonomousSteps := 20
+	stepCount := 0
+
+	for stepCount < maxAutonomousSteps {
+		if e.lifecycle != nil {
+			select {
+			case <-e.lifecycle.CancelCh():
+				result.Outcome = OutcomeSkip
+				result.Errors = append(result.Errors, "cancelled during autonomous execution")
+				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "engine", "cancelled", "autonomous flow cancelled")
+				return result
+			case <-e.lifecycle.PauseCh():
+				e.lifecycle.AcknowledgePause()
+				<-e.lifecycle.ResumeCh()
+				e.lifecycle.AcknowledgeResume()
+			case evt := <-e.lifecycle.SteerCh():
+				e.handleSteeringEvent(evt, ctx, result, plan)
+			default:
+			}
+		}
+
+		trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "generating_step", fmt.Sprintf("step %d", stepCount+1))
+
+		llmCtx, llmCancel := e.autonomousLLMContext(context.Background())
+		planStep, err := autonomousPlanner.GenerateNextStep(llmCtx, ctx)
+		llmCancel()
+		if err != nil {
+			if errors.Is(err, context.Canceled) {
+				result.Outcome = OutcomeSkip
+				result.Errors = append(result.Errors, "cancelled during step generation")
+				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "step_generation_cancelled", "context cancelled")
+				break
+			}
+			result.Outcome = OutcomeFail
+			result.Errors = append(result.Errors, fmt.Sprintf("failed to generate step: %v", err))
+			trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "step_generation_failed", err.Error())
+			break
+		}
+
+		trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "step_generated",
+			fmt.Sprintf("tool=%s params=%v reason=%s", planStep.Tool, planStep.Params, planStep.Reason))
+
+		autonomousPlanner.AddStepToPlan(plan, planStep)
+		ctx.Plan = plan
+
+		e.saveCheckpoint(runID, ctx, planStep)
+		stepResult := e.executeAndValidate(ctx, planStep)
+		result.Steps = append(result.Steps, stepResult)
+
+		if !stepResult.Success {
+			trace.EmitRecoveryAction(e.traceStore, runID, flow.ID, nil, stepResult)
+			decision := e.handleFailure(ctx, stepResult, result)
+			trace.EmitRecoveryAction(e.traceStore, runID, flow.ID, decision, stepResult)
+
+			switch decision.Action {
+			case agentstypes.RecoveryActionRetry:
+				result.Retries++
+				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "recovery", "retry", decision.Reason)
+				continue
+			case agentstypes.RecoveryActionReplan:
+				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "recovery", "replan", decision.Reason)
+				continue
+			case agentstypes.RecoveryActionSkip:
+				autonomousPlanner.UpdatePlan(plan, planStep.StepIndex, true, decision.Reason)
+				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "recovery", "skip", decision.Reason)
+			case agentstypes.RecoveryActionFail:
+				result.Outcome = OutcomeFail
+				result.Errors = append(result.Errors, decision.Reason)
+				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "recovery", "fail", decision.Reason)
+				goto done
+			}
+		}
+
+		stepCount++
+		autonomousPlanner.Advance(plan)
+
+		if autonomousPlanner.ShouldStop(plan) {
+			trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "plan_completed", fmt.Sprintf("generated %d steps", stepCount))
+			break
+		}
+	}
+
+	if stepCount >= maxAutonomousSteps {
+		trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "max_steps_reached", fmt.Sprintf("reached max %d steps", maxAutonomousSteps))
+	}
+
+done:
+	result.DurationMs = time.Since(start).Milliseconds()
+	if result.Outcome == OutcomePass && len(result.Errors) > 0 {
+		result.Outcome = OutcomeFail
+	}
+
+	if result.Outcome == OutcomePass {
+		trace.EmitLifecycleEvent(e.traceStore, runID, flow.ID, sharedtypes.RunStateCompleted, map[string]any{
+			"duration_ms":      result.DurationMs,
+			"autonomous_steps": stepCount,
+		})
 	} else {
 		trace.EmitLifecycleEvent(e.traceStore, runID, flow.ID, sharedtypes.RunStateFailed, map[string]any{"errors": result.Errors})
 	}
@@ -337,5 +517,120 @@ func (e *AgentEngine) handleSteeringEvent(evt *sharedtypes.SteeringEvent, ctx *a
 		if e.lifecycle != nil && e.lifecycle.IsWaitingForInput() {
 			e.lifecycle.AcknowledgeInput()
 		}
+	}
+}
+
+func convertToLLMTools(tools interface {
+	ListToolsWithDocs() []browsertools.ToolInfo
+}) []llm.ToolInfo {
+	if tools == nil {
+		return getDefaultLLMTools()
+	}
+
+	if registry, ok := tools.(*browsertools.ToolRegistry); ok {
+		return agenttools.RegistryToLLMTools(registry)
+	}
+
+	registryTools := tools.ListToolsWithDocs()
+	if len(registryTools) == 0 {
+		return getDefaultLLMTools()
+	}
+
+	result := make([]llm.ToolInfo, 0, len(registryTools))
+	for _, t := range registryTools {
+		params := make(map[string]llm.ParameterInfo, len(t.Parameters))
+		for name, p := range t.Parameters {
+			params[name] = llm.ParameterInfo{
+				Type:        p.Type,
+				Description: p.Description,
+				Required:    p.Required,
+			}
+		}
+		result = append(result, llm.ToolInfo{
+			Name:        t.Name,
+			Description: t.Description,
+			Parameters:  params,
+		})
+	}
+	return result
+}
+
+func (e *AgentEngine) autonomousLLMContext(parent context.Context) (context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(parent)
+	if e.lifecycle == nil {
+		return ctx, cancel
+	}
+
+	go func() {
+		select {
+		case <-e.lifecycle.CancelCh():
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
+	return ctx, cancel
+}
+
+func getDefaultLLMTools() []llm.ToolInfo {
+	return []llm.ToolInfo{
+		{
+			Name:        "navigate",
+			Description: "Navigate to a URL in the browser",
+			Parameters: map[string]llm.ParameterInfo{
+				"url": {Type: "string", Description: "The URL to navigate to", Required: true},
+			},
+		},
+		{
+			Name:        "click",
+			Description: "Click on an element identified by CSS selector",
+			Parameters: map[string]llm.ParameterInfo{
+				"selector": {Type: "string", Description: "CSS selector for the element to click", Required: true},
+			},
+		},
+		{
+			Name:        "type_text",
+			Description: "Type text into an input field",
+			Parameters: map[string]llm.ParameterInfo{
+				"selector": {Type: "string", Description: "CSS selector for the input field", Required: true},
+				"value":    {Type: "string", Description: "Text to type into the field", Required: true},
+			},
+		},
+		{
+			Name:        "wait_for",
+			Description: "Wait for an element to reach a specific state",
+			Parameters: map[string]llm.ParameterInfo{
+				"selector": {Type: "string", Description: "CSS selector for the element to wait for", Required: true},
+				"state":    {Type: "string", Description: "Wait state: visible, hidden, attached", Required: false},
+			},
+		},
+		{
+			Name:        "get_text",
+			Description: "Get the text content of an element",
+			Parameters: map[string]llm.ParameterInfo{
+				"selector": {Type: "string", Description: "CSS selector for the element", Required: true},
+			},
+		},
+		{
+			Name:        "get_html",
+			Description: "Get the inner HTML of an element",
+			Parameters: map[string]llm.ParameterInfo{
+				"selector": {Type: "string", Description: "CSS selector for the element", Required: true},
+			},
+		},
+		{
+			Name:        "evaluate",
+			Description: "Evaluate a JavaScript expression in the browser context",
+			Parameters: map[string]llm.ParameterInfo{
+				"expression": {Type: "string", Description: "JavaScript expression to evaluate", Required: true},
+			},
+		},
+		{
+			Name:        "screenshot",
+			Description: "Take a screenshot of the page",
+			Parameters: map[string]llm.ParameterInfo{
+				"path":      {Type: "string", Description: "File path to save the screenshot", Required: false},
+				"full_page": {Type: "bool", Description: "Capture full page if true", Required: false},
+			},
+		},
 	}
 }
