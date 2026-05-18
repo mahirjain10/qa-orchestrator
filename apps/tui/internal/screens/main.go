@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"qa-orchestrator/apps/tui/internal/components"
 	"qa-orchestrator/apps/tui/internal/state"
+	"qa-orchestrator/packages/reporting"
 	"qa-orchestrator/packages/shared/types"
 	"qa-orchestrator/packages/storage/artifact"
 	"qa-orchestrator/packages/storage/session"
@@ -39,9 +40,11 @@ type MainScreen struct {
 	tracePanel   *components.TracePanelModel
 	artifactPanel *components.ArtifactPanelModel
 
-	traceStore    *trace.TraceStore
-	artifactStore *artifact.ArtifactStore
+	traceStore     *trace.TraceStore
+	artifactStore  *artifact.ArtifactStore
+	reportGenerator *reporting.ReportGenerator
 
+	reportView    string
 	command       string
 	msg           string
 	steeringInput string
@@ -69,6 +72,7 @@ func NewMainScreenWithStores(store *session.SessionStore, traceStore *trace.Trac
 	screen := NewMainScreen(store)
 	screen.traceStore = traceStore
 	screen.artifactStore = artifactStore
+	screen.reportGenerator = reporting.NewReportGenerator(store, traceStore, artifactStore, "reports")
 	return screen
 }
 
@@ -189,6 +193,14 @@ case tea.KeyMsg:
 			m.state.SetView(state.ViewArtifacts)
 			m.refreshArtifacts()
 
+		case "v":
+			if m.state.GetCurrentRunID() != "" {
+				m.state.SetView(state.ViewReport)
+				m.refreshReport()
+			} else {
+				m.msg = "Select a run first to view report"
+			}
+
 		case "s":
 			if m.state.GetCurrentRunID() != "" {
 				m.steeringMode = true
@@ -222,6 +234,8 @@ func (m *MainScreen) View() string {
 		content = m.tracePanel.View()
 	} else if currentView == state.ViewArtifacts {
 		content = m.artifactPanel.View()
+	} else if currentView == state.ViewReport {
+		content = m.reportView
 	} else {
 		leftPanel := lipgloss.JoinVertical(
 			lipgloss.Left,
@@ -241,7 +255,7 @@ func (m *MainScreen) View() string {
 )
 	}
 
-	footer := helpStyle.Render(" ↑↓ Navigate  Enter Select  Space Pause/Resume  x Cancel  r Refresh  f Flows  t Traces  a Artifacts  s Steer  q Quit")
+	footer := helpStyle.Render(" ↑↓ Navigate  Enter Select  Space Pause/Resume  x Cancel  r Refresh  f Flows  t Traces  a Artifacts  v Report  s Steer  q Quit")
 
 	viewContent := lipgloss.JoinVertical(
 		lipgloss.Left,
@@ -315,6 +329,18 @@ func (m *MainScreen) refreshArtifacts() {
 		artifacts, err := m.artifactStore.GetByRunID(runID)
 		if err == nil {
 			m.artifactPanel.SetArtifacts(artifacts)
+		}
+	}
+}
+
+func (m *MainScreen) refreshReport() {
+	runID := m.state.GetCurrentRunID()
+	if runID != "" && m.reportGenerator != nil {
+		report, err := m.reportGenerator.GenerateTerminalSummary(runID)
+		if err == nil {
+			m.reportView = report
+		} else {
+			m.reportView = fmt.Sprintf("Error generating report: %v", err)
 		}
 	}
 }

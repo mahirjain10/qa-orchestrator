@@ -15,6 +15,7 @@ const (
 	ViewFlowStatus   View = "flow_status"
 	ViewTraces       View = "traces"
 	ViewArtifacts    View = "artifacts"
+	ViewReport       View = "report"
 )
 
 type AppState struct {
