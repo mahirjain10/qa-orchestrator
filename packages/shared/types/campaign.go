@@ -68,13 +68,14 @@ type FlowState string
 
 const (
 	FlowStatePending            FlowState = "PENDING"
-	FlowStateRunning             FlowState = "RUNNING"
-	FlowStatePassed              FlowState = "PASSED"
-	FlowStateFailed              FlowState = "FAILED"
-	FlowStateRetrying            FlowState = "RETRYING"
-	FlowStateSkippedUpstream     FlowState = "SKIPPED_UPSTREAM_FAILED"
+	FlowStateRunning            FlowState = "RUNNING"
+	FlowStatePassed             FlowState = "PASSED"
+	FlowStateFailed             FlowState = "FAILED"
+	FlowStateRetrying           FlowState = "RETRYING"
+	FlowStateSkippedUpstream    FlowState = "SKIPPED_UPSTREAM_FAILED"
 	FlowStateBlockedConfigError FlowState = "BLOCKED_CONFIG_ERROR"
-	FlowStatePaused              FlowState = "PAUSED"
+	FlowStatePaused             FlowState = "PAUSED"
+	FlowStateWaitingInput       FlowState = "WAITING_FOR_INPUT"
 )
 
 type Session struct {

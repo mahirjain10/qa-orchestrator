@@ -35,5 +35,12 @@ This is a terminal-based AI coding/orchestration project.
 - Do not modify scope without approval.
 - Prefer small, focused changes.
 
+## Summary Edit Protocol
+- Only write/edit to your own current session's summary/log
+- Never touch another agent's summaries (past or present) without explicit permission
+- Request permission before any edit to someone else's summary
+- Show exact changes before touching it
+- Wait for user confirmation before proceeding
+
 ## Conventions
 - Everything you need to know about templates, file naming, log format, and slice strategy lives in `docs/LOG_CONVENTIONS.md`. Read it before writing any log, summary, or updating CURRENT.md.

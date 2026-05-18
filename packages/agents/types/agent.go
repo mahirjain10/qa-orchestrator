@@ -1,6 +1,8 @@
 package types
 
-import "qa-orchestrator/packages/shared/types"
+import (
+	"qa-orchestrator/packages/shared/types"
+)
 
 type AgentType string
 
@@ -80,3 +82,5 @@ type ExecutionContext struct {
 	Plan        *Plan
 	Observations []Observation
 }
+
+

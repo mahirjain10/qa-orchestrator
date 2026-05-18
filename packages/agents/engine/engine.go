@@ -9,6 +9,7 @@ import (
 	"qa-orchestrator/packages/agents/recovery"
 	agentstypes "qa-orchestrator/packages/agents/types"
 	"qa-orchestrator/packages/agents/validator"
+	"qa-orchestrator/packages/runtime"
 	sharedtypes "qa-orchestrator/packages/shared/types"
 	"qa-orchestrator/packages/storage/artifact"
 	"qa-orchestrator/packages/storage/trace"
@@ -33,12 +34,13 @@ type ExecutionResult struct {
 }
 
 type AgentEngine struct {
-	planner     *planner.Planner
-	executor    *executor.Executor
-	validator   *validator.Validator
-	recovery    *recovery.Recovery
-	traceStore  *trace.TraceStore
+	planner      *planner.Planner
+	executor     *executor.Executor
+	validator    *validator.Validator
+	recovery     *recovery.Recovery
+	traceStore   *trace.TraceStore
 	artifactStore *artifact.ArtifactStore
+	lifecycle    *runtime.LifecycleController
 }
 
 func NewAgentEngine() *AgentEngine {
@@ -67,6 +69,7 @@ func NewAgentEngineWithStores(registry executor.ToolRegistry, traceStore *trace.
 		recovery:      recovery.NewRecovery(nil),
 		traceStore:    traceStore,
 		artifactStore: artifactStore,
+		lifecycle:     runtime.NewLifecycleController(""),
 	}
 }
 
@@ -86,7 +89,17 @@ func (e *AgentEngine) RunFlow(runID string, flow sharedtypes.Flow) *ExecutionRes
 		Steps:  flow.Steps,
 	}
 
+	if e.lifecycle != nil {
+		e.lifecycle.SetStatus(sharedtypes.RunStateRunning)
+	}
+
 	trace.EmitLifecycleEvent(e.traceStore, runID, flow.ID, sharedtypes.RunStateRunning, map[string]any{"goal": flow.Goal})
+
+	if e.lifecycle != nil && e.lifecycle.GetStatus() == sharedtypes.RunStateCancelling {
+		result.Outcome = OutcomeSkip
+		result.Errors = append(result.Errors, "cancelled before execution")
+		return result
+	}
 
 	plan, err := e.planner.CreatePlan(ctx)
 	if err != nil {
@@ -100,6 +113,22 @@ func (e *AgentEngine) RunFlow(runID string, flow sharedtypes.Flow) *ExecutionRes
 	trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "plan_created", fmt.Sprintf("created plan with %d steps", len(plan.Steps)))
 
 	for !e.planner.ShouldStop(plan) {
+		if e.lifecycle != nil {
+			select {
+			case <-e.lifecycle.CancelCh():
+				result.Outcome = OutcomeSkip
+				result.Errors = append(result.Errors, "cancelled during execution")
+				return result
+			case <-e.lifecycle.PauseCh():
+				e.lifecycle.AcknowledgePause()
+				<-e.lifecycle.ResumeCh()
+				e.lifecycle.AcknowledgeResume()
+			case evt := <-e.lifecycle.SteerCh():
+				e.handleSteeringEvent(evt, ctx, result, plan)
+			default:
+			}
+		}
+
 		planStep := e.planner.GetNextStep(plan)
 		if planStep == nil {
 			break
@@ -279,4 +308,34 @@ func (e *AgentEngine) EmitArtifact(runID, flowID string, artifactType artifact.A
 	}
 	trace.EmitArtifactEvent(e.traceStore, runID, flowID, string(artifactType), artifact.Path, metadata)
 	return artifact.ArtifactID
+}
+
+func (e *AgentEngine) SetLifecycleController(lc *runtime.LifecycleController) {
+	e.lifecycle = lc
+}
+
+func (e *AgentEngine) handleSteeringEvent(evt *sharedtypes.SteeringEvent, ctx *agentstypes.ExecutionContext, result *ExecutionResult, plan *agentstypes.Plan) {
+	trace.EmitAgentDecision(e.traceStore, ctx.RunID, ctx.FlowID, "steering", string(evt.Command), evt.Reason)
+
+	switch evt.Command {
+	case sharedtypes.SteerSkip:
+		if evt.FlowID == "" || evt.FlowID == ctx.FlowID {
+			result.Outcome = OutcomeSkip
+			result.Errors = append(result.Errors, fmt.Sprintf("skipped by steering: %s", evt.Reason))
+			return
+		}
+	case sharedtypes.SteerRetry:
+		if evt.FlowID == "" || evt.FlowID == ctx.FlowID {
+			result.Retries++
+		}
+	case sharedtypes.SteerHumanReview:
+		if e.lifecycle != nil {
+			e.lifecycle.SetWaitingForInput()
+		}
+		trace.EmitAgentDecision(e.traceStore, ctx.RunID, ctx.FlowID, "steering", "waiting_for_input", "human review requested")
+	case sharedtypes.SteerApprove, sharedtypes.SteerContinue:
+		if e.lifecycle != nil && e.lifecycle.IsWaitingForInput() {
+			e.lifecycle.AcknowledgeInput()
+		}
+	}
 }

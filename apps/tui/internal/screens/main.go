@@ -2,6 +2,7 @@ package screens
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/bubbletea"
@@ -41,8 +42,10 @@ type MainScreen struct {
 	traceStore    *trace.TraceStore
 	artifactStore *artifact.ArtifactStore
 
-	command string
-	msg     string
+	command       string
+	msg           string
+	steeringInput string
+	steeringMode  bool
 }
 
 func NewMainScreen(store *session.SessionStore) *MainScreen {
@@ -84,7 +87,31 @@ func (m *MainScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return TickMsg(t)
 		})
 
-	case tea.KeyMsg:
+case tea.KeyMsg:
+		if m.steeringMode {
+			switch msg.String() {
+			case "enter":
+				if m.steeringInput != "" {
+					m.processSteeringCommand(m.steeringInput)
+					m.steeringMode = false
+					m.steeringInput = ""
+				}
+			case "backspace":
+				if len(m.steeringInput) > 0 {
+					m.steeringInput = m.steeringInput[:len(m.steeringInput)-1]
+				}
+			case "Escape":
+				m.state.SetView(state.ViewCampaignList)
+				m.steeringMode = false
+				m.steeringInput = ""
+			default:
+				if len(msg.Runes) > 0 && msg.Runes[0] >= 32 {
+					m.steeringInput += string(msg.Runes[0])
+				}
+			}
+			return m, nil
+		}
+
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
@@ -162,10 +189,18 @@ func (m *MainScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.state.SetView(state.ViewArtifacts)
 			m.refreshArtifacts()
 
-		case "Escape":
-			m.state.SetView(state.ViewCampaignList)
+		case "s":
+			if m.state.GetCurrentRunID() != "" {
+				m.steeringMode = true
+				m.steeringInput = ""
+				m.msg = "Steering mode: type command and press ENTER. ESC to cancel."
+			} else {
+				m.msg = "Select a run first before steering"
+			}
 		}
+		return m, nil
 	}
+
 	return m, nil
 }
 
@@ -203,23 +238,45 @@ func (m *MainScreen) View() string {
 			leftPanel,
 			lipgloss.NewStyle().Width(3).Render("  "),
 			rightPanel,
+)
+	}
+
+	footer := helpStyle.Render(" ↑↓ Navigate  Enter Select  Space Pause/Resume  x Cancel  r Refresh  f Flows  t Traces  a Artifacts  s Steer  q Quit")
+
+	viewContent := lipgloss.JoinVertical(
+		lipgloss.Left,
+		lipgloss.NewStyle().Foreground(lipgloss.Color("86")).Bold(true).Render("Zenact TUI - Campaign Runner"),
+		lipgloss.NewStyle().Render("─────────────────────────────────────────────────────"),
+		lipgloss.NewStyle().Height(1).Render(""),
+		content,
+		lipgloss.NewStyle().Height(1).Render(""),
+	)
+
+	if m.steeringMode {
+		steeringBanner := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("208")).
+			Bold(true).
+			Render("STEERING MODE: Type command and press ENTER. ESC to cancel.")
+		steeringInput := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("86")).
+			Render(fmt.Sprintf("> %s_", m.steeringInput))
+		viewContent = lipgloss.JoinVertical(
+			lipgloss.Left,
+			viewContent,
+			lipgloss.NewStyle().Height(1).Render(""),
+			steeringBanner,
+			steeringInput,
 		)
 	}
 
-	footer := helpStyle.Render(" ↑↓ Navigate  Enter Select  Space Pause/Resume  x Cancel  r Refresh  f Flows  t Traces  a Artifacts  q Quit")
-
-	return mainStyle.Render(
-		lipgloss.JoinVertical(
-			lipgloss.Left,
-			lipgloss.NewStyle().Foreground(lipgloss.Color("86")).Bold(true).Render("Zenact TUI - Campaign Runner"),
-			lipgloss.NewStyle().Render("─────────────────────────────────────────────────────"),
-			lipgloss.NewStyle().Height(1).Render(""),
-			content,
-			lipgloss.NewStyle().Height(1).Render(""),
-			msgStyle.Render("  "+m.msg),
-			footer,
-		),
+	viewContent = lipgloss.JoinVertical(
+		lipgloss.Left,
+		viewContent,
+		msgStyle.Render("  "+m.msg),
+		footer,
 	)
+
+	return mainStyle.Render(viewContent)
 }
 
 func (m *MainScreen) refreshAll() {
@@ -260,4 +317,76 @@ func (m *MainScreen) refreshArtifacts() {
 			m.artifactPanel.SetArtifacts(artifacts)
 		}
 	}
+}
+
+func (m *MainScreen) processSteeringCommand(input string) {
+	runID := m.state.GetCurrentRunID()
+	if runID == "" {
+		m.msg = "No run selected"
+		return
+	}
+
+	cmd, args := parseSteeringInput(input)
+
+	switch cmd {
+	case "retry":
+		if len(args) > 0 {
+			err := m.handlers.RetryFlow(runID, args[0])
+			if err != nil {
+				m.msg = fmt.Sprintf("Error: %v", err)
+			} else {
+				m.msg = fmt.Sprintf("Retry scheduled for flow: %s", args[0])
+			}
+		} else {
+			m.msg = "Usage: retry <flow_id>"
+		}
+
+	case "skip":
+		if len(args) > 0 {
+			err := m.handlers.SkipFlow(runID, args[0])
+			if err != nil {
+				m.msg = fmt.Sprintf("Error: %v", err)
+			} else {
+				m.msg = fmt.Sprintf("Flow skipped: %s", args[0])
+			}
+		} else {
+			m.msg = "Usage: skip <flow_id>"
+		}
+
+	case "continue":
+		sess, _ := m.handlers.GetRunStatus(runID)
+		if sess != nil && sess.Status == types.RunStateWaitingInput {
+			err := m.handlers.AcknowledgeInputAndResume(runID)
+			if err != nil {
+				m.msg = fmt.Sprintf("Error: %v", err)
+			} else {
+				m.msg = "Run resumed from WAITING_FOR_INPUT"
+			}
+		} else {
+			m.msg = "Run is not in WAITING_FOR_INPUT state"
+		}
+
+	case "approve":
+		m.msg = "Approval noted"
+
+	case "status":
+		sess, err := m.handlers.GetRunStatus(runID)
+		if err == nil && sess != nil {
+			m.msg = fmt.Sprintf("Status: %s | Flow: %s | Agent: %s",
+				sess.Status, sess.CurrentFlowID, sess.CurrentAgent)
+		} else {
+			m.msg = "Could not retrieve status"
+		}
+
+	default:
+		m.msg = "Unknown command. Try: retry, skip, continue, approve, status"
+	}
+}
+
+func parseSteeringInput(input string) (cmd string, args []string) {
+	parts := strings.Fields(input)
+	if len(parts) == 0 {
+		return "", nil
+	}
+	return parts[0], parts[1:]
 }
