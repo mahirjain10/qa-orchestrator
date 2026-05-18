@@ -18,11 +18,28 @@ type CampaignConfig struct {
 	ParallelLimit int            `json:"parallel_limit" yaml:"parallel_limit"`
 }
 
+type FlowMode string
+
+const (
+	FlowModeGuided     FlowMode = "guided"
+	FlowModeAutonomous FlowMode = "autonomous"
+)
+
+type FlowPriority string
+
+const (
+	FlowPriorityHigh   FlowPriority = "high"
+	FlowPriorityMedium FlowPriority = "medium"
+	FlowPriorityLow    FlowPriority = "low"
+)
+
 type Flow struct {
 	ID          string            `json:"id" yaml:"id"`
 	Name        string            `json:"name" yaml:"name"`
 	Description string            `json:"description" yaml:"description"`
 	Goal        string            `json:"goal" yaml:"goal"`
+	Mode        FlowMode          `json:"mode" yaml:"mode"`
+	Priority    FlowPriority      `json:"priority" yaml:"priority"`
 	DependsOn   []string          `json:"depends_on" yaml:"depends_on"`
 	Steps       []Step            `json:"steps" yaml:"steps"`
 	Config      FlowConfig        `json:"config" yaml:"config"`
@@ -31,7 +48,6 @@ type Flow struct {
 type FlowConfig struct {
 	Timeout    time.Duration `json:"timeout" yaml:"timeout"`
 	RetryLimit int            `json:"retry_limit" yaml:"retry_limit"`
-	Priority   int            `json:"priority" yaml:"priority"`
 }
 
 type Step struct {

@@ -1,6 +1,6 @@
 # Current Project State
 
-## Completed Phases (Verified & Refactored)
+## Original MVP Phases (Completed)
 - **Phase 1:** Core Runtime (Parsers, Validators, Storage)
 - **Phase 2:** TUI Shell (Live UI, Navigation, Lifecycle controls)
 - **Phase 3:** Agent Loop (Planner, Executor, Validator, Recovery)
@@ -9,8 +9,14 @@
 - **Phase 6:** Steering and lifecycle controls (Wait states, Steering commands)
 - **Phase 7:** Final reporting (Campaign Summary generation, Markdown/Terminal export)
 
-### Missing / Pending Phases
-- **None! The MVP is 100% complete.**
+## V2 Phases (Autonomous Upgrade)
+- **Phase 1:** Hybrid Schema & Validation — COMPLETE
+- **Phase 2:** LLM Integration Package — PENDING
+- **Phase 3:** Iterative Autonomous Planner — PENDING
+- **Phase 4:** Tool Registry & Metadata — PENDING
+- **Phase 5:** Agent Engine V2 (Mode Routing) — PENDING
+- **Phase 6:** TUI & Visibility — PENDING
+- **Phase 7:** Validation & Sample Campaigns — PENDING
 
 ### File Structure
 ```
@@ -25,14 +31,14 @@ qa-orchestrator/
 │   ├── shared/types/              # Core types (Session, Trace, Flow, Steering)
 │   └── storage/                   # Stores: Session, Trace, Artifact
 ├── go.mod                         # Root module
-└── docs/run-summaries/            # Up to run-013.md
+└── docs/run-summaries/            # Up to run-014.md
 ```
 
 ### Test Coverage
 - `go test ./...` verified successfully across all packages.
-- 98 tests passing.
+- Parser/validator hardening completed with additional coverage for cycle detection and schema-valid natural-language parsing.
 
 ## Last Run
-- Run 013: 2026-05-18
-- Agent: Gemini CLI
-- Status: Phase 7 reviewed and verified. Project MVP is entirely complete and bug-free!
+- Run 015: 2026-05-19
+- Agent: codex
+- Status: Fixed Phase 1 inconsistencies (natural-language schema defaults, parser-level cycle detection wiring, false-positive tests, and dependency validation deduplication). Full test suite and compile passed.

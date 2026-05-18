@@ -54,3 +54,5 @@ build/
 *.tmp
 *.bak
 *.orig
+
+.gocache/
