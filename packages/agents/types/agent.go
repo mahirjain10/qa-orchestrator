@@ -46,25 +46,47 @@ type Plan struct {
 	CurrentIdx   int
 	Goal         string
 	IsAutonomous bool
+	historyCache string
+	historyBuilt int
+	historyDirty bool
 }
 
 func (p *Plan) AddStep(step PlanStep) {
 	step.StepIndex = len(p.Steps)
+	if len(step.Params) > 0 {
+		if b, err := json.Marshal(step.Params); err == nil {
+			step.paramsJSON = string(b)
+		}
+	}
 	p.Steps = append(p.Steps, step)
+	p.historyDirty = true
+}
+
+func (p *Plan) InvalidateHistoryCache() {
+	p.historyDirty = true
 }
 
 func (p *Plan) GetHistory() string {
 	if p.CurrentIdx == 0 {
 		return "No steps executed yet."
 	}
-	var history string
-	for i := 0; i < p.CurrentIdx && i < len(p.Steps); i++ {
-		step := p.Steps[i]
+	if p.historyDirty || p.historyBuilt > p.CurrentIdx {
+		p.historyCache = ""
+		p.historyBuilt = 0
+		p.historyDirty = false
+	}
+
+	history := p.historyCache
+	for i := p.historyBuilt; i < p.CurrentIdx && i < len(p.Steps); i++ {
+		step := &p.Steps[i]
 		history += fmt.Sprintf("Step %d (%s): tool=%s", i+1, step.StepID, step.Tool)
-		if len(step.Params) > 0 {
+		if step.paramsJSON == "" && len(step.Params) > 0 {
 			if b, err := json.Marshal(step.Params); err == nil {
-				history += fmt.Sprintf(", params=%s", string(b))
+				step.paramsJSON = string(b)
 			}
+		}
+		if step.paramsJSON != "" {
+			history += fmt.Sprintf(", params=%s", step.paramsJSON)
 		}
 		if step.Skip {
 			history += " [SKIPPED: " + step.Reason + "]"
@@ -73,16 +95,23 @@ func (p *Plan) GetHistory() string {
 		}
 		history += "\n"
 	}
+	p.historyCache = history
+	if p.CurrentIdx < len(p.Steps) {
+		p.historyBuilt = p.CurrentIdx
+	} else {
+		p.historyBuilt = len(p.Steps)
+	}
 	return history
 }
 
 type PlanStep struct {
-	StepIndex int
-	StepID    string
-	Tool      string
-	Params    map[string]any
-	Skip      bool
-	Reason    string
+	StepIndex  int
+	StepID     string
+	Tool       string
+	Params     map[string]any
+	paramsJSON string
+	Skip       bool
+	Reason     string
 }
 
 type Assertion = types.Assertion

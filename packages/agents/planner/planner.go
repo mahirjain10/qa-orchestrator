@@ -63,6 +63,7 @@ func (p *Planner) UpdatePlan(plan *types.Plan, stepIdx int, skip bool, reason st
 	if stepIdx >= 0 && stepIdx < len(plan.Steps) {
 		plan.Steps[stepIdx].Skip = skip
 		plan.Steps[stepIdx].Reason = reason
+		plan.InvalidateHistoryCache()
 	}
 }
 
