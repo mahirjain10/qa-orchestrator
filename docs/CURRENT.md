@@ -11,7 +11,7 @@
 
 ## V2 Phases (Autonomous Upgrade)
 - **Phase 1:** Hybrid Schema & Validation — COMPLETE
-- **Phase 2:** LLM Integration Package — PENDING
+- **Phase 2:** LLM Integration Package — COMPLETE
 - **Phase 3:** Iterative Autonomous Planner — PENDING
 - **Phase 4:** Tool Registry & Metadata — PENDING
 - **Phase 5:** Agent Engine V2 (Mode Routing) — PENDING
@@ -25,20 +25,21 @@ qa-orchestrator/
 ├── packages/
 │   ├── agents/                    # Loop: Engine, Planner, Executor, Validator, Recovery
 │   ├── browser-runtime/           # Playwright runtime & ToolRegistry
+│   ├── llm/                       # LLM client (OpenRouter/OpenAI)
 │   ├── orchestrator/              # Campaign parsing & DAG validation
 │   ├── reporting/                 # Markdown and Terminal report generation
 │   ├── runtime/                   # LifecycleController (unified state management)
 │   ├── shared/types/              # Core types (Session, Trace, Flow, Steering)
 │   └── storage/                   # Stores: Session, Trace, Artifact
 ├── go.mod                         # Root module
-└── docs/run-summaries/            # Up to run-014.md
+└── docs/run-summaries/            # Up to run-017.md
 ```
 
 ### Test Coverage
 - `go test ./...` verified successfully across all packages.
-- Parser/validator hardening completed with additional coverage for cycle detection and schema-valid natural-language parsing.
+- 133 tests passing.
 
 ## Last Run
-- Run 015: 2026-05-19
+- Run 017: 2026-05-19
 - Agent: codex
-- Status: Fixed Phase 1 inconsistencies (natural-language schema defaults, parser-level cycle detection wiring, false-positive tests, and dependency validation deduplication). Full test suite and compile passed.
+- Status: Added `.env.example` for LLM config documentation, tests passed, and compile passed using `-buildvcs=false`.
