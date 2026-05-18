@@ -1,0 +1,67 @@
+package types
+
+import (
+	"crypto/rand"
+	"encoding/hex"
+	"fmt"
+	"time"
+)
+
+func NewRunID() string {
+	b := make([]byte, 8)
+	rand.Read(b)
+	return fmt.Sprintf("run_%s_%s", time.Now().Format("20060102"), hex.EncodeToString(b)[:6])
+}
+
+func NewSessionID() string {
+	b := make([]byte, 12)
+	rand.Read(b)
+	return fmt.Sprintf("sess_%s", hex.EncodeToString(b))
+}
+
+func NewSession(campaignName string) *Session {
+	now := time.Now().UTC()
+	return &Session{
+		RunID:          NewRunID(),
+		SessionID:      NewSessionID(),
+		CampaignName:  campaignName,
+		Status:        RunStatePending,
+		StartedAt:     now,
+		UpdatedAt:     now,
+		Flows:         []FlowRunState{},
+	}
+}
+
+func (s *Session) AddFlowState(frs FlowRunState) {
+	s.Flows = append(s.Flows, frs)
+	s.UpdatedAt = time.Now().UTC()
+}
+
+func (s *Session) UpdateFlowState(flowID string, status FlowState, errMsg string) {
+	for i, f := range s.Flows {
+		if f.FlowID == flowID {
+			now := time.Now().UTC()
+			s.Flows[i].Status = status
+			s.Flows[i].Error = errMsg
+			if status == FlowStateRunning && s.Flows[i].StartedAt == nil {
+				s.Flows[i].StartedAt = &now
+			}
+			if status == FlowStatePassed || status == FlowStateFailed || status == FlowStateSkippedUpstream {
+				s.Flows[i].FinishedAt = &now
+			}
+			break
+		}
+	}
+	s.UpdatedAt = time.Now().UTC()
+}
+
+func (s *Session) SetCheckpoint(flowID, stepID string, stepIndex int, payload map[string]any) {
+	s.Checkpoint = &Checkpoint{
+		FlowID:    flowID,
+		StepID:    stepID,
+		StepIndex: stepIndex,
+		Payload:   payload,
+		Timestamp: time.Now().UTC(),
+	}
+	s.UpdatedAt = time.Now().UTC()
+}

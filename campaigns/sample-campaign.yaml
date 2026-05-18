@@ -1,0 +1,80 @@
+name: Sample Web App Campaign
+description: Test the Zenact demo web app
+version: "1.0"
+config:
+  timeout: 300s
+  retry_limit: 2
+  parallel_limit: 1
+
+flows:
+  - id: login-flow
+    name: Login Test
+    description: Test login functionality
+    goal: Login to the demo app with test credentials
+    depends_on: []
+    steps:
+      - id: nav-to-login
+        name: Navigate to Login Page
+        tool: navigate
+        params:
+          url: "https://example.com/login"
+      - id: enter-username
+        name: Enter Username
+        tool: type_text
+        params:
+          selector: "#username"
+          value: "testuser"
+      - id: enter-password
+        name: Enter Password
+        tool: type_text
+        params:
+          selector: "#password"
+          value: "password123"
+      - id: click-login
+        name: Click Login Button
+        tool: click
+        params:
+          selector: "#login-btn"
+      - id: verify-success
+        name: Verify Login Success
+        tool: wait_for
+        params:
+          selector: ".dashboard"
+          state: "visible"
+
+  - id: dashboard-flow
+    name: Dashboard Test
+    description: Test dashboard elements
+    goal: Verify dashboard displays correctly after login
+    depends_on:
+      - login-flow
+    steps:
+      - id: check-welcome
+        name: Check Welcome Message
+        tool: get_text
+        params:
+          selector: ".welcome-message"
+      - id: verify-user
+        name: Verify User Info
+        tool: get_text
+        params:
+          selector: ".user-info"
+
+  - id: logout-flow
+    name: Logout Test
+    description: Test logout functionality
+    goal: Logout from the application
+    depends_on:
+      - dashboard-flow
+    steps:
+      - id: click-logout
+        name: Click Logout Button
+        tool: click
+        params:
+          selector: "#logout-btn"
+      - id: verify-logout
+        name: Verify Logged Out
+        tool: wait_for
+        params:
+          selector: "#login-form"
+          state: "visible"
