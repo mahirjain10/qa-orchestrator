@@ -404,7 +404,7 @@ func TestRunFlow_CancelBeforeExecution_FinalizesSkippedState(t *testing.T) {
 	if len(updated.Flows) != 1 {
 		t.Fatalf("expected 1 flow state, got %d", len(updated.Flows))
 	}
-	if updated.Flows[0].Status != sharedtypes.FlowStateSkippedUpstream {
-		t.Fatalf("expected SKIPPED_UPSTREAM_FAILED, got %s", updated.Flows[0].Status)
+	if updated.Flows[0].Status != sharedtypes.FlowStateSkippedUser {
+		t.Fatalf("expected SKIPPED_USER, got %s", updated.Flows[0].Status)
 	}
 }

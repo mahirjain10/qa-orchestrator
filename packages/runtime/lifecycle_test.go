@@ -161,6 +161,20 @@ func TestLifecycleController_WaitingForInput(t *testing.T) {
 	}
 }
 
+func TestLifecycleController_RequestInputSignal(t *testing.T) {
+	ctrl := NewLifecycleController("run_123")
+	ctrl.RequestInput()
+
+	select {
+	case <-ctrl.InputCh():
+	case <-time.After(100 * time.Millisecond):
+		t.Fatal("expected input signal on channel")
+	}
+	if ctrl.GetStatus() != types.RunStateWaitingInput {
+		t.Fatalf("expected WAITING_FOR_INPUT, got %s", ctrl.GetStatus())
+	}
+}
+
 func TestLifecycleController_SteeringEvents(t *testing.T) {
 	ctrl := NewLifecycleController("run_123")
 

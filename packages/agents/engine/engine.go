@@ -717,7 +717,7 @@ func (e *AgentEngine) finalizeFlowState(runID, flowID string, result *ExecutionR
 	case OutcomePass:
 		status = sharedtypes.FlowStatePassed
 	case OutcomeSkip:
-		status = sharedtypes.FlowStateSkippedUpstream
+		status = sharedtypes.FlowStateSkippedUser
 	case OutcomeFail:
 		status = sharedtypes.FlowStateFailed
 	default:

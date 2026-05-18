@@ -158,8 +158,8 @@ func TestParseNaturalLanguage(t *testing.T) {
 	if len(camp.Flows) != 1 {
 		t.Errorf("expected 1 flow, got %d", len(camp.Flows))
 	}
-	if camp.Flows[0].ID != "auto-flow-1" {
-		t.Errorf("expected auto ID 'auto-flow-1', got %q", camp.Flows[0].ID)
+	if !strings.HasPrefix(camp.Flows[0].ID, "auto-flow-") {
+		t.Errorf("expected auto-generated ID with prefix 'auto-flow-', got %q", camp.Flows[0].ID)
 	}
 	if camp.Version != "1.0" {
 		t.Errorf("expected version '1.0', got %q", camp.Version)

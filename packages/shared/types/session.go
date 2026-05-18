@@ -9,26 +9,30 @@ import (
 
 func NewRunID() string {
 	b := make([]byte, 8)
-	rand.Read(b)
-	return fmt.Sprintf("run_%s_%s", time.Now().Format("20060102"), hex.EncodeToString(b)[:6])
+	if _, err := rand.Read(b); err == nil {
+		return fmt.Sprintf("run_%s_%s", time.Now().Format("20060102"), hex.EncodeToString(b)[:6])
+	}
+	return fmt.Sprintf("run_%s_%d", time.Now().Format("20060102"), time.Now().UnixNano())
 }
 
 func NewSessionID() string {
 	b := make([]byte, 12)
-	rand.Read(b)
-	return fmt.Sprintf("sess_%s", hex.EncodeToString(b))
+	if _, err := rand.Read(b); err == nil {
+		return fmt.Sprintf("sess_%s", hex.EncodeToString(b))
+	}
+	return fmt.Sprintf("sess_%d", time.Now().UnixNano())
 }
 
 func NewSession(campaignName string) *Session {
 	now := time.Now().UTC()
 	return &Session{
-		RunID:          NewRunID(),
-		SessionID:      NewSessionID(),
-		CampaignName:  campaignName,
-		Status:        RunStatePending,
-		StartedAt:     now,
-		UpdatedAt:     now,
-		Flows:         []FlowRunState{},
+		RunID:        NewRunID(),
+		SessionID:    NewSessionID(),
+		CampaignName: campaignName,
+		Status:       RunStatePending,
+		StartedAt:    now,
+		UpdatedAt:    now,
+		Flows:        []FlowRunState{},
 	}
 }
 
@@ -46,7 +50,7 @@ func (s *Session) UpdateFlowState(flowID string, status FlowState, errMsg string
 			if status == FlowStateRunning && s.Flows[i].StartedAt == nil {
 				s.Flows[i].StartedAt = &now
 			}
-			if status == FlowStatePassed || status == FlowStateFailed || status == FlowStateSkippedUpstream {
+			if status == FlowStatePassed || status == FlowStateFailed || status == FlowStateSkippedUpstream || status == FlowStateSkippedUser {
 				s.Flows[i].FinishedAt = &now
 			}
 			break

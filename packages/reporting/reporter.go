@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
+	sharedtypes "qa-orchestrator/packages/shared/types"
 	"qa-orchestrator/packages/storage/artifact"
 	"qa-orchestrator/packages/storage/session"
 	"qa-orchestrator/packages/storage/trace"
-	sharedtypes "qa-orchestrator/packages/shared/types"
 )
 
 type ReportGenerator struct {
@@ -72,15 +72,20 @@ func (r *ReportGenerator) GenerateCampaignSummary(runID string) (*CampaignSummar
 		RunID:          sess.RunID,
 		CampaignName:   sess.CampaignName,
 		Status:         sess.Status,
-		StartedAt:       sess.StartedAt,
-		CompletedAt:    sess.UpdatedAt,
+		StartedAt:      sess.StartedAt,
 		RetryCount:     sess.RetryCount,
 		ArtifactsCount: len(artifacts),
 		TracesCount:    len(traces),
 	}
 
-	if !sess.StartedAt.IsZero() && !sess.UpdatedAt.IsZero() {
-		summary.Duration = sess.UpdatedAt.Sub(sess.StartedAt)
+	if sess.CompletedAt != nil {
+		summary.CompletedAt = *sess.CompletedAt
+	} else {
+		summary.CompletedAt = sess.UpdatedAt
+	}
+
+	if !summary.StartedAt.IsZero() && !summary.CompletedAt.IsZero() {
+		summary.Duration = summary.CompletedAt.Sub(summary.StartedAt)
 	}
 
 	for _, flow := range sess.Flows {
@@ -112,7 +117,7 @@ func (r *ReportGenerator) GenerateCampaignSummary(runID string) (*CampaignSummar
 			summary.PassedFlows++
 		case sharedtypes.FlowStateFailed:
 			summary.FailedFlows++
-		case sharedtypes.FlowStateSkippedUpstream, sharedtypes.FlowStateBlockedConfigError:
+		case sharedtypes.FlowStateSkippedUpstream, sharedtypes.FlowStateSkippedUser, sharedtypes.FlowStateBlockedConfigError:
 			summary.SkippedFlows++
 		case sharedtypes.FlowStatePending:
 			summary.PendingFlows++

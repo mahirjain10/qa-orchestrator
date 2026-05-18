@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
+	sharedtypes "qa-orchestrator/packages/shared/types"
 	"qa-orchestrator/packages/storage/artifact"
 	"qa-orchestrator/packages/storage/session"
 	"qa-orchestrator/packages/storage/trace"
-	sharedtypes "qa-orchestrator/packages/shared/types"
 )
 
 func TestReportGenerator_GenerateCampaignSummary(t *testing.T) {
@@ -29,6 +29,8 @@ func TestReportGenerator_GenerateCampaignSummary(t *testing.T) {
 	sess.Status = sharedtypes.RunStateCompleted
 	sess.StartedAt = now.Add(-10 * time.Minute)
 	sess.UpdatedAt = now
+	completedAt := now.Add(-5 * time.Minute)
+	sess.CompletedAt = &completedAt
 
 	sess.Flows = []sharedtypes.FlowRunState{
 		{
@@ -93,6 +95,9 @@ func TestReportGenerator_GenerateCampaignSummary(t *testing.T) {
 
 	if summary.Status != sharedtypes.RunStateCompleted {
 		t.Errorf("expected status COMPLETED, got %s", summary.Status)
+	}
+	if !summary.CompletedAt.Equal(completedAt) {
+		t.Errorf("expected completedAt %v, got %v", completedAt, summary.CompletedAt)
 	}
 }
 

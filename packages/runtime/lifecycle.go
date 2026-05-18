@@ -7,14 +7,14 @@ import (
 )
 
 type LifecycleController struct {
-	mu          sync.RWMutex
-	runID       string
-	status      types.RunState
-	steeringCh  chan *types.SteeringEvent
-	pauseCh     chan struct{}
-	resumeCh    chan struct{}
-	cancelCh    chan struct{}
-	inputCh     chan struct{}
+	mu         sync.RWMutex
+	runID      string
+	status     types.RunState
+	steeringCh chan *types.SteeringEvent
+	pauseCh    chan struct{}
+	resumeCh   chan struct{}
+	cancelCh   chan struct{}
+	inputCh    chan struct{}
 }
 
 func NewLifecycleController(runID string) *LifecycleController {
@@ -25,6 +25,7 @@ func NewLifecycleController(runID string) *LifecycleController {
 		pauseCh:    make(chan struct{}, 1),
 		resumeCh:   make(chan struct{}, 1),
 		cancelCh:   make(chan struct{}, 1),
+		inputCh:    make(chan struct{}, 1),
 	}
 }
 

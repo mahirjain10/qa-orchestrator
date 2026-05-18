@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v3"
 	"qa-orchestrator/packages/orchestrator/validator"
@@ -115,7 +116,7 @@ func (p *CampaignParser) ParseNaturalLanguage(text string) (*types.Campaign, err
 	}
 
 	flow := types.Flow{
-		ID:       "auto-flow-1",
+		ID:       fmt.Sprintf("auto-flow-%d", time.Now().UnixNano()),
 		Name:     strings.TrimSpace(lines[0]),
 		Goal:     text,
 		Mode:     types.FlowModeAutonomous,
