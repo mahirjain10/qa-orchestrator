@@ -29,11 +29,21 @@ func NewSessionStore(baseDir string) (*SessionStore, error) {
 	}, nil
 }
 
-func (s *SessionStore) Create(name string) (*types.Session, error) {
+func (s *SessionStore) Create(campaign *types.Campaign) (*types.Session, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	session := types.NewSession(name)
+	session := types.NewSession(campaign.Name)
+	for _, flow := range campaign.Flows {
+		session.AddFlowState(types.FlowRunState{
+			FlowID:   flow.ID,
+			Name:     flow.Name,
+			Mode:     flow.Mode,
+			Priority: flow.Priority,
+			Status:   types.FlowStatePending,
+		})
+	}
+
 	s.sessions[session.RunID] = session
 
 	if err := s.persist(session); err != nil {

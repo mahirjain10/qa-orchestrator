@@ -67,8 +67,8 @@ func (m *FlowStatusModel) View() string {
 		return flowTableHeaderStyle.Render("Flow Status") + "\n\n  No flows\n"
 	}
 
-	header := fmt.Sprintf("  %-20s %-10s %-12s %-20s", "Flow ID", "Status", "Started", "Duration")
-	border := "  " + flowTableHeaderBorder.Render(strings.Repeat("─", 66))
+	header := fmt.Sprintf("  %-20s %-12s %-10s %-10s %-10s %-12s", "Flow ID", "Mode", "Priority", "Status", "Started", "Duration")
+	border := "  " + flowTableHeaderBorder.Render(strings.Repeat("─", 80))
 
 	lines := []string{}
 	lines = append(lines, flowTableHeaderStyle.Render("Flow Status"))
@@ -109,7 +109,17 @@ func (m *FlowStatusModel) View() string {
 			durationStr = dur.Round(time.Second).String() + " (running)"
 		}
 
-		row := fmt.Sprintf("  %-20s %-10s %-12s %-20s", f.FlowID, statusColor.Render(statusStr), startedStr, durationStr)
+		modeStr := string(f.Mode)
+		priorityStr := string(f.Priority)
+
+		row := fmt.Sprintf("  %-20s %-12s %-10s %-10s %-10s %-12s",
+			f.FlowID,
+			modeStr,
+			priorityStr,
+			statusColor.Render(statusStr),
+			startedStr,
+			durationStr,
+		)
 		if i == m.selected {
 			lines = append(lines, selectedStyle.Render(row))
 		} else {

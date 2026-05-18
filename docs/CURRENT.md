@@ -15,30 +15,13 @@
 - **Phase 3:** Iterative Autonomous Planner — COMPLETE
 - **Phase 4:** Tool Registry & Metadata — COMPLETE (hardened)
 - **Phase 5:** Agent Engine V2 (Mode Routing) — COMPLETE (hardened)
-- **Phase 6:** TUI & Visibility — PENDING
+- **Phase 6:** TUI & Visibility — COMPLETE (hardened)
 - **Phase 7:** Validation & Sample Campaigns — PENDING
-
-### File Structure
-```
-qa-orchestrator/
-├── apps/tui/                      # TUI interface and screens
-├── packages/
-│   ├── agents/                    # Loop: Engine, Planner, Executor, Validator, Recovery
-│   ├── browser-runtime/           # Playwright runtime & ToolRegistry
-│   ├── llm/                       # LLM client (OpenRouter/OpenAI)
-│   ├── orchestrator/              # Campaign parsing & DAG validation
-│   ├── reporting/                 # Markdown and Terminal report generation
-│   ├── runtime/                   # LifecycleController (unified state management)
-│   ├── shared/types/              # Core types (Session, Trace, Flow, Steering)
-│   └── storage/                   # Stores: Session, Trace, Artifact
-├── go.mod                         # Root module
-└── docs/run-summaries/            # Up to run-021.md
-```
 
 ### Test Coverage
 - `go test ./...` verified successfully across all packages.
 
 ## Last Run
-- Run 021: 2026-05-19
+- Run 023: 2026-05-19
 - Agent: codex
-- Status: Hardened Phase 5 autonomous cancellation and tool metadata conversion; tests and compile passed.
+- Status: Fixed Phase 6 cancellation/state-sync bugs (finalization on cancel, skipped-state mapping, session sync error visibility, metadata alignment). Tests and compile passed.

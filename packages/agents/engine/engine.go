@@ -17,6 +17,7 @@ import (
 	"qa-orchestrator/packages/runtime"
 	sharedtypes "qa-orchestrator/packages/shared/types"
 	"qa-orchestrator/packages/storage/artifact"
+	"qa-orchestrator/packages/storage/session"
 	"qa-orchestrator/packages/storage/trace"
 )
 
@@ -46,6 +47,7 @@ type AgentEngine struct {
 	recovery      *recovery.Recovery
 	traceStore    *trace.TraceStore
 	artifactStore *artifact.ArtifactStore
+	sessionStore  *session.SessionStore
 	lifecycle     *runtime.LifecycleController
 	llmClient     planner.LLMClient
 	toolRegistry  executor.ToolRegistry
@@ -73,12 +75,13 @@ func NewAgentEngineWithRegistry(registry executor.ToolRegistry) *AgentEngine {
 	}
 }
 
-func NewAgentEngineWithStores(registry executor.ToolRegistry, traceStore *trace.TraceStore, artifactStore *artifact.ArtifactStore) *AgentEngine {
+func NewAgentEngineWithStores(registry executor.ToolRegistry, sessionStore *session.SessionStore, traceStore *trace.TraceStore, artifactStore *artifact.ArtifactStore) *AgentEngine {
 	return &AgentEngine{
 		planner:       planner.NewPlanner(),
 		executor:      executor.NewExecutor(registry),
 		validator:     validator.NewValidator(),
 		recovery:      recovery.NewRecovery(nil),
+		sessionStore:  sessionStore,
 		traceStore:    traceStore,
 		artifactStore: artifactStore,
 		lifecycle:     runtime.NewLifecycleController(""),
@@ -86,7 +89,7 @@ func NewAgentEngineWithStores(registry executor.ToolRegistry, traceStore *trace.
 	}
 }
 
-func NewAgentEngineWithLLM(registry executor.ToolRegistry, llmClient planner.LLMClient, browserTools interface {
+func NewAgentEngineWithLLM(registry executor.ToolRegistry, sessionStore *session.SessionStore, llmClient planner.LLMClient, browserTools interface {
 	ListToolsWithDocs() []browsertools.ToolInfo
 }) *AgentEngine {
 	return &AgentEngine{
@@ -94,6 +97,7 @@ func NewAgentEngineWithLLM(registry executor.ToolRegistry, llmClient planner.LLM
 		executor:     executor.NewExecutor(registry),
 		validator:    validator.NewValidator(),
 		recovery:     recovery.NewRecovery(nil),
+		sessionStore: sessionStore,
 		llmClient:    llmClient,
 		toolRegistry: registry,
 		browserTools: browserTools,
@@ -128,6 +132,21 @@ func (e *AgentEngine) RunFlow(runID string, flow sharedtypes.Flow) *ExecutionRes
 		Steps:  flow.Steps,
 	}
 
+	if e.sessionStore != nil {
+		e.syncSessionStore(runID, flow.ID, "update_flow_running", func() error {
+			return e.sessionStore.UpdateFlowState(runID, flow.ID, sharedtypes.FlowStateRunning, "")
+		})
+		sess, err := e.sessionStore.Get(runID)
+		if sess != nil {
+			sess.CurrentFlowID = flow.ID
+			e.syncSessionStore(runID, flow.ID, "save_current_flow", func() error {
+				return e.sessionStore.Save(sess)
+			})
+		} else if err != nil {
+			trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "session_sync", "get_failed", err.Error())
+		}
+	}
+
 	if e.lifecycle != nil {
 		e.lifecycle.SetStatus(sharedtypes.RunStateRunning)
 	}
@@ -140,6 +159,7 @@ func (e *AgentEngine) RunFlow(runID string, flow sharedtypes.Flow) *ExecutionRes
 	if e.lifecycle != nil && e.lifecycle.GetStatus() == sharedtypes.RunStateCancelling {
 		result.Outcome = OutcomeSkip
 		result.Errors = append(result.Errors, "cancelled before execution")
+		e.finalizeFlowState(runID, flow.ID, result)
 		return result
 	}
 
@@ -152,6 +172,7 @@ func (e *AgentEngine) RunFlow(runID string, flow sharedtypes.Flow) *ExecutionRes
 
 func (e *AgentEngine) runGuidedFlow(runID string, flow sharedtypes.Flow, ctx *agentstypes.ExecutionContext, result *ExecutionResult, start time.Time) *ExecutionResult {
 	trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "engine", "mode", "guided")
+	e.setCurrentAgent(ctx.RunID, "planner")
 
 	plan, err := e.planner.CreatePlan(ctx)
 	if err != nil {
@@ -170,8 +191,9 @@ func (e *AgentEngine) runGuidedFlow(runID string, flow sharedtypes.Flow, ctx *ag
 			case <-e.lifecycle.CancelCh():
 				result.Outcome = OutcomeSkip
 				result.Errors = append(result.Errors, "cancelled during execution")
-				return result
+				goto done
 			case <-e.lifecycle.PauseCh():
+				e.setCurrentAgent(ctx.RunID, "idle (paused)")
 				e.lifecycle.AcknowledgePause()
 				<-e.lifecycle.ResumeCh()
 				e.lifecycle.AcknowledgeResume()
@@ -187,10 +209,12 @@ func (e *AgentEngine) runGuidedFlow(runID string, flow sharedtypes.Flow, ctx *ag
 		}
 
 		e.saveCheckpoint(runID, ctx, planStep)
+		e.setCurrentAgent(ctx.RunID, "executor")
 		stepResult := e.executeAndValidate(ctx, planStep)
 		result.Steps = append(result.Steps, stepResult)
 
 		if !stepResult.Success {
+			e.setCurrentAgent(ctx.RunID, "recovery")
 			trace.EmitRecoveryAction(e.traceStore, runID, flow.ID, nil, stepResult)
 			decision := e.handleFailure(ctx, stepResult, result)
 			trace.EmitRecoveryAction(e.traceStore, runID, flow.ID, decision, stepResult)
@@ -202,6 +226,7 @@ func (e *AgentEngine) runGuidedFlow(runID string, flow sharedtypes.Flow, ctx *ag
 				continue
 			case agentstypes.RecoveryActionReplan:
 				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "recovery", "replan", decision.Reason)
+				e.setCurrentAgent(ctx.RunID, "planner")
 				newPlan, replanErr := e.planner.CreatePlan(ctx)
 				if replanErr != nil {
 					result.Outcome = OutcomeFail
@@ -233,6 +258,11 @@ done:
 		result.Outcome = OutcomeFail
 	}
 
+	if e.sessionStore != nil {
+		e.finalizeFlowState(runID, flow.ID, result)
+		e.setCurrentAgent(runID, "")
+	}
+
 	if result.Outcome == OutcomePass {
 		trace.EmitLifecycleEvent(e.traceStore, runID, flow.ID, sharedtypes.RunStateCompleted, map[string]any{"duration_ms": result.DurationMs})
 	} else {
@@ -255,6 +285,7 @@ func (e *AgentEngine) runAutonomousFlow(runID string, flow sharedtypes.Flow, ctx
 	llmTools := convertToLLMTools(e.browserTools)
 	autonomousPlanner := planner.NewAutonomousPlanner(e.llmClient, llmTools)
 
+	e.setCurrentAgent(runID, "planner (init)")
 	plan, err := autonomousPlanner.CreatePlan(ctx)
 	if err != nil {
 		result.Outcome = OutcomeFail
@@ -276,8 +307,9 @@ func (e *AgentEngine) runAutonomousFlow(runID string, flow sharedtypes.Flow, ctx
 				result.Outcome = OutcomeSkip
 				result.Errors = append(result.Errors, "cancelled during autonomous execution")
 				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "engine", "cancelled", "autonomous flow cancelled")
-				return result
+				goto done
 			case <-e.lifecycle.PauseCh():
+				e.setCurrentAgent(runID, "idle (paused)")
 				e.lifecycle.AcknowledgePause()
 				<-e.lifecycle.ResumeCh()
 				e.lifecycle.AcknowledgeResume()
@@ -288,6 +320,7 @@ func (e *AgentEngine) runAutonomousFlow(runID string, flow sharedtypes.Flow, ctx
 		}
 
 		trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "generating_step", fmt.Sprintf("step %d", stepCount+1))
+		e.setCurrentAgent(runID, fmt.Sprintf("planner (step %d)", stepCount+1))
 
 		llmCtx, llmCancel := e.autonomousLLMContext(context.Background())
 		planStep, err := autonomousPlanner.GenerateNextStep(llmCtx, ctx)
@@ -312,10 +345,12 @@ func (e *AgentEngine) runAutonomousFlow(runID string, flow sharedtypes.Flow, ctx
 		ctx.Plan = plan
 
 		e.saveCheckpoint(runID, ctx, planStep)
+		e.setCurrentAgent(runID, "executor")
 		stepResult := e.executeAndValidate(ctx, planStep)
 		result.Steps = append(result.Steps, stepResult)
 
 		if !stepResult.Success {
+			e.setCurrentAgent(runID, "recovery")
 			trace.EmitRecoveryAction(e.traceStore, runID, flow.ID, nil, stepResult)
 			decision := e.handleFailure(ctx, stepResult, result)
 			trace.EmitRecoveryAction(e.traceStore, runID, flow.ID, decision, stepResult)
@@ -358,6 +393,11 @@ done:
 		result.Outcome = OutcomeFail
 	}
 
+	if e.sessionStore != nil {
+		e.finalizeFlowState(runID, flow.ID, result)
+		e.setCurrentAgent(runID, "")
+	}
+
 	if result.Outcome == OutcomePass {
 		trace.EmitLifecycleEvent(e.traceStore, runID, flow.ID, sharedtypes.RunStateCompleted, map[string]any{
 			"duration_ms":      result.DurationMs,
@@ -368,6 +408,23 @@ done:
 	}
 
 	return result
+}
+
+func (e *AgentEngine) setCurrentAgent(runID, agent string) {
+	if e.sessionStore == nil {
+		return
+	}
+	sess, err := e.sessionStore.Get(runID)
+	if err == nil && sess != nil {
+		sess.CurrentAgent = agent
+		e.syncSessionStore(runID, sess.CurrentFlowID, "save_current_agent", func() error {
+			return e.sessionStore.Save(sess)
+		})
+		return
+	}
+	if err != nil {
+		trace.EmitAgentDecision(e.traceStore, runID, "", "session_sync", "get_failed", err.Error())
+	}
 }
 
 func (e *AgentEngine) executeAndValidate(ctx *agentstypes.ExecutionContext, planStep *agentstypes.PlanStep) *agentstypes.StepResult {
@@ -470,12 +527,21 @@ func (e *AgentEngine) saveCheckpoint(runID string, ctx *agentstypes.ExecutionCon
 	for i, obs := range ctx.Observations {
 		payload[fmt.Sprintf("obs_%d", i)] = obs.State
 	}
-	trace.EmitCheckpoint(e.traceStore, runID, &sharedtypes.Checkpoint{
+
+	cp := &sharedtypes.Checkpoint{
 		FlowID:    ctx.FlowID,
 		StepID:    planStep.StepID,
 		StepIndex: planStep.StepIndex,
 		Payload:   payload,
-	})
+	}
+
+	if e.sessionStore != nil {
+		e.syncSessionStore(runID, ctx.FlowID, "save_checkpoint", func() error {
+			return e.sessionStore.SaveCheckpoint(runID, cp)
+		})
+	}
+
+	trace.EmitCheckpoint(e.traceStore, runID, cp)
 }
 
 func (e *AgentEngine) EmitArtifact(runID, flowID string, artifactType artifact.ArtifactType, filename string, data []byte, metadata map[string]any) string {
@@ -600,7 +666,7 @@ func getDefaultLLMTools() []llm.ToolInfo {
 			Description: "Wait for an element to reach a specific state",
 			Parameters: map[string]llm.ParameterInfo{
 				"selector": {Type: "string", Description: "CSS selector for the element to wait for", Required: true},
-				"state":    {Type: "string", Description: "Wait state: visible, hidden, attached", Required: false},
+				"state":    {Type: "string", Description: "Wait state: visible, hidden, attached (default: visible)", Required: false},
 			},
 		},
 		{
@@ -633,4 +699,37 @@ func getDefaultLLMTools() []llm.ToolInfo {
 			},
 		},
 	}
+}
+
+func (e *AgentEngine) syncSessionStore(runID, flowID, action string, fn func() error) bool {
+	if e.sessionStore == nil {
+		return true
+	}
+	if err := fn(); err != nil {
+		trace.EmitAgentDecision(e.traceStore, runID, flowID, "session_sync", action+"_failed", err.Error())
+		return false
+	}
+	return true
+}
+
+func (e *AgentEngine) finalizeFlowState(runID, flowID string, result *ExecutionResult) {
+	status := sharedtypes.FlowStatePassed
+	switch result.Outcome {
+	case OutcomePass:
+		status = sharedtypes.FlowStatePassed
+	case OutcomeSkip:
+		status = sharedtypes.FlowStateSkippedUpstream
+	case OutcomeFail:
+		status = sharedtypes.FlowStateFailed
+	default:
+		status = sharedtypes.FlowStateFailed
+	}
+
+	errMsg := ""
+	if len(result.Errors) > 0 {
+		errMsg = result.Errors[0]
+	}
+	e.syncSessionStore(runID, flowID, "update_flow_final_state", func() error {
+		return e.sessionStore.UpdateFlowState(runID, flowID, status, errMsg)
+	})
 }

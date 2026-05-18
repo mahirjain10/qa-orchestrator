@@ -10,6 +10,7 @@ import (
 	browsertools "qa-orchestrator/packages/browser-runtime/tools"
 	"qa-orchestrator/packages/runtime"
 	sharedtypes "qa-orchestrator/packages/shared/types"
+	"qa-orchestrator/packages/storage/session"
 )
 
 func TestAgentEngineRunFlowSuccess(t *testing.T) {
@@ -249,7 +250,7 @@ func (m *cancelAwareLLMClient) GenerateWithSystem(ctx context.Context, system, u
 func TestAutonomousFlow_CancelsDuringGeneration(t *testing.T) {
 	registry := executor.NewMockToolRegistry()
 	llmClient := &cancelAwareLLMClient{started: make(chan struct{})}
-	engine := NewAgentEngineWithLLM(registry, llmClient, &mockBrowserTools{docs: []browsertools.ToolInfo{}})
+	engine := NewAgentEngineWithLLM(registry, nil, llmClient, &mockBrowserTools{docs: []browsertools.ToolInfo{}})
 	lifecycle := runtime.NewLifecycleController("run_test")
 	engine.SetLifecycleController(lifecycle)
 
@@ -282,5 +283,53 @@ func TestAutonomousFlow_CancelsDuringGeneration(t *testing.T) {
 		}
 	case <-time.After(3 * time.Second):
 		t.Fatal("RunFlow did not return after cancellation")
+	}
+}
+
+func TestRunFlow_CancelBeforeExecution_FinalizesSkippedState(t *testing.T) {
+	tmpDir := t.TempDir()
+	store, err := session.NewSessionStore(tmpDir)
+	if err != nil {
+		t.Fatalf("failed to create session store: %v", err)
+	}
+
+	campaign := &sharedtypes.Campaign{
+		Name: "cancel-test",
+		Flows: []sharedtypes.Flow{
+			{ID: "flow-cancel", Name: "Cancel Flow", Mode: sharedtypes.FlowModeGuided, Priority: sharedtypes.FlowPriorityMedium},
+		},
+	}
+	sess, err := store.Create(campaign)
+	if err != nil {
+		t.Fatalf("failed to create session: %v", err)
+	}
+
+	engine := NewAgentEngineWithStores(executor.NewMockToolRegistry(), store, nil, nil)
+	lc := runtime.NewLifecycleController(sess.RunID)
+	lc.RequestCancel()
+	engine.SetLifecycleController(lc)
+
+	flow := types.Flow{
+		ID:   "flow-cancel",
+		Mode: sharedtypes.FlowModeGuided,
+		Steps: []types.Step{
+			{ID: "s1", Tool: "echo", Params: map[string]any{"value": "x"}},
+		},
+	}
+
+	result := engine.RunFlow(sess.RunID, flow)
+	if result.Outcome != OutcomeSkip {
+		t.Fatalf("expected SKIPPED outcome, got %s", result.Outcome)
+	}
+
+	updated, err := store.Get(sess.RunID)
+	if err != nil {
+		t.Fatalf("failed to load updated session: %v", err)
+	}
+	if len(updated.Flows) != 1 {
+		t.Fatalf("expected 1 flow state, got %d", len(updated.Flows))
+	}
+	if updated.Flows[0].Status != sharedtypes.FlowStateSkippedUpstream {
+		t.Fatalf("expected SKIPPED_UPSTREAM_FAILED, got %s", updated.Flows[0].Status)
 	}
 }

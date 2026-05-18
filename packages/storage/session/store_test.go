@@ -15,7 +15,7 @@ func TestSessionStore_Create(t *testing.T) {
 		t.Fatalf("failed to create store: %v", err)
 	}
 
-	session, err := store.Create("test-campaign")
+	session, err := store.Create(&types.Campaign{Name: "test-campaign"})
 	if err != nil {
 		t.Fatalf("failed to create session: %v", err)
 	}
@@ -41,7 +41,7 @@ func TestSessionStore_Get(t *testing.T) {
 		t.Fatalf("failed to create store: %v", err)
 	}
 
-	created, err := store.Create("test-campaign")
+	created, err := store.Create(&types.Campaign{Name: "test-campaign"})
 	if err != nil {
 		t.Fatalf("failed to create session: %v", err)
 	}
@@ -63,7 +63,7 @@ func TestSessionStore_Save(t *testing.T) {
 		t.Fatalf("failed to create store: %v", err)
 	}
 
-	session, err := store.Create("test-campaign")
+	session, err := store.Create(&types.Campaign{Name: "test-campaign"})
 	if err != nil {
 		t.Fatalf("failed to create session: %v", err)
 	}
@@ -90,7 +90,7 @@ func TestSessionStore_UpdateFlowState(t *testing.T) {
 		t.Fatalf("failed to create store: %v", err)
 	}
 
-	session, err := store.Create("test-campaign")
+	session, err := store.Create(&types.Campaign{Name: "test-campaign"})
 	if err != nil {
 		t.Fatalf("failed to create session: %v", err)
 	}
@@ -129,7 +129,7 @@ func TestSessionStore_SaveCheckpoint(t *testing.T) {
 		t.Fatalf("failed to create store: %v", err)
 	}
 
-	session, err := store.Create("test-campaign")
+	session, err := store.Create(&types.Campaign{Name: "test-campaign"})
 	if err != nil {
 		t.Fatalf("failed to create session: %v", err)
 	}
@@ -165,7 +165,7 @@ func TestSessionStore_Delete(t *testing.T) {
 		t.Fatalf("failed to create store: %v", err)
 	}
 
-	session, err := store.Create("test-campaign")
+	session, err := store.Create(&types.Campaign{Name: "test-campaign"})
 	if err != nil {
 		t.Fatalf("failed to create session: %v", err)
 	}
@@ -188,7 +188,7 @@ func TestSessionStore_PersistenceOnDisk(t *testing.T) {
 		t.Fatalf("failed to create store: %v", err)
 	}
 
-	session, err := store.Create("persistent-campaign")
+	session, err := store.Create(&types.Campaign{Name: "persistent-campaign"})
 	if err != nil {
 		t.Fatalf("failed to create session: %v", err)
 	}

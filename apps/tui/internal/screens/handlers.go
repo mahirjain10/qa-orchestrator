@@ -18,8 +18,8 @@ func NewCommandHandlers(store *session.SessionStore) *CommandHandlers {
 	}
 }
 
-func (h *CommandHandlers) StartCampaign(campaignName string) (*types.Session, error) {
-	return h.store.Create(campaignName)
+func (h *CommandHandlers) StartCampaign(campaign *types.Campaign) (*types.Session, error) {
+	return h.store.Create(campaign)
 }
 
 func (h *CommandHandlers) PauseRun(runID string) error {

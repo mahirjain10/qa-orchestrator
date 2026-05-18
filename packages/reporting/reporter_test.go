@@ -20,7 +20,7 @@ func TestReportGenerator_GenerateCampaignSummary(t *testing.T) {
 		t.Fatalf("creating session store: %v", err)
 	}
 
-	sess, err := sessionStore.Create("test-campaign")
+	sess, err := sessionStore.Create(&sharedtypes.Campaign{Name: "test-campaign"})
 	if err != nil {
 		t.Fatalf("creating session: %v", err)
 	}
@@ -100,7 +100,7 @@ func TestReportGenerator_GenerateMarkdownReport(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	sessionStore, _ := session.NewSessionStore(tmpDir)
-	sess, _ := sessionStore.Create("markdown-test")
+	sess, _ := sessionStore.Create(&sharedtypes.Campaign{Name: "markdown-test"})
 	sess.Status = sharedtypes.RunStateCompleted
 	sess.Flows = []sharedtypes.FlowRunState{
 		{
@@ -138,7 +138,7 @@ func TestReportGenerator_GenerateTerminalSummary(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	sessionStore, _ := session.NewSessionStore(tmpDir)
-	sess, _ := sessionStore.Create("terminal-test")
+	sess, _ := sessionStore.Create(&sharedtypes.Campaign{Name: "terminal-test"})
 	sess.Status = sharedtypes.RunStateFailed
 	sess.Flows = []sharedtypes.FlowRunState{
 		{
@@ -174,7 +174,7 @@ func TestReportGenerator_SaveMarkdownReport(t *testing.T) {
 	reportsDir := filepath.Join(tmpDir, "reports")
 
 	sessionStore, _ := session.NewSessionStore(tmpDir)
-	sess, _ := sessionStore.Create("save-test")
+	sess, _ := sessionStore.Create(&sharedtypes.Campaign{Name: "save-test"})
 	sess.Status = sharedtypes.RunStateCompleted
 	sessionStore.Save(sess)
 

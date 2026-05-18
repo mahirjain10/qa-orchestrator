@@ -2,6 +2,7 @@ package components
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/lipgloss"
@@ -75,6 +76,16 @@ func (m *RunPanelModel) View() string {
 
 	if m.session.CurrentFlowID != "" {
 		lines = append(lines, runPanelLabelStyle.Render("  Flow:      ")+runPanelValueStyle.Render(m.session.CurrentFlowID))
+	}
+
+	if m.session.CurrentAgent != "" {
+		agentColor := lipgloss.NewStyle().Foreground(lipgloss.Color("226")) // Yellow
+		agentText := m.session.CurrentAgent
+		if strings.Contains(strings.ToLower(agentText), "planner") {
+			agentColor = lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Bold(true) // Orange/Pulsing-like
+			agentText += " 🤖 (planning...)"
+		}
+		lines = append(lines, runPanelLabelStyle.Render("  Agent:     ")+agentColor.Render(agentText))
 	}
 
 	lines = append(lines, "")

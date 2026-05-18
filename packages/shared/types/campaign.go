@@ -110,13 +110,15 @@ type Session struct {
 }
 
 type FlowRunState struct {
-	FlowID     string     `json:"flow_id" yaml:"flow_id"`
-	Name       string     `json:"name" yaml:"name"`
-	Status     FlowState  `json:"status" yaml:"status"`
-	StartedAt  *time.Time `json:"started_at,omitempty" yaml:"started_at,omitempty"`
-	FinishedAt *time.Time `json:"finished_at,omitempty" yaml:"finished_at,omitempty"`
-	RetryCount int        `json:"retry_count" yaml:"retry_count"`
-	Error      string     `json:"error,omitempty" yaml:"error,omitempty"`
+	FlowID     string       `json:"flow_id" yaml:"flow_id"`
+	Name       string       `json:"name" yaml:"name"`
+	Mode       FlowMode     `json:"mode" yaml:"mode"`
+	Priority   FlowPriority `json:"priority" yaml:"priority"`
+	Status     FlowState    `json:"status" yaml:"status"`
+	StartedAt  *time.Time   `json:"started_at,omitempty" yaml:"started_at,omitempty"`
+	FinishedAt *time.Time   `json:"finished_at,omitempty" yaml:"finished_at,omitempty"`
+	RetryCount int          `json:"retry_count" yaml:"retry_count"`
+	Error      string       `json:"error,omitempty" yaml:"error,omitempty"`
 }
 
 type Checkpoint struct {
