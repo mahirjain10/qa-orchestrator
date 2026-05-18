@@ -1,5 +1,7 @@
 package llm
 
+import "strings"
+
 const (
 	SystemPromptTemplate = `You are an autonomous planning agent for a QA orchestration system.
 
@@ -13,6 +15,8 @@ Your role is to generate a sequence of steps to achieve a given goal.
 - Steps should be specific and executable
 - Include necessary parameters for each tool
 - Output in JSON format as specified
+- Do not wrap JSON in markdown code fences
+- Do not include any text before or after the JSON array
 
 ## Response Format
 Respond with a JSON array of steps, each containing:
@@ -87,29 +91,5 @@ func BuildUserPrompt(data PlannerPromptData) string {
 }
 
 func replacePlaceholder(template, placeholder, value string) string {
-	return replaceAll(template, "{{."+placeholder+"}}", value)
-}
-
-func replaceAll(s, old, new string) string {
-	result := s
-	for {
-		if len(result) == 0 {
-			break
-		}
-		i := indexOf(result, old)
-		if i < 0 {
-			break
-		}
-		result = result[:i] + new + result[i+len(old):]
-	}
-	return result
-}
-
-func indexOf(s, substr string) int {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return i
-		}
-	}
-	return -1
+	return strings.ReplaceAll(template, "{{."+placeholder+"}}", value)
 }

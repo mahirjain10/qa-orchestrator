@@ -91,8 +91,12 @@ func (c *HTTPClient) doRequest(ctx context.Context, body []byte) (*GenerateRespo
 
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Authorization", "Bearer "+c.config.APIKey)
-	httpReq.Header.Set("HTTP-Referer", "https://github.com/zenact")
-	httpReq.Header.Set("X-Title", "Zenact QA Orchestrator")
+	if c.config.HTTPReferer != "" {
+		httpReq.Header.Set("HTTP-Referer", c.config.HTTPReferer)
+	}
+	if c.config.AppTitle != "" {
+		httpReq.Header.Set("X-Title", c.config.AppTitle)
+	}
 
 	resp, err := c.httpClient.Do(httpReq)
 	if err != nil {
@@ -223,16 +227,10 @@ func (s *SimpleClient) Close() error {
 func ParseStepsFromResponse(response string) ([]map[string]any, error) {
 	response = strings.TrimSpace(response)
 
-	start := strings.Index(response, "[")
-	if start == -1 {
-		return nil, fmt.Errorf("no JSON array found in response")
+	jsonStr, err := extractJSONArray(response)
+	if err != nil {
+		return nil, err
 	}
-	end := strings.LastIndex(response, "]")
-	if end == -1 {
-		return nil, fmt.Errorf("invalid JSON array format")
-	}
-
-	jsonStr := response[start : end+1]
 
 	var steps []map[string]any
 	if err := json.Unmarshal([]byte(jsonStr), &steps); err != nil {
@@ -240,4 +238,52 @@ func ParseStepsFromResponse(response string) ([]map[string]any, error) {
 	}
 
 	return steps, nil
+}
+
+func extractJSONArray(s string) (string, error) {
+	for i := 0; i < len(s); i++ {
+		if s[i] != '[' {
+			continue
+		}
+		depth := 0
+		inString := false
+		escaped := false
+		for j := i; j < len(s); j++ {
+			ch := s[j]
+			if inString {
+				if escaped {
+					escaped = false
+					continue
+				}
+				if ch == '\\' {
+					escaped = true
+					continue
+				}
+				if ch == '"' {
+					inString = false
+				}
+				continue
+			}
+			if ch == '"' {
+				inString = true
+				continue
+			}
+			if ch == '[' {
+				depth++
+			} else if ch == ']' {
+				depth--
+				if depth == 0 {
+					candidate := s[i : j+1]
+					var probe any
+					if err := json.Unmarshal([]byte(candidate), &probe); err == nil {
+						if _, ok := probe.([]any); ok {
+							return candidate, nil
+						}
+					}
+					break
+				}
+			}
+		}
+	}
+	return "", fmt.Errorf("no JSON array found in response")
 }

@@ -3,6 +3,7 @@ package llm
 import (
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"time"
 )
@@ -199,7 +200,7 @@ func TestRetryConfig_CalculateDelay(t *testing.T) {
 	}
 
 	tests := []struct {
-		attempt    int
+		attempt     int
 		expectedMin time.Duration
 		expectedMax time.Duration
 	}{
@@ -280,6 +281,17 @@ func TestParseStepsFromResponse_InvalidJSON(t *testing.T) {
 	}
 }
 
+func TestParseStepsFromResponse_WithCodeFence(t *testing.T) {
+	response := "```json\n[{\"tool\":\"navigate\",\"params\":{\"url\":\"https://example.com\"},\"reason\":\"go\"}]\n```"
+	steps, err := ParseStepsFromResponse(response)
+	if err != nil {
+		t.Fatalf("ParseStepsFromResponse failed: %v", err)
+	}
+	if len(steps) != 1 {
+		t.Fatalf("expected 1 step, got %d", len(steps))
+	}
+}
+
 func TestBuildSystemPrompt(t *testing.T) {
 	tools := []ToolInfo{
 		{
@@ -324,5 +336,5 @@ func TestBuildUserPrompt(t *testing.T) {
 }
 
 func contains(s, substr string) bool {
-	return len(s) > 0 && len(substr) > 0 && indexOf(s, substr) >= 0
+	return strings.Contains(s, substr)
 }

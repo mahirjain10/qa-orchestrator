@@ -99,7 +99,7 @@ func (v *DependencyValidator) Validate(flows []types.Flow) ValidationResult {
 	}
 
 	// Compute topological order
-	order := v.topologicalSort(flows, flowMap)
+	order := v.topologicalSort(flows)
 
 	return ValidationResult{
 		Valid:            true,
@@ -107,9 +107,7 @@ func (v *DependencyValidator) Validate(flows []types.Flow) ValidationResult {
 	}
 }
 
-func (v *DependencyValidator) topologicalSort(flows []types.Flow, flowMap map[string]types.Flow) []string {
-	_ = flowMap
-
+func (v *DependencyValidator) topologicalSort(flows []types.Flow) []string {
 	inDegree := make(map[string]int)
 	for _, flow := range flows {
 		if _, exists := inDegree[flow.ID]; !exists {

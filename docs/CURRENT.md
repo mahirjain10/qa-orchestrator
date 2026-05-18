@@ -12,7 +12,7 @@
 ## V2 Phases (Autonomous Upgrade)
 - **Phase 1:** Hybrid Schema & Validation — COMPLETE
 - **Phase 2:** LLM Integration Package — COMPLETE
-- **Phase 3:** Iterative Autonomous Planner — PENDING
+- **Phase 3:** Iterative Autonomous Planner — COMPLETE (with cancellation + history hardening fixes)
 - **Phase 4:** Tool Registry & Metadata — PENDING
 - **Phase 5:** Agent Engine V2 (Mode Routing) — PENDING
 - **Phase 6:** TUI & Visibility — PENDING
@@ -32,14 +32,13 @@ qa-orchestrator/
 │   ├── shared/types/              # Core types (Session, Trace, Flow, Steering)
 │   └── storage/                   # Stores: Session, Trace, Artifact
 ├── go.mod                         # Root module
-└── docs/run-summaries/            # Up to run-017.md
+└── docs/run-summaries/            # Up to run-018.md
 ```
 
 ### Test Coverage
 - `go test ./...` verified successfully across all packages.
-- 133 tests passing.
 
 ## Last Run
-- Run 017: 2026-05-19
+- Run 018: 2026-05-19
 - Agent: codex
-- Status: Added `.env.example` for LLM config documentation, tests passed, and compile passed using `-buildvcs=false`.
+- Status: Fixed Phase 3 planner cancellation/history issues and LLM hardening items; tests and compile passed.

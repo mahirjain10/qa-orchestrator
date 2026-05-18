@@ -1,23 +1,48 @@
 package planner
 
 import (
+	"context"
+	"fmt"
+
 	"qa-orchestrator/packages/agents/types"
+	"qa-orchestrator/packages/llm"
+	sharedtypes "qa-orchestrator/packages/shared/types"
 )
 
-type Planner struct{}
+type LLMClient interface {
+	Generate(ctx context.Context, prompt string) (string, error)
+	GenerateWithSystem(ctx context.Context, system, user string) (string, error)
+}
+
+type Planner struct {
+	llmClient LLMClient
+	tools     []llm.ToolInfo
+}
 
 func NewPlanner() *Planner {
 	return &Planner{}
 }
 
+func NewAutonomousPlanner(client LLMClient, tools []llm.ToolInfo) *Planner {
+	return &Planner{
+		llmClient: client,
+		tools:     tools,
+	}
+}
+
 func (p *Planner) CreatePlan(ctx *types.ExecutionContext) (*types.Plan, error) {
+	if ctx.Mode == sharedtypes.FlowModeAutonomous {
+		return p.CreateAutonomousPlan(ctx)
+	}
+
 	steps := ctx.Steps
 
 	plan := &types.Plan{
-		FlowID:     ctx.FlowID,
-		Goal:       ctx.Goal,
-		CurrentIdx: 0,
-		Steps:      make([]types.PlanStep, len(steps)),
+		FlowID:       ctx.FlowID,
+		Goal:         ctx.Goal,
+		CurrentIdx:   0,
+		Steps:        make([]types.PlanStep, len(steps)),
+		IsAutonomous: false,
 	}
 
 	for i, step := range steps {
@@ -105,4 +130,97 @@ func PlanFromFlow(flow types.Flow) []types.PlanStep {
 		})
 	}
 	return steps
+}
+
+func (p *Planner) CreateAutonomousPlan(ctx *types.ExecutionContext) (*types.Plan, error) {
+	plan := &types.Plan{
+		FlowID:       ctx.FlowID,
+		Goal:         ctx.Goal,
+		CurrentIdx:   0,
+		Steps:        make([]types.PlanStep, 0),
+		IsAutonomous: true,
+	}
+	return plan, nil
+}
+
+func (p *Planner) GenerateNextStep(ctx context.Context, execCtx *types.ExecutionContext) (*types.PlanStep, error) {
+	if p.llmClient == nil {
+		return nil, fmt.Errorf("LLM client not configured for autonomous mode")
+	}
+
+	goal := execCtx.Goal
+	history := ""
+	if execCtx.Plan != nil {
+		history = execCtx.Plan.GetHistory()
+	}
+
+	observation := ""
+	if len(execCtx.Observations) > 0 {
+		lastObs := execCtx.Observations[len(execCtx.Observations)-1]
+		if lastObs.LastStep != nil {
+			observation = fmt.Sprintf("Last step: %s, Tool: %s, Success: %v",
+				lastObs.LastStep.StepID, lastObs.LastStep.Tool, lastObs.LastStep.Success)
+			if lastObs.LastStep.Output != nil {
+				observation += fmt.Sprintf(", Output: %v", lastObs.LastStep.Output)
+			}
+		}
+		if lastObs.Error != nil {
+			observation += fmt.Sprintf(", Error: %v", lastObs.Error)
+		}
+	}
+
+	systemPrompt := llm.BuildSystemPrompt(p.tools)
+	userPrompt := llm.BuildUserPrompt(llm.PlannerPromptData{
+		Goal:        goal,
+		History:     history,
+		Observation: observation,
+		Tools:       p.tools,
+	})
+
+	response, err := p.llmClient.GenerateWithSystem(ctx, systemPrompt, userPrompt)
+	if err != nil {
+		return nil, fmt.Errorf("LLM request failed: %w", err)
+	}
+
+	steps, err := llm.ParseStepsFromResponse(response)
+	if err != nil {
+		return nil, fmt.Errorf("parsing LLM response: %w", err)
+	}
+
+	if len(steps) == 0 {
+		return nil, fmt.Errorf("LLM returned no steps")
+	}
+
+	stepData := steps[0]
+	tool, ok := stepData["tool"].(string)
+	if !ok {
+		return nil, fmt.Errorf("step missing 'tool' field")
+	}
+
+	params, ok := stepData["params"].(map[string]any)
+	if !ok {
+		params = make(map[string]any)
+	}
+
+	reason, _ := stepData["reason"].(string)
+
+	stepID := fmt.Sprintf("auto-step-%d", execCtx.Plan.CurrentIdx+1)
+	planStep := types.PlanStep{
+		StepIndex: execCtx.Plan.CurrentIdx,
+		StepID:    stepID,
+		Tool:      tool,
+		Params:    params,
+		Skip:      false,
+		Reason:    reason,
+	}
+
+	return &planStep, nil
+}
+
+func (p *Planner) AddStepToPlan(plan *types.Plan, step *types.PlanStep) {
+	plan.AddStep(*step)
+}
+
+func (p *Planner) IsAutonomousMode(ctx *types.ExecutionContext) bool {
+	return ctx.Mode == sharedtypes.FlowModeAutonomous
 }
