@@ -14,8 +14,8 @@ func NewDependencyValidator() *DependencyValidator {
 }
 
 type ValidationResult struct {
-	Valid         bool
-	Error         *types.DependencyError
+	Valid            bool
+	Error            *types.DependencyError
 	TopologicalOrder []string
 }
 
@@ -92,7 +92,7 @@ func (v *DependencyValidator) Validate(flows []types.Flow) ValidationResult {
 		return ValidationResult{
 			Valid: false,
 			Error: &types.DependencyError{
-				FlowID:   cycleDeps[0],
+				FlowID:    cycleDeps[0],
 				CycleDeps: cycleDeps,
 			},
 		}
@@ -102,20 +102,22 @@ func (v *DependencyValidator) Validate(flows []types.Flow) ValidationResult {
 	order := v.topologicalSort(flows, flowMap)
 
 	return ValidationResult{
-		Valid:             true,
+		Valid:            true,
 		TopologicalOrder: order,
 	}
 }
 
 func (v *DependencyValidator) topologicalSort(flows []types.Flow, flowMap map[string]types.Flow) []string {
+	_ = flowMap
+
 	inDegree := make(map[string]int)
 	for _, flow := range flows {
 		if _, exists := inDegree[flow.ID]; !exists {
 			inDegree[flow.ID] = 0
 		}
-for range flow.DependsOn {
-		inDegree[flow.ID]++
-	}
+		for range flow.DependsOn {
+			inDegree[flow.ID]++
+		}
 	}
 
 	// Find eligible flows (no dependencies)
