@@ -14,6 +14,8 @@ import (
 	"qa-orchestrator/packages/storage/trace"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/bubbles/spinner"
+	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -34,15 +36,52 @@ var (
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(lipgloss.Color("240"))
 
+	activeBorderStyle = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("86")).
+			Bold(true)
+
 	highlightBorderStyle = lipgloss.NewStyle().
-				Border(lipgloss.RoundedBorder()).
-				BorderForeground(lipgloss.Color("86"))
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("86"))
 
 	passColor    = lipgloss.Color("76")
 	failColor    = lipgloss.Color("204")
 	pausedColor  = lipgloss.Color("228")
 	runningColor = lipgloss.Color("75")
 	pendingColor = lipgloss.Color("245")
+
+	focusCampaignsStyle = lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("75")).
+		Bold(true)
+
+	focusFlowsStyle = lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("226")).
+		Bold(true)
+
+	focusTracesStyle = lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("208")).
+		Bold(true)
+
+	steeringBarStyle = lipgloss.NewStyle().
+		Background(lipgloss.Color("235")).
+		Foreground(lipgloss.Color("86")).
+		Bold(true)
+
+	steeringInputStyle = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("46"))
+)
+
+type Pane string
+
+const (
+	PaneCampaigns Pane = "campaigns"
+	PaneFlows     Pane = "flows"
+	PaneTraces    Pane = "traces"
+	PaneRun       Pane = "run"
 )
 
 type TickMsg time.Time
@@ -64,27 +103,42 @@ type MainScreen struct {
 	width  int
 	height int
 
-	reportView    string
-	command       string
-	msg           string
-	steeringInput string
+	activePane    Pane
+	focusedRunPane bool
+	spinner       spinner.Model
+	steeringInput textinput.Model
 	steeringMode  bool
+
+	reportView string
+	command    string
+	msg        string
 }
 
 func NewMainScreen(store *session.SessionStore) *MainScreen {
 	appState := state.NewAppState(store)
 	handlers := NewCommandHandlers(store)
 
+	sp := spinner.New()
+
+	ti := textinput.New()
+	ti.Placeholder = "Type steering command (retry, skip, continue, status)..."
+	ti.Prompt = "│ > "
+	ti.CharLimit = 256
+	ti.Width = 60
+
 	return &MainScreen{
-		state:         appState,
-		handlers:      handlers,
-		campaignList:  components.NewCampaignListModel(),
-		runPanel:      components.NewRunPanelModel(),
-		flowStatus:    components.NewFlowStatusModel(),
-		tracePanel:    components.NewTracePanelModel(),
-		artifactPanel: components.NewArtifactPanelModel(),
-		command:       "",
-		msg:           "Press ENTER to select a run, or type a command",
+		state:          appState,
+		handlers:       handlers,
+		campaignList:   components.NewCampaignListModel(),
+		runPanel:       components.NewRunPanelModel(),
+		flowStatus:     components.NewFlowStatusModel(),
+		tracePanel:     components.NewTracePanelModel(),
+		artifactPanel:  components.NewArtifactPanelModel(),
+		activePane:     PaneCampaigns,
+		spinner:        sp,
+		steeringInput:  ti,
+		command:        "",
+		msg:            "Press ENTER to select a run, SPACE to pause/resume, TAB to switch panes",
 	}
 }
 
@@ -102,18 +156,24 @@ func (m *MainScreen) SetMessage(msg string) {
 
 func (m *MainScreen) Init() tea.Cmd {
 	m.refreshAll()
-	return tea.Tick(time.Second, func(t time.Time) tea.Msg {
-		return TickMsg(t)
-	})
+	return tea.Batch(
+		tea.Tick(time.Second, func(t time.Time) tea.Msg {
+			return TickMsg(t)
+		}),
+	)
 }
 
 func (m *MainScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+
 	switch msg := msg.(type) {
 	case TickMsg:
 		m.refreshAll()
-		return m, tea.Tick(time.Second, func(t time.Time) tea.Msg {
-			return TickMsg(t)
-		})
+		return m, nil
+
+	case spinner.TickMsg:
+		m.spinner, cmd = m.spinner.Update(msg)
+		return m, cmd
 
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
@@ -122,49 +182,71 @@ func (m *MainScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		if m.steeringMode {
-			switch msg.String() {
-			case "enter":
-				if m.steeringInput != "" {
-					m.processSteeringCommand(m.steeringInput)
+			m.steeringInput, cmd = m.steeringInput.Update(msg)
+			if msg.String() == "enter" {
+				inputVal := m.steeringInput.Value()
+				if inputVal != "" {
+					m.processSteeringCommand(inputVal)
 					m.steeringMode = false
-					m.steeringInput = ""
-				}
-			case "backspace":
-				if len(m.steeringInput) > 0 {
-					m.steeringInput = m.steeringInput[:len(m.steeringInput)-1]
-				}
-			case "Escape":
-				m.state.SetView(state.ViewCampaignList)
-				m.steeringMode = false
-				m.steeringInput = ""
-			default:
-				if len(msg.Runes) > 0 && msg.Runes[0] >= 32 {
-					m.steeringInput += string(msg.Runes[0])
+					m.steeringInput.SetValue("")
 				}
 			}
-			return m, nil
+			if msg.String() == "Escape" {
+				m.state.SetView(state.ViewCampaignList)
+				m.steeringMode = false
+				m.steeringInput.SetValue("")
+			}
+			return m, cmd
 		}
 
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
 
+		case "tab":
+			switch m.activePane {
+			case PaneCampaigns:
+				m.activePane = PaneFlows
+			case PaneFlows:
+				m.activePane = PaneTraces
+			case PaneTraces:
+				m.activePane = PaneRun
+			case PaneRun:
+				m.activePane = PaneCampaigns
+			}
+			m.msg = fmt.Sprintf("Focus: %s (Press TAB to switch)", m.activePane)
+
 		case "up", "k":
-			m.campaignList.Prev()
-			m.flowStatus.Prev()
+			switch m.activePane {
+			case PaneCampaigns:
+				m.campaignList.Prev()
+			case PaneFlows:
+				m.flowStatus.Prev()
+			case PaneTraces:
+				m.tracePanel.Prev()
+			}
 
 		case "down", "j":
-			m.campaignList.Next()
-			m.flowStatus.Next()
+			switch m.activePane {
+			case PaneCampaigns:
+				m.campaignList.Next()
+			case PaneFlows:
+				m.flowStatus.Next()
+			case PaneTraces:
+				m.tracePanel.Next()
+			}
 
 		case "enter":
-			sessions := m.state.GetSessions()
-			idx := m.campaignList.GetSelected()
-			if idx >= 0 && idx < len(sessions) {
-				runID := sessions[idx].RunID
-				m.state.SetCurrentRunID(runID)
-				m.refreshRun()
-				m.msg = fmt.Sprintf("Selected run: %s", runID)
+			if m.activePane == PaneCampaigns {
+				sessions := m.state.GetSessions()
+				idx := m.campaignList.GetSelected()
+				if idx >= 0 && idx < len(sessions) {
+					runID := sessions[idx].RunID
+					m.state.SetCurrentRunID(runID)
+					m.refreshRun()
+					m.activePane = PaneRun
+					m.msg = fmt.Sprintf("Selected run: %s | ↑↓ to navigate, TAB to switch panes", runID)
+				}
 			}
 
 		case " ":
@@ -215,6 +297,7 @@ func (m *MainScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.refreshFlowStatus()
 
 		case "t":
+			m.activePane = PaneTraces
 			m.state.SetView(state.ViewTraces)
 			m.refreshTraces()
 
@@ -233,7 +316,7 @@ func (m *MainScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "s":
 			if m.state.GetCurrentRunID() != "" {
 				m.steeringMode = true
-				m.steeringInput = ""
+				m.steeringInput.Focus()
 				m.msg = "Steering mode: type command and press ENTER. ESC to cancel."
 			} else {
 				m.msg = "Select a run first before steering"
@@ -242,7 +325,8 @@ func (m *MainScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
-	return m, nil
+	m.spinner, cmd = m.spinner.Update(msg)
+	return m, cmd
 }
 
 func (m *MainScreen) View() string {
@@ -281,12 +365,27 @@ func (m *MainScreen) View() string {
 		BorderForeground(lipgloss.Color("240")).
 		Padding(0, 1)
 
-	// Left Side (Campaigns & Flows)
+	focusedPanelStyle := lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("75")).
+			Bold(true).
+			Padding(0, 1)
+
 	campaignListView := m.campaignList.ViewWithWidth(leftWidth - 4)
 	flowStatusView := m.flowStatus.ViewWithWidth(leftWidth - 4)
 
-	leftTopPanel := panelStyle.Width(leftWidth).Height(topHeight).Render(campaignListView)
-	leftBottomPanel := panelStyle.Width(leftWidth).Height(bottomHeight).Render(flowStatusView)
+	var leftTopPanel, leftBottomPanel string
+	if m.activePane == PaneCampaigns {
+		leftTopPanel = focusedPanelStyle.Width(leftWidth).Height(topHeight).Render(campaignListView)
+	} else {
+		leftTopPanel = panelStyle.Width(leftWidth).Height(topHeight).Render(campaignListView)
+	}
+
+	if m.activePane == PaneFlows {
+		leftBottomPanel = focusedPanelStyle.Width(leftWidth).Height(bottomHeight).Render(flowStatusView)
+	} else {
+		leftBottomPanel = panelStyle.Width(leftWidth).Height(bottomHeight).Render(flowStatusView)
+	}
 
 	leftCol := lipgloss.JoinVertical(lipgloss.Left, leftTopPanel, leftBottomPanel)
 
@@ -302,10 +401,17 @@ func (m *MainScreen) View() string {
 	case state.ViewReport:
 		rightCol = panelStyle.Width(rightWidth).Height(mainHeight).Render(m.reportView)
 	default:
-		runPanelView := m.runPanel.View()
+		runPanelView := m.runPanel.ViewWithWidth(rightWidth - 4)
 		tracesView := m.tracePanel.ViewCompact()
 
-		rightTopPanel := panelStyle.Width(rightWidth).Height(topHeight).Render(runPanelView)
+		var rightTopStyle *lipgloss.Style
+		if m.activePane == PaneRun {
+			rightTopStyle = &focusedPanelStyle
+		} else {
+			rightTopStyle = &panelStyle
+		}
+
+		rightTopPanel := rightTopStyle.Width(rightWidth).Height(topHeight).Render(runPanelView)
 		rightBottomPanel := panelStyle.Width(rightWidth).Height(bottomHeight).Render(tracesView)
 
 		rightCol = lipgloss.JoinVertical(lipgloss.Left, rightTopPanel, rightBottomPanel)
@@ -315,7 +421,8 @@ func (m *MainScreen) View() string {
 
 	header := headerStyle.Render("Zenact TUI - Campaign Runner") +
 		lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render(" │ ") +
-		lipgloss.NewStyle().Foreground(lipgloss.Color("245")).Render("Press ENTER to select, SPACE to pause/resume")
+		lipgloss.NewStyle().Foreground(lipgloss.Color("75")).Render("●") +
+		lipgloss.NewStyle().Foreground(lipgloss.Color("245")).Render(fmt.Sprintf(" Focus: %s ", m.activePane))
 
 	footer := helpStyle.Render("↑↓ Navigate │ Enter Select │ Space Pause/Resume │ x Cancel │ r Refresh │ t Traces │ a Artifacts │ v Report │ s Steer │ q Quit")
 
@@ -327,18 +434,30 @@ func (m *MainScreen) View() string {
 	)
 
 	if m.steeringMode {
-		steeringBanner := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("208")).
-			Bold(true).
-			Render(" STEERING MODE: Type command and press ENTER. ESC to cancel. ")
-		steeringInput := lipgloss.NewStyle().
+		steeringBar := lipgloss.NewStyle().
+			Background(lipgloss.Color("235")).
 			Foreground(lipgloss.Color("86")).
-			Render(fmt.Sprintf("│ > %s_", m.steeringInput))
+			Width(m.width - 2).
+			Render(" STEERING MODE ")
+
+		steeringInputView := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("46")).
+			Render(fmt.Sprintf("> %s█", m.steeringInput.View()))
+
+		steeringHint := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("241")).
+			Render(" [ENTER] Execute  [ESC] Cancel")
+
 		steeringBox := lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(lipgloss.Color("208")).
 			Width(m.width - 2).
-			Render(steeringBanner + "\n" + steeringInput)
+			Render(lipgloss.JoinVertical(
+				lipgloss.Left,
+				steeringBar,
+				steeringInputView,
+				steeringHint,
+			))
 		viewContent = lipgloss.JoinVertical(
 			lipgloss.Left,
 			viewContent,
@@ -370,6 +489,7 @@ func (m *MainScreen) refreshRun() {
 	sess, err := m.handlers.GetRunStatus(m.state.GetCurrentRunID())
 	if err == nil && sess != nil {
 		m.runPanel.SetSession(sess)
+		m.runPanel.Tick()
 	}
 }
 

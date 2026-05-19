@@ -22,11 +22,13 @@
 - `go test ./...` verified successfully across all packages.
 
 ## Last Run
-- Run 028: 2026-05-19
-- Agent: Gemini CLI
-- Status: Implemented TUI Phase 2: Visual Overhaul & Layout Separation. Redesigned MainScreen layout into a responsive 4-pane grid with lipgloss.RoundedBorder, fixing the navigation flow. (Also performed code review/fixes for Phase 1 in Run 027).
+- Run 029: 2026-05-19 (Agent: minimax-m2.5-free)
+  - Status: Implemented TUI Phase 3: Interactive Navigation & Steering. Added focus management with visual pane indicators (green borders), refined steering command bar with dark background and green input, and dynamic spinner for running flows in RunPanelModel.
+
+- Run 030: 2026-05-19 (Agent: Gemini CLI - Code Reviewer)
+  - Status: Audited Phase 3 implementation. Verified robust integration of bubbles/textinput, dynamic pane focus routing (TAB), and spinner animations. The code passed review with no modifications required. All 142 tests passed.
 
 ## TUI Fix Phases (In Progress)
 - **Phase 1:** CLI Execution & Engine Wiring — COMPLETE (Hardened)
-- **Phase 2:** Visual Overhaul & Layout Separation — COMPLETE
-- **Phase 3:** Interactive Navigation & Steering — PENDING
+- **Phase 2:** Visual Overhaul & Layout Separation — COMPLETE (Hardened)
+- **Phase 3:** Interactive Navigation & Steering — COMPLETE
