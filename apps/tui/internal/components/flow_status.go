@@ -171,7 +171,17 @@ func (m *FlowStatusModel) ViewWithWidth(width int) string {
 			flowID = flowID[:colFlow-5] + "..."
 		}
 
-		row := fmt.Sprintf(fmt.Sprintf(" %%-%ds %%-%ds %%-%ds ", colFlow, colMode, colPriority)+statusColor.Render("%%-%ds"), flowID, string(f.Mode), string(f.Priority), statusStr)
+		flowFmt := fmt.Sprintf("%%-%ds", colFlow)
+		modeFmt := fmt.Sprintf("%%-%ds", colMode)
+		priorityFmt := fmt.Sprintf("%%-%ds", colPriority)
+		statusFmt := fmt.Sprintf("%%-%ds", colStatus)
+
+		flowStr := fmt.Sprintf(flowFmt, flowID)
+		modeStr := fmt.Sprintf(modeFmt, string(f.Mode))
+		priorityStr := fmt.Sprintf(priorityFmt, string(f.Priority))
+		statusPadded := fmt.Sprintf(statusFmt, statusStr)
+
+		row := fmt.Sprintf(" %s %s %s %s", flowStr, modeStr, priorityStr, statusColor.Render(statusPadded))
 		if i == m.selected {
 			lines = append(lines, selectedStyle.Render(row))
 		} else {

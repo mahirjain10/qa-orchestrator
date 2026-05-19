@@ -24,8 +24,8 @@ var (
 				Bold(true)
 
 	runSpinnerStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("75")).
-				Bold(true)
+			Foreground(lipgloss.Color("75")).
+			Bold(true)
 )
 
 type RunPanelModel struct {

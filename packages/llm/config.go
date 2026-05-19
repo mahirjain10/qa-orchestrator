@@ -7,13 +7,15 @@ import (
 )
 
 const (
-	envAPIKey      = "LLM_API_KEY"
-	envBaseURL     = "LLM_BASE_URL"
-	envModel       = "LLM_MODEL"
-	envTimeout     = "LLM_TIMEOUT"
-	envMaxRetries  = "LLM_MAX_RETRIES"
-	envHTTPReferer = "LLM_HTTP_REFERER"
-	envAppTitle    = "LLM_APP_TITLE"
+	envAPIKey           = "LLM_API_KEY"
+	envBaseURL          = "LLM_BASE_URL"
+	envModel            = "LLM_MODEL"
+	envTimeout          = "LLM_TIMEOUT"
+	envMaxRetries       = "LLM_MAX_RETRIES"
+	envHTTPReferer      = "LLM_HTTP_REFERER"
+	envAppTitle         = "LLM_APP_TITLE"
+	envProviderPriority = "LLM_PROVIDER_PRIORITY"
+	envProviderAllow    = "LLM_PROVIDER_ALLOW"
 
 	defaultBaseURL    = "https://openrouter.ai/api/v1"
 	defaultModel      = "openai/gpt-4o-mini"
@@ -22,13 +24,15 @@ const (
 )
 
 type Config struct {
-	APIKey      string
-	BaseURL     string
-	Model       string
-	Timeout     time.Duration
-	MaxRetries  int
-	HTTPReferer string
-	AppTitle    string
+	APIKey           string
+	BaseURL          string
+	Model            string
+	Timeout          time.Duration
+	MaxRetries       int
+	HTTPReferer      string
+	AppTitle         string
+	ProviderPriority string
+	ProviderAllow    string
 }
 
 func LoadConfig() (*Config, error) {
@@ -69,13 +73,15 @@ func LoadConfig() (*Config, error) {
 	}
 
 	return &Config{
-		APIKey:      apiKey,
-		BaseURL:     baseURL,
-		Model:       model,
-		Timeout:     time.Duration(timeout) * time.Second,
-		MaxRetries:  maxRetries,
-		HTTPReferer: os.Getenv(envHTTPReferer),
-		AppTitle:    os.Getenv(envAppTitle),
+		APIKey:           apiKey,
+		BaseURL:          baseURL,
+		Model:            model,
+		Timeout:          time.Duration(timeout) * time.Second,
+		MaxRetries:       maxRetries,
+		HTTPReferer:      os.Getenv(envHTTPReferer),
+		AppTitle:         os.Getenv(envAppTitle),
+		ProviderPriority: os.Getenv(envProviderPriority),
+		ProviderAllow:    os.Getenv(envProviderAllow),
 	}, nil
 }
 

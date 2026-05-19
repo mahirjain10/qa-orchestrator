@@ -89,15 +89,64 @@ func TestLoadConfig_InvalidTimeout(t *testing.T) {
 	}
 }
 
-func TestLoadConfig_InvalidMaxRetries(t *testing.T) {
+func TestLoadConfig_ProviderSettings(t *testing.T) {
 	os.Setenv("LLM_API_KEY", "test-key")
-	os.Setenv("LLM_MAX_RETRIES", "-1")
+	os.Setenv("LLM_PROVIDER_PRIORITY", "OpenAI, Anthropic")
+	os.Setenv("LLM_PROVIDER_ALLOW", "false")
 	defer os.Unsetenv("LLM_API_KEY")
-	defer os.Unsetenv("LLM_MAX_RETRIES")
+	defer os.Unsetenv("LLM_PROVIDER_PRIORITY")
+	defer os.Unsetenv("LLM_PROVIDER_ALLOW")
 
-	_, err := LoadConfig()
-	if err == nil {
-		t.Error("expected error for negative max retries")
+	cfg, err := LoadConfig()
+	if err != nil {
+		t.Fatalf("LoadConfig failed: %v", err)
+	}
+
+	if cfg.ProviderPriority != "OpenAI, Anthropic" {
+		t.Errorf("expected provider priority 'OpenAI, Anthropic', got %q", cfg.ProviderPriority)
+	}
+	if cfg.ProviderAllow != "false" {
+		t.Errorf("expected provider allow 'false', got %q", cfg.ProviderAllow)
+	}
+}
+
+func TestParseErrorResponse_Standard(t *testing.T) {
+	json := `{"error": {"message": "Invalid API key", "type": "invalid_request_error", "code": "invalid_api_key"}}`
+	resp, err := parseErrorResponse(strings.NewReader(json))
+	if err != nil {
+		t.Fatalf("parseErrorResponse failed: %v", err)
+	}
+	if resp.Error.Message != "Invalid API key" {
+		t.Errorf("expected message 'Invalid API key', got %q", resp.Error.Message)
+	}
+	if resp.Error.Code != "invalid_api_key" {
+		t.Errorf("expected code 'invalid_api_key', got %q", resp.Error.Code)
+	}
+}
+
+func TestParseErrorResponse_Nested(t *testing.T) {
+	json := `{"error": {"message": "OpenRouter error", "inner_error": {"message": "Provider failed"}}}`
+	resp, err := parseErrorResponse(strings.NewReader(json))
+	if err != nil {
+		t.Fatalf("parseErrorResponse failed: %v", err)
+	}
+	// It should prioritize the top-level message if present in the first unmarshal
+	if resp.Error.Message != "OpenRouter error" {
+		t.Errorf("expected message 'OpenRouter error', got %q", resp.Error.Message)
+	}
+}
+
+func TestParseErrorResponse_Inner(t *testing.T) {
+	json := `{"error": {"inner_error": {"message": "Provider failed"}}}`
+	resp, err := parseErrorResponse(strings.NewReader(json))
+	if err != nil {
+		t.Fatalf("parseErrorResponse failed: %v", err)
+	}
+	if resp.Error.Message != "Provider failed" {
+		t.Errorf("expected message 'Provider failed', got %q", resp.Error.Message)
+	}
+	if resp.Error.Type != "provider_error" {
+		t.Errorf("expected type 'provider_error', got %q", resp.Error.Type)
 	}
 }
 

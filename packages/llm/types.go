@@ -1,11 +1,21 @@
 package llm
 
 type GenerateRequest struct {
-	Model       string    `json:"model"`
-	Messages    []Message `json:"messages"`
-	Temperature float64   `json:"temperature,omitempty"`
-	MaxTokens   int       `json:"max_tokens,omitempty"`
-	Timeout     int       `json:"-"`
+	Model       string            `json:"model"`
+	Messages    []Message         `json:"messages"`
+	Temperature float64           `json:"temperature,omitempty"`
+	MaxTokens   int               `json:"max_tokens,omitempty"`
+	TopP        float64           `json:"top_p,omitempty"`
+	Stop        []string          `json:"stop,omitempty"`
+	Provider    *ProviderSettings `json:"provider,omitempty"`
+	Timeout     int               `json:"-"`
+}
+
+type ProviderSettings struct {
+	Order             []string `json:"order,omitempty"`
+	AllowFallbacks    *bool    `json:"allow_fallbacks,omitempty"`
+	RequireParameters *bool    `json:"require_parameters,omitempty"`
+	DataCollection    string   `json:"data_collection,omitempty"` // "allow" or "deny"
 }
 
 type Message struct {
@@ -14,16 +24,25 @@ type Message struct {
 }
 
 type GenerateResponse struct {
-	Content      string `json:"content"`
-	Model        string `json:"model"`
-	FinishReason string `json:"finish_reason,omitempty"`
-	Usage        Usage  `json:"usage,omitempty"`
+	ID      string   `json:"id"`
+	Object  string   `json:"object"`
+	Created int64    `json:"created"`
+	Model   string   `json:"model"`
+	Choices []Choice `json:"choices"`
+	Usage   Usage    `json:"usage"`
+	Content string   `json:"-"` // Populated after parsing for convenience
+}
+
+type Choice struct {
+	Index        int     `json:"index"`
+	Message      Message `json:"message"`
+	FinishReason string  `json:"finish_reason,omitempty"`
 }
 
 type Usage struct {
-	PromptTokens     int `json:"prompt_tokens,omitempty"`
-	CompletionTokens int `json:"completion_tokens,omitempty"`
-	TotalTokens      int `json:"total_tokens,omitempty"`
+	PromptTokens     int `json:"prompt_tokens"`
+	CompletionTokens int `json:"completion_tokens"`
+	TotalTokens      int `json:"total_tokens"`
 }
 
 type ErrorResponse struct {

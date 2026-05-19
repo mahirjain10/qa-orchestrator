@@ -18,17 +18,25 @@
 - **Phase 6:** TUI & Visibility — COMPLETE (hardened)
 - **Phase 7:** Validation & Sample Campaigns — COMPLETE
 
+## V3 Phases (TUI & OpenRouter Hardening)
+- **Phase 1:** OpenRouter Integration Hardening — COMPLETE (Hardened)
+- **Phase 2:** TUI Slot-based Layout Engine — PENDING
+- **Phase 3:** Interactive Pane Management — PENDING
+- **Phase 4:** Validation & Testing — PENDING
+
 ### Test Coverage
 - `go test ./...` verified successfully across all packages.
 
 ## Last Run
-- Run 029: 2026-05-19 (Agent: minimax-m2.5-free)
-  - Status: Implemented TUI Phase 3: Interactive Navigation & Steering. Added focus management with visual pane indicators (green borders), refined steering command bar with dark background and green input, and dynamic spinner for running flows in RunPanelModel.
-
-- Run 030: 2026-05-19 (Agent: Gemini CLI - Code Reviewer)
-  - Status: Audited Phase 3 implementation. Verified robust integration of bubbles/textinput, dynamic pane focus routing (TAB), and spinner animations. The code passed review with no modifications required. All 142 tests passed.
+- Run 032: 2026-05-19 (Agent: Gemini CLI)
+  - Status: Fixed two critical TUI bugs. Fixed the Flow Status rendering bug (`%!d(...)`) caused by nested ANSI/Sprintf evaluation. Fixed the TUI freezing issue by correctly re-queueing `tea.Tick` to re-enable live auto-refreshing. 
 
 ## TUI Fix Phases (In Progress)
 - **Phase 1:** CLI Execution & Engine Wiring — COMPLETE (Hardened)
 - **Phase 2:** Visual Overhaul & Layout Separation — COMPLETE (Hardened)
 - **Phase 3:** Interactive Navigation & Steering — COMPLETE
+
+## Makefile (Updated)
+- Added `run-sample` and `run-guided` targets for quick testing
+- Added `help` target for available commands
+- Enhanced `run` target documentation

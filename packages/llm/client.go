@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/rs/zerolog/log"
 )
 
 type Client interface {
@@ -48,6 +50,21 @@ func (c *HTTPClient) Generate(ctx context.Context, req *GenerateRequest) (*Gener
 
 	if req.MaxTokens == 0 {
 		req.MaxTokens = 1024
+	}
+
+	// Apply provider settings if not already set in request
+	if req.Provider == nil && (c.config.ProviderPriority != "" || c.config.ProviderAllow != "") {
+		req.Provider = &ProviderSettings{}
+		if c.config.ProviderPriority != "" {
+			req.Provider.Order = strings.Split(c.config.ProviderPriority, ",")
+			for i := range req.Provider.Order {
+				req.Provider.Order[i] = strings.TrimSpace(req.Provider.Order[i])
+			}
+		}
+		if c.config.ProviderAllow != "" {
+			allow := c.config.ProviderAllow == "true"
+			req.Provider.AllowFallbacks = &allow
+		}
 	}
 
 	body, err := json.Marshal(req)
@@ -135,10 +152,24 @@ func (c *HTTPClient) doRequest(ctx context.Context, body []byte) (*GenerateRespo
 		return nil, fmt.Errorf("decoding response: %w", err)
 	}
 
-	if len(generateResp.Content) == 0 {
+	// Log the model actually used (OpenRouter may route differently)
+	log.Debug().Str("model_used", generateResp.Model).Msg("LLM response received")
+
+	// Extract content from choices (OpenAI format) or direct content
+	content := generateResp.Content
+	if content == "" && len(generateResp.Choices) > 0 {
+		content = generateResp.Choices[0].Message.Content
+		finishReason := generateResp.Choices[0].FinishReason
+		if finishReason != "" {
+			log.Debug().Str("finish_reason", finishReason).Msg("LLM finish reason")
+		}
+	}
+
+	if len(content) == 0 {
 		return nil, NewNonRetryableError(fmt.Errorf("empty response from LLM"))
 	}
 
+	generateResp.Content = content
 	return &generateResp, nil
 }
 
@@ -159,11 +190,61 @@ func isSuccess(statusCode int) bool {
 }
 
 func parseErrorResponse(body io.Reader) (*ErrorResponse, error) {
-	var errResp ErrorResponse
-	if err := json.NewDecoder(body).Decode(&errResp); err != nil {
-		return nil, fmt.Errorf("parsing error response: %w", err)
+	bodyBytes, err := io.ReadAll(body)
+	if err != nil {
+		return nil, fmt.Errorf("reading error body: %w", err)
 	}
-	return &errResp, nil
+
+	// Try standard OpenAI/OpenRouter error format
+	var errResp ErrorResponse
+	if err := json.Unmarshal(bodyBytes, &errResp); err == nil {
+		if errResp.Error.Message != "" {
+			return &errResp, nil
+		}
+	}
+
+	// Try nested error format (OpenRouter may wrap provider errors)
+	var nested struct {
+		Error struct {
+			Message string `json:"message"`
+			Type    string `json:"type"`
+			Code    string `json:"code,omitempty"`
+			Inner   struct {
+				Message string `json:"message"`
+			} `json:"inner_error,omitempty"`
+		} `json:"error"`
+	}
+	if err := json.Unmarshal(bodyBytes, &nested); err == nil {
+		if nested.Error.Message != "" {
+			return &ErrorResponse{
+				Error: ErrorDetail{
+					Message: nested.Error.Message,
+					Type:    nested.Error.Type,
+					Code:    nested.Error.Code,
+				},
+			}, nil
+		}
+		if nested.Error.Inner.Message != "" {
+			return &ErrorResponse{
+				Error: ErrorDetail{
+					Message: nested.Error.Inner.Message,
+					Type:    "provider_error",
+				},
+			}, nil
+		}
+	}
+
+	// Try raw error object
+	var raw map[string]any
+	if err := json.Unmarshal(bodyBytes, &raw); err == nil {
+		if msg, ok := raw["error"].(string); ok {
+			return &ErrorResponse{
+				Error: ErrorDetail{Message: msg, Type: "unknown"},
+			}, nil
+		}
+	}
+
+	return nil, fmt.Errorf("could not parse error response: %s", string(bodyBytes))
 }
 
 func parseRetryAfter(value string) time.Duration {
@@ -180,6 +261,10 @@ func parseRetryAfter(value string) time.Duration {
 
 type SimpleClient struct {
 	client Client
+}
+
+func NewSimpleClientWithClient(client Client) *SimpleClient {
+	return &SimpleClient{client: client}
 }
 
 func NewSimpleClient(apiKey string) (*SimpleClient, error) {

@@ -1,10 +1,8 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/charmbracelet/bubbletea"
 	"qa-orchestrator/apps/tui/internal/screens"
@@ -17,33 +15,6 @@ import (
 	"qa-orchestrator/packages/storage/session"
 	"qa-orchestrator/packages/storage/trace"
 )
-
-type CLIClient struct {
-	client *llm.HTTPClient
-}
-
-func (c *CLIClient) Generate(ctx context.Context, prompt string) (string, error) {
-	messages := []llm.Message{
-		{Role: "user", Content: prompt},
-	}
-	resp, err := c.client.GenerateWithMessages(ctx, messages)
-	if err != nil {
-		return "", err
-	}
-	return resp.Content, nil
-}
-
-func (c *CLIClient) GenerateWithSystem(ctx context.Context, system, user string) (string, error) {
-	messages := []llm.Message{
-		{Role: "system", Content: system},
-		{Role: "user", Content: user},
-	}
-	resp, err := c.client.GenerateWithMessages(ctx, messages)
-	if err != nil {
-		return "", err
-	}
-	return resp.Content, nil
-}
 
 func main() {
 	dataDir := "./data"
@@ -82,11 +53,24 @@ func main() {
 
 		runID := sess.RunID
 
-		llmClient := createLLMClient()
+		llmClient, llmErr := createLLMClient()
+
+		hasAutonomous := false
+		for _, f := range camp.Flows {
+			if f.Mode == sharedtypes.FlowModeAutonomous {
+				hasAutonomous = true
+				break
+			}
+		}
+
+		if hasAutonomous && llmErr != nil {
+			panic(fmt.Sprintf("Campaign contains autonomous flows but LLM configuration failed: %v", llmErr))
+		}
+
 		var agentEngine *engine.AgentEngine
 
 		if llmClient != nil {
-			cliWrapper := &CLIClient{client: llmClient}
+			cliWrapper := llm.NewSimpleClientWithClient(llmClient)
 			agentEngine = engine.NewAgentEngineWithLLM(
 				executor.NewMockToolRegistry(),
 				sessionStore,
@@ -119,30 +103,18 @@ func main() {
 	}
 }
 
-func createLLMClient() *llm.HTTPClient {
-	apiKey := os.Getenv("LLM_API_KEY")
-	model := os.Getenv("LLM_MODEL")
-	baseURL := os.Getenv("LLM_BASE_URL")
-
-	if apiKey == "" {
-		return nil
-	}
-
-	cfg := &llm.Config{
-		APIKey:     apiKey,
-		Model:      model,
-		BaseURL:    baseURL,
-		MaxRetries: 3,
-		Timeout:    120 * time.Second,
+func createLLMClient() (*llm.HTTPClient, error) {
+	cfg, err := llm.LoadConfig()
+	if err != nil {
+		return nil, fmt.Errorf("loading LLM config: %w", err)
 	}
 
 	client, err := llm.NewClient(cfg)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Warning: failed to create LLM client: %v\n", err)
-		return nil
+		return nil, fmt.Errorf("creating LLM client: %w", err)
 	}
 
-	return client
+	return client, nil
 }
 
 func runCampaign(eng *engine.AgentEngine, camp *sharedtypes.Campaign, runID string, sessionStore *session.SessionStore) {

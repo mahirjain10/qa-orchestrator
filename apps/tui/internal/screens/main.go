@@ -13,9 +13,9 @@ import (
 	"qa-orchestrator/packages/storage/session"
 	"qa-orchestrator/packages/storage/trace"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -37,13 +37,13 @@ var (
 			BorderForeground(lipgloss.Color("240"))
 
 	activeBorderStyle = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("86")).
-			Bold(true)
+				Border(lipgloss.RoundedBorder()).
+				BorderForeground(lipgloss.Color("86")).
+				Bold(true)
 
 	highlightBorderStyle = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("86"))
+				Border(lipgloss.RoundedBorder()).
+				BorderForeground(lipgloss.Color("86"))
 
 	passColor    = lipgloss.Color("76")
 	failColor    = lipgloss.Color("204")
@@ -52,27 +52,27 @@ var (
 	pendingColor = lipgloss.Color("245")
 
 	focusCampaignsStyle = lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("75")).
-		Bold(true)
+				Border(lipgloss.RoundedBorder()).
+				BorderForeground(lipgloss.Color("75")).
+				Bold(true)
 
 	focusFlowsStyle = lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("226")).
-		Bold(true)
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("226")).
+			Bold(true)
 
 	focusTracesStyle = lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("208")).
-		Bold(true)
+				Border(lipgloss.RoundedBorder()).
+				BorderForeground(lipgloss.Color("208")).
+				Bold(true)
 
 	steeringBarStyle = lipgloss.NewStyle().
-		Background(lipgloss.Color("235")).
-		Foreground(lipgloss.Color("86")).
-		Bold(true)
+				Background(lipgloss.Color("235")).
+				Foreground(lipgloss.Color("86")).
+				Bold(true)
 
 	steeringInputStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("46"))
+				Foreground(lipgloss.Color("46"))
 )
 
 type Pane string
@@ -103,11 +103,11 @@ type MainScreen struct {
 	width  int
 	height int
 
-	activePane    Pane
+	activePane     Pane
 	focusedRunPane bool
-	spinner       spinner.Model
-	steeringInput textinput.Model
-	steeringMode  bool
+	spinner        spinner.Model
+	steeringInput  textinput.Model
+	steeringMode   bool
 
 	reportView string
 	command    string
@@ -127,18 +127,18 @@ func NewMainScreen(store *session.SessionStore) *MainScreen {
 	ti.Width = 60
 
 	return &MainScreen{
-		state:          appState,
-		handlers:       handlers,
-		campaignList:   components.NewCampaignListModel(),
-		runPanel:       components.NewRunPanelModel(),
-		flowStatus:     components.NewFlowStatusModel(),
-		tracePanel:     components.NewTracePanelModel(),
-		artifactPanel:  components.NewArtifactPanelModel(),
-		activePane:     PaneCampaigns,
-		spinner:        sp,
-		steeringInput:  ti,
-		command:        "",
-		msg:            "Press ENTER to select a run, SPACE to pause/resume, TAB to switch panes",
+		state:         appState,
+		handlers:      handlers,
+		campaignList:  components.NewCampaignListModel(),
+		runPanel:      components.NewRunPanelModel(),
+		flowStatus:    components.NewFlowStatusModel(),
+		tracePanel:    components.NewTracePanelModel(),
+		artifactPanel: components.NewArtifactPanelModel(),
+		activePane:    PaneCampaigns,
+		spinner:       sp,
+		steeringInput: ti,
+		command:       "",
+		msg:           "Press ENTER to select a run, SPACE to pause/resume, TAB to switch panes",
 	}
 }
 
@@ -169,7 +169,9 @@ func (m *MainScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case TickMsg:
 		m.refreshAll()
-		return m, nil
+		return m, tea.Tick(time.Second, func(t time.Time) tea.Msg {
+			return TickMsg(t)
+		})
 
 	case spinner.TickMsg:
 		m.spinner, cmd = m.spinner.Update(msg)
@@ -366,10 +368,10 @@ func (m *MainScreen) View() string {
 		Padding(0, 1)
 
 	focusedPanelStyle := lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("75")).
-			Bold(true).
-			Padding(0, 1)
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("75")).
+		Bold(true).
+		Padding(0, 1)
 
 	campaignListView := m.campaignList.ViewWithWidth(leftWidth - 4)
 	flowStatusView := m.flowStatus.ViewWithWidth(leftWidth - 4)
