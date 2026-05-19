@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/bubbles/viewport"
 	"github.com/charmbracelet/lipgloss"
 	"qa-orchestrator/apps/tui/internal/style"
 	"qa-orchestrator/apps/tui/internal/util"
@@ -14,6 +15,8 @@ import (
 type FlowStatusModel struct {
 	flows    []types.FlowRunState
 	selected int
+	Expanded bool
+	viewport viewport.Model
 }
 
 func NewFlowStatusModel() *FlowStatusModel {

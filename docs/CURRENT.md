@@ -36,11 +36,11 @@
 | 3 | State Architecture Refactor | ✅ COMPLETE |
 | 4 | Async Event System (Replace Polling) | ✅ COMPLETE |
 | 5 | Layout System: Sidebar + Main Content | ✅ COMPLETE |
-| 6 | Dashboard View | ⏳ Pending |
-| 7 | Viewport Integration for Traces | ⏳ Pending |
-| 8 | Flows View with Detail Panel | ⏳ Pending |
-| 9 | Trace Filtering | ⏳ Pending |
-| 10 | Status Bar + Contextual Help | ⏳ Pending |
+| 6 | Dashboard View | ✅ COMPLETE |
+| 7 | Viewport Integration for Traces | ✅ COMPLETE |
+| 8 | Flows View with Detail Panel | ✅ COMPLETE |
+| 9 | Trace Filtering | ✅ COMPLETE |
+| 10 | Status Bar + Contextual Help | ✅ COMPLETE |
 | 11 | Campaign Selection Modal | ⏳ Pending |
 | 12 | Responsive Behavior | ⏳ Pending |
 | 13 | Goroutine Shutdown + Clean Exit | ⏳ Pending |
@@ -59,14 +59,41 @@
 **V4 Phase 5 Completed:**
 - Run 046: Replaced 2x2 quadrant layout with sidebar+main content system. Removed `ComponentID` type, `quadrants`, `activeSlot`, `maximized`, `maximizedSlot` fields. Added `View` type enum (`Dashboard`, `Flows`, `Traces`, `Report`) and `sidebarFocus` boolean. Rewrote `View()` method with `renderSidebar()`, `renderMainContent()`, and view-specific renderers. Replaced slot-based key bindings (tab, left/right, 0-3, p, w, m) with view switching (1-4, tab for focus toggle, up/down context-aware). Removed 18 old quadrant/slot tests, added 8 new sidebar/view tests. All 22 packages pass, build clean, vet clean.
 
+**V4 Phase 6 Completed:**
+- Run 047: Implemented Dashboard View. Added `util` import, replaced local `utilSafeWidth()` with `util.SafeWidth()`, replaced inline truncation with `util.Truncate()`. Verified `renderDashboardView()`, `renderRunSummary()`, and `renderFlowTimeline()` work correctly. All styles use `style.*`, all truncation uses `util.*`. Added 8 new tests. All packages pass, build clean.
+
+**V4 Phase 7 Completed:**
+- Run 048: Integrated `bubbles/viewport` into trace panel. Replaced `maxEvents` truncation with viewport scrolling. Added `Viewport` and `FollowTail` fields to `TracePanelModel`. Added `updateViewportContent()` with column headers and reversed event rows. Added `Update()` method for viewport scroll keys (pgup/pgdown/home/end). Added `f` key to toggle follow-tail mode. Updated `renderTracesView()` to use `Viewport.View()`. All packages pass, build clean.
+
+**V4 Phase 8 Completed:**
+- Run 049: Implemented Flows View with expandable detail panel. Added `Expanded` bool and `viewport` to `FlowStatusModel`. Updated `renderFlowsView()` with responsive table using `util.SafeWidth()` and `util.Truncate()`. Added `renderFlowDetail()` showing Started, Finished, Duration, Retries, Error. Added `enter` key to toggle expand/collapse, `left`/`h` to collapse. Added `contentWidth()` helper. Added 18 new tests. All packages pass, build clean.
+
+**V4 Phase 9 Completed:**
+- Run 050: Implemented Trace Filtering. Added `TraceFilter` struct with `Text`, `ShowFailed`, `FlowID`, `EventType` fields. Added `Filter`, `FilterMode`, `FilterInput` to `TracePanelModel`. Created `FilteredEvents()` method for text, failed-only, flow ID, and event type filtering. Added `/` key to enter filter mode, `S` key to toggle failures-only filter. ESC cancels filter mode, Enter applies filter text. Updated all view methods to use filtered events. Added 13 new tests. All packages pass, build clean.
+
+**V4 Phase 10 Completed:**
+- Run 051: Replaced static footer with contextual status bar. Enhanced `renderStatusBar()` with run status badge + truncated ID on left, contextual keys on right, message line above bar. Added `contextualKeys()` returning view-specific key hints. Hides on terminals < 20 rows. Uses `style.BgDark`, `style.Dim`, `style.Msg`. Added 12 new tests. All packages pass, build clean, vet clean.
+
 ### Test Coverage
-- `go test ./...` — passing (96 tests in screens package, 47 in util, 12 in style)
+- `go test ./...` — passing (152 tests in screens package, 47 in util, 12 in style)
 
 ## Bug Fixes
 - Run 038: Fixed tool registry mismatch — `getDefaultLLMTools()` listed `get_html` and `evaluate` which `MockToolRegistry` didn't have, causing "unknown tool" → "configuration error" failures in autonomous mode.
 - Run 039: Fixed autonomous planner infinite loop — LLM generated 20 redundant verification steps because `finish` tool was never exposed in its prompt. Engine already handled `finish` at line 338 but LLM didn't know it existed.
 
 ## Last Run
+- Run 052: 2026-05-20 (Agent: qwen3.6-plus-free)
+  - Status: Code review of Phases 5-10 — 3 bugs found and fixed (nil pointer panic in renderFlowDetail, double-width paused character, content width inconsistency). 3 new tests added. All 22 packages pass.
+- Run 051: 2026-05-20 (Agent: qwen3.6-plus-free)
+  - Status: V4 Phase 10 COMPLETE — Status Bar + Contextual Help. All packages pass, build clean, vet clean.
+- Run 050: 2026-05-20 (Agent: qwen3.6-plus-free)
+  - Status: V4 Phase 9 COMPLETE — Trace Filtering. All packages pass, build clean.
+- Run 049: 2026-05-20 (Agent: qwen3.6-plus-free)
+  - Status: V4 Phase 8 COMPLETE — Flows View with expandable detail panel. All packages pass, build clean.
+- Run 048: 2026-05-20 (Agent: qwen3.6-plus-free)
+  - Status: V4 Phase 7 COMPLETE — Viewport Integration for Traces. All packages pass, build clean.
+- Run 047: 2026-05-20 (Agent: qwen3.6-plus-free)
+  - Status: V4 Phase 6 COMPLETE — Dashboard View implemented. All packages pass, build clean.
 - Run 046: 2026-05-20 (Agent: qwen3.6-plus-free)
   - Status: V4 Phase 5 COMPLETE — Replaced 2x2 quadrant layout with sidebar+main content. All 22 packages pass, build clean, vet clean.
 - Run 045: 2026-05-20 (Agent: qwen3.6-plus-free)

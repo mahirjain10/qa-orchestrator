@@ -9,6 +9,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
+	"qa-orchestrator/apps/tui/internal/components"
 	"qa-orchestrator/packages/shared/types"
 	"qa-orchestrator/packages/storage/artifact"
 	"qa-orchestrator/packages/storage/session"
@@ -929,4 +930,930 @@ func newScreenWithRun(t *testing.T) (*MainScreen, string) {
 
 	screen := NewMainScreenWithStores(sessionStore, traceStore, artifactStore)
 	return screen, sess.RunID
+}
+
+func TestRenderDashboardViewWithNoRun(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = nil
+
+	view := screen.renderDashboardView()
+	if !strings.Contains(view, "Select a Campaign") {
+		t.Fatalf("expected campaign selector when no run, got %q", view)
+	}
+}
+
+func TestRenderDashboardViewWithActiveRun(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = &types.Session{
+		RunID:        runID,
+		CampaignName: "test-campaign",
+		Status:       types.RunStateRunning,
+		CurrentAgent: "executor",
+		CurrentFlowID: "flow-1",
+		Flows: []types.FlowRunState{
+			{FlowID: "flow-1", Status: types.FlowStateRunning},
+			{FlowID: "flow-2", Status: types.FlowStatePassed},
+			{FlowID: "flow-3", Status: types.FlowStateFailed},
+		},
+	}
+	screen.flowStatus.SetFlows(screen.currentRun.Flows)
+
+	view := screen.renderDashboardView()
+	if !strings.Contains(view, "Run Summary") {
+		t.Fatal("expected run summary in dashboard view")
+	}
+	if !strings.Contains(view, "Flows") {
+		t.Fatal("expected flows section in dashboard view")
+	}
+	if !strings.Contains(view, "test-campaign") {
+		t.Fatal("expected campaign name in dashboard view")
+	}
+}
+
+func TestRenderRunSummaryShowsStatusAndCampaign(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = &types.Session{
+		RunID:        runID,
+		CampaignName: "my-campaign",
+		Status:       types.RunStateRunning,
+		CurrentAgent: "planner",
+		CurrentFlowID: "flow-1",
+		Flows: []types.FlowRunState{
+			{FlowID: "flow-1", Status: types.FlowStateRunning},
+			{FlowID: "flow-2", Status: types.FlowStatePassed},
+			{FlowID: "flow-3", Status: types.FlowStateFailed},
+		},
+	}
+
+	summary := screen.renderRunSummary()
+	if !strings.Contains(summary, "Run Summary") {
+		t.Fatal("expected 'Run Summary' title")
+	}
+	if !strings.Contains(summary, "my-campaign") {
+		t.Fatal("expected campaign name in summary")
+	}
+	if !strings.Contains(summary, "planner") {
+		t.Fatal("expected agent name in summary")
+	}
+	if !strings.Contains(summary, "flow-1") {
+		t.Fatal("expected current flow ID in summary")
+	}
+	if !strings.Contains(summary, "3 flows") {
+		t.Fatal("expected flow count in summary")
+	}
+	if !strings.Contains(summary, "R:1") {
+		t.Fatal("expected running count in summary")
+	}
+	if !strings.Contains(summary, "P:1") {
+		t.Fatal("expected passed count in summary")
+	}
+	if !strings.Contains(summary, "F:1") {
+		t.Fatal("expected failed count in summary")
+	}
+}
+
+func TestRenderRunSummaryWithNoRun(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = nil
+
+	summary := screen.renderRunSummary()
+	if !strings.Contains(summary, "No run selected") {
+		t.Fatalf("expected 'No run selected' message, got %q", summary)
+	}
+}
+
+func TestRenderFlowTimelineWithFlows(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = &types.Session{
+		RunID: runID,
+		Flows: []types.FlowRunState{
+			{FlowID: "flow-1", Status: types.FlowStateRunning},
+			{FlowID: "flow-2", Status: types.FlowStatePassed},
+			{FlowID: "flow-3", Status: types.FlowStateFailed},
+		},
+	}
+	screen.flowStatus.SetFlows(screen.currentRun.Flows)
+
+	timeline := screen.renderFlowTimeline()
+	if !strings.Contains(timeline, "Flows") {
+		t.Fatal("expected 'Flows' section header")
+	}
+	if !strings.Contains(timeline, "flow-1") {
+		t.Fatal("expected flow-1 in timeline")
+	}
+	if !strings.Contains(timeline, "flow-2") {
+		t.Fatal("expected flow-2 in timeline")
+	}
+	if !strings.Contains(timeline, "flow-3") {
+		t.Fatal("expected flow-3 in timeline")
+	}
+}
+
+func TestRenderFlowTimelineWithNoFlows(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = &types.Session{RunID: runID, Flows: []types.FlowRunState{}}
+
+	timeline := screen.renderFlowTimeline()
+	if !strings.Contains(timeline, "No flows") {
+		t.Fatalf("expected 'No flows' message, got %q", timeline)
+	}
+}
+
+func TestRenderFlowTimelineWithNilRun(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = nil
+
+	timeline := screen.renderFlowTimeline()
+	if !strings.Contains(timeline, "No flows") {
+		t.Fatalf("expected 'No flows' message for nil run, got %q", timeline)
+	}
+}
+
+func TestRenderDashboardViewShowsFlowTimeline(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = &types.Session{
+		RunID:        runID,
+		CampaignName: "test",
+		Status:       types.RunStateCompleted,
+		Flows: []types.FlowRunState{
+			{FlowID: "flow-a", Status: types.FlowStatePassed},
+			{FlowID: "flow-b", Status: types.FlowStatePassed},
+		},
+	}
+	screen.flowStatus.SetFlows(screen.currentRun.Flows)
+
+	view := screen.renderDashboardView()
+	if !strings.Contains(view, "flow-a") {
+		t.Fatal("expected flow-a in dashboard view")
+	}
+	if !strings.Contains(view, "flow-b") {
+		t.Fatal("expected flow-b in dashboard view")
+	}
+}
+
+func TestEnterTogglesFlowExpand(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = &types.Session{
+		RunID: runID,
+		Flows: []types.FlowRunState{
+			{FlowID: "flow-1", Status: types.FlowStateRunning},
+			{FlowID: "flow-2", Status: types.FlowStatePassed},
+		},
+	}
+	screen.flowStatus.SetFlows(screen.currentRun.Flows)
+	screen.activeView = ViewFlows
+	screen.sidebarFocus = false
+
+	if screen.flowStatus.Expanded {
+		t.Fatal("expected expanded to be false initially")
+	}
+
+	screen.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	if !screen.flowStatus.Expanded {
+		t.Fatal("expected expanded to be true after enter")
+	}
+
+	screen.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	if screen.flowStatus.Expanded {
+		t.Fatal("expected expanded to be false after second enter")
+	}
+}
+
+func TestEnterDoesNotExpandWhenSidebarFocused(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = &types.Session{RunID: runID, Flows: []types.FlowRunState{
+		{FlowID: "flow-1", Status: types.FlowStateRunning},
+	}}
+	screen.flowStatus.SetFlows(screen.currentRun.Flows)
+	screen.activeView = ViewFlows
+	screen.sidebarFocus = true
+
+	screen.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	if screen.flowStatus.Expanded {
+		t.Fatal("expected expanded to remain false when sidebar focused")
+	}
+}
+
+func TestLeftCollapsesExpandedFlow(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = &types.Session{RunID: runID, Flows: []types.FlowRunState{
+		{FlowID: "flow-1", Status: types.FlowStateRunning},
+	}}
+	screen.flowStatus.SetFlows(screen.currentRun.Flows)
+	screen.activeView = ViewFlows
+	screen.sidebarFocus = false
+	screen.flowStatus.Expanded = true
+
+	screen.Update(tea.KeyMsg{Type: tea.KeyLeft})
+	if screen.flowStatus.Expanded {
+		t.Fatal("expected expanded to be false after left")
+	}
+}
+
+func TestHCollapsesExpandedFlow(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = &types.Session{RunID: runID, Flows: []types.FlowRunState{
+		{FlowID: "flow-1", Status: types.FlowStateRunning},
+	}}
+	screen.flowStatus.SetFlows(screen.currentRun.Flows)
+	screen.activeView = ViewFlows
+	screen.sidebarFocus = false
+	screen.flowStatus.Expanded = true
+
+	screen.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'h'}})
+	if screen.flowStatus.Expanded {
+		t.Fatal("expected expanded to be false after h")
+	}
+}
+
+func TestLeftDoesNotCollapseWhenSidebarFocused(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = &types.Session{RunID: runID, Flows: []types.FlowRunState{
+		{FlowID: "flow-1", Status: types.FlowStateRunning},
+	}}
+	screen.flowStatus.SetFlows(screen.currentRun.Flows)
+	screen.activeView = ViewFlows
+	screen.sidebarFocus = true
+	screen.flowStatus.Expanded = true
+
+	screen.Update(tea.KeyMsg{Type: tea.KeyLeft})
+	if !screen.flowStatus.Expanded {
+		t.Fatal("expected expanded to remain true when sidebar focused")
+	}
+}
+
+func TestRenderFlowsViewShowsTable(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = &types.Session{
+		RunID: runID,
+		Flows: []types.FlowRunState{
+			{FlowID: "flow-1", Mode: types.FlowModeGuided, Priority: types.FlowPriorityHigh, Status: types.FlowStateRunning},
+			{FlowID: "flow-2", Mode: types.FlowModeAutonomous, Priority: types.FlowPriorityLow, Status: types.FlowStatePassed},
+		},
+	}
+	screen.flowStatus.SetFlows(screen.currentRun.Flows)
+	screen.activeView = ViewFlows
+
+	view := screen.renderFlowsView()
+	if !strings.Contains(view, "Flows") {
+		t.Fatal("expected 'Flows' title in view")
+	}
+	if !strings.Contains(view, "Flow") || !strings.Contains(view, "Mode") {
+		t.Fatal("expected table headers in view")
+	}
+	if !strings.Contains(view, "flow-1") {
+		t.Fatal("expected flow-1 in view")
+	}
+	if !strings.Contains(view, "flow-2") {
+		t.Fatal("expected flow-2 in view")
+	}
+}
+
+func TestRenderFlowsViewWithNoFlows(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = &types.Session{RunID: runID, Flows: []types.FlowRunState{}}
+
+	view := screen.renderFlowsView()
+	if !strings.Contains(view, "No flows") {
+		t.Fatalf("expected 'No flows' message, got %q", view)
+	}
+}
+
+func TestRenderFlowsViewWithNilRun(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = nil
+
+	view := screen.renderFlowsView()
+	if !strings.Contains(view, "No flows") {
+		t.Fatalf("expected 'No flows' message for nil run, got %q", view)
+	}
+}
+
+func TestRenderFlowDetailShowsStartedAndFinished(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+
+	started := time.Date(2026, 5, 20, 10, 30, 0, 0, time.UTC)
+	finished := time.Date(2026, 5, 20, 10, 30, 45, 0, time.UTC)
+	f := types.FlowRunState{
+		FlowID:     "flow-1",
+		Status:     types.FlowStatePassed,
+		StartedAt:  &started,
+		FinishedAt: &finished,
+	}
+
+	detail := screen.renderFlowDetail(f)
+	if !strings.Contains(detail, "Started:") {
+		t.Fatal("expected 'Started:' in detail")
+	}
+	if !strings.Contains(detail, "Finished:") {
+		t.Fatal("expected 'Finished:' in detail")
+	}
+	if !strings.Contains(detail, "Duration:") {
+		t.Fatal("expected 'Duration:' in detail")
+	}
+}
+
+func TestRenderFlowDetailShowsRetries(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	f := types.FlowRunState{
+		FlowID:     "flow-1",
+		Status:     types.FlowStateRetrying,
+		RetryCount: 3,
+	}
+
+	detail := screen.renderFlowDetail(f)
+	if !strings.Contains(detail, "Retries:") {
+		t.Fatal("expected 'Retries:' in detail")
+	}
+	if !strings.Contains(detail, "3") {
+		t.Fatal("expected retry count '3' in detail")
+	}
+}
+
+func TestRenderFlowDetailShowsError(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	f := types.FlowRunState{
+		FlowID: "flow-1",
+		Status: types.FlowStateFailed,
+		Error:  "connection refused",
+	}
+
+	detail := screen.renderFlowDetail(f)
+	if !strings.Contains(detail, "Error:") {
+		t.Fatal("expected 'Error:' in detail")
+	}
+	if !strings.Contains(detail, "connection refused") {
+		t.Fatal("expected error message in detail")
+	}
+}
+
+func TestRenderFlowDetailWithNoDates(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	f := types.FlowRunState{
+		FlowID: "flow-1",
+		Status: types.FlowStatePending,
+	}
+
+	detail := screen.renderFlowDetail(f)
+	if strings.Contains(detail, "Started:") {
+		t.Fatal("expected no 'Started:' when StartedAt is nil")
+	}
+	if strings.Contains(detail, "Finished:") {
+		t.Fatal("expected no 'Finished:' when FinishedAt is nil")
+	}
+}
+
+func TestRenderFlowDetailWithNoRetries(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	f := types.FlowRunState{
+		FlowID:     "flow-1",
+		Status:     types.FlowStatePassed,
+		RetryCount: 0,
+	}
+
+	detail := screen.renderFlowDetail(f)
+	if strings.Contains(detail, "Retries:") {
+		t.Fatal("expected no 'Retries:' when RetryCount is 0")
+	}
+}
+
+func TestRenderFlowDetailWithNoError(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	f := types.FlowRunState{
+		FlowID: "flow-1",
+		Status: types.FlowStatePassed,
+		Error:  "",
+	}
+
+	detail := screen.renderFlowDetail(f)
+	if strings.Contains(detail, "Error:") {
+		t.Fatal("expected no 'Error:' when Error is empty")
+	}
+}
+
+func TestRenderFlowDetailWithFinishedButNoStarted(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	finished := time.Date(2026, 5, 20, 10, 30, 45, 0, time.UTC)
+	f := types.FlowRunState{
+		FlowID:     "flow-1",
+		Status:     types.FlowStateFailed,
+		StartedAt:  nil,
+		FinishedAt: &finished,
+		Error:      "crashed",
+	}
+
+	detail := screen.renderFlowDetail(f)
+	if strings.Contains(detail, "Duration:") {
+		t.Fatal("expected no 'Duration:' when StartedAt is nil")
+	}
+	if !strings.Contains(detail, "Finished:") {
+		t.Fatal("expected 'Finished:' in detail")
+	}
+	if !strings.Contains(detail, "Error:") {
+		t.Fatal("expected 'Error:' in detail")
+	}
+}
+
+func TestRenderFlowsViewShowsExpandedDetail(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+
+	started := time.Date(2026, 5, 20, 10, 30, 0, 0, time.UTC)
+	finished := time.Date(2026, 5, 20, 10, 30, 45, 0, time.UTC)
+	screen.currentRun = &types.Session{
+		RunID: runID,
+		Flows: []types.FlowRunState{
+			{FlowID: "flow-1", Status: types.FlowStatePassed, StartedAt: &started, FinishedAt: &finished},
+			{FlowID: "flow-2", Status: types.FlowStatePending},
+		},
+	}
+	screen.flowStatus.SetFlows(screen.currentRun.Flows)
+	screen.flowStatus.SetSelected(0)
+	screen.flowStatus.Expanded = true
+	screen.activeView = ViewFlows
+	screen.sidebarFocus = false
+
+	view := screen.renderFlowsView()
+	if !strings.Contains(view, "Started:") {
+		t.Fatal("expected expanded detail 'Started:' in view")
+	}
+	if !strings.Contains(view, "Duration:") {
+		t.Fatal("expected expanded detail 'Duration:' in view")
+	}
+}
+
+func TestRenderFlowsViewHidesDetailWhenNotExpanded(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+
+	started := time.Date(2026, 5, 20, 10, 30, 0, 0, time.UTC)
+	screen.currentRun = &types.Session{
+		RunID: runID,
+		Flows: []types.FlowRunState{
+			{FlowID: "flow-1", Status: types.FlowStateRunning, StartedAt: &started},
+		},
+	}
+	screen.flowStatus.SetFlows(screen.currentRun.Flows)
+	screen.flowStatus.Expanded = false
+	screen.activeView = ViewFlows
+
+	view := screen.renderFlowsView()
+	if strings.Contains(view, "Started:") {
+		t.Fatal("expected no detail when not expanded")
+	}
+}
+
+func TestContentWidthReturnsMinimum(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 50
+
+	w := screen.contentWidth()
+	if w < 40 {
+		t.Fatalf("expected minimum width 40, got %d", w)
+	}
+}
+
+func TestContentWidthCalculatesCorrectly(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 120
+
+	w := screen.contentWidth()
+	if w != 94 {
+		t.Fatalf("expected width 94, got %d", w)
+	}
+}
+
+func TestTracesViewUsesContentWidth(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = &types.Session{RunID: runID}
+	screen.activeView = ViewTraces
+
+	view := screen.renderTracesView()
+	if view == "" {
+		t.Fatal("expected non-empty traces view")
+	}
+}
+
+func TestReportViewUsesContentWidth(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = &types.Session{RunID: runID}
+	screen.activeView = ViewReport
+	screen.reportView = "Test report content"
+
+	view := screen.renderReportView()
+	if !strings.Contains(view, "Test report content") {
+		t.Fatalf("expected report view to contain content, got %q", view)
+	}
+}
+
+func TestFilterModeEntersOnSlash(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.currentRun = &types.Session{RunID: runID}
+	screen.activeView = ViewTraces
+	screen.sidebarFocus = false
+
+	_, _ = screen.handleMainKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}})
+
+	if !screen.tracePanel.FilterMode {
+		t.Fatal("expected filter mode to be enabled")
+	}
+}
+
+func TestFilterModeDoesNotEnterOnSidebarFocus(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.currentRun = &types.Session{RunID: runID}
+	screen.activeView = ViewTraces
+	screen.sidebarFocus = true
+
+	_, _ = screen.handleMainKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}})
+
+	if screen.tracePanel.FilterMode {
+		t.Fatal("expected filter mode to not be enabled when sidebar focused")
+	}
+}
+
+func TestFilterModeCancelledOnEsc(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.currentRun = &types.Session{RunID: runID}
+	screen.activeView = ViewTraces
+	screen.tracePanel.FilterMode = true
+	screen.tracePanel.FilterInput.SetValue("test")
+
+	_, _ = screen.handleFilterKey(tea.KeyMsg{Type: tea.KeyEscape})
+
+	if screen.tracePanel.FilterMode {
+		t.Fatal("expected filter mode to be cancelled")
+	}
+	if screen.tracePanel.FilterInput.Value() != "" {
+		t.Fatal("expected filter input to be cleared")
+	}
+}
+
+func TestFilterModeAppliedOnEnter(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.currentRun = &types.Session{RunID: runID}
+	screen.activeView = ViewTraces
+	screen.tracePanel.FilterMode = true
+	screen.tracePanel.FilterInput.SetValue("browser")
+
+	_, _ = screen.handleFilterKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+	if screen.tracePanel.FilterMode {
+		t.Fatal("expected filter mode to be disabled after enter")
+	}
+	if screen.tracePanel.Filter.Text != "browser" {
+		t.Fatalf("expected filter text 'browser', got %q", screen.tracePanel.Filter.Text)
+	}
+	if screen.tracePanel.Selected != 0 {
+		t.Fatalf("expected selected to reset to 0, got %d", screen.tracePanel.Selected)
+	}
+}
+
+func TestShowFailedToggle(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.currentRun = &types.Session{RunID: runID}
+	screen.activeView = ViewTraces
+	screen.sidebarFocus = false
+
+	_, _ = screen.handleMainKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'S'}})
+
+	if !screen.tracePanel.Filter.ShowFailed {
+		t.Fatal("expected showFailed to be true after toggle")
+	}
+
+	_, _ = screen.handleMainKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'S'}})
+
+	if screen.tracePanel.Filter.ShowFailed {
+		t.Fatal("expected showFailed to be false after second toggle")
+	}
+}
+
+func TestFilteredEventsReturnsAllWhenNoFilter(t *testing.T) {
+	panel := components.NewTracePanelModel()
+	events := []*types.TraceEvent{
+		types.NewTraceEvent("run-1", "flow-1", "agent", types.TraceEventStepExecution, "action1", types.TraceStatusSuccess),
+		types.NewTraceEvent("run-1", "flow-1", "agent", types.TraceEventStepExecution, "action2", types.TraceStatusFailed),
+	}
+	panel.SetEvents(events)
+
+	filtered := panel.FilteredEvents()
+	if len(filtered) != 2 {
+		t.Fatalf("expected 2 events, got %d", len(filtered))
+	}
+}
+
+func TestFilteredEventsFiltersByText(t *testing.T) {
+	panel := components.NewTracePanelModel()
+	events := []*types.TraceEvent{
+		types.NewTraceEvent("run-1", "flow-1", "agent", types.TraceEventStepExecution, "browser click", types.TraceStatusSuccess),
+		types.NewTraceEvent("run-1", "flow-1", "agent", types.TraceEventStepExecution, "api call", types.TraceStatusSuccess),
+	}
+	panel.SetEvents(events)
+	panel.Filter.Text = "browser"
+
+	filtered := panel.FilteredEvents()
+	if len(filtered) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(filtered))
+	}
+	if filtered[0].Action != "browser click" {
+		t.Fatalf("expected 'browser click', got %q", filtered[0].Action)
+	}
+}
+
+func TestFilteredEventsFiltersByShowFailed(t *testing.T) {
+	panel := components.NewTracePanelModel()
+	events := []*types.TraceEvent{
+		types.NewTraceEvent("run-1", "flow-1", "agent", types.TraceEventStepExecution, "action1", types.TraceStatusSuccess),
+		types.NewTraceEvent("run-1", "flow-1", "agent", types.TraceEventStepExecution, "action2", types.TraceStatusFailed),
+		types.NewTraceEvent("run-1", "flow-1", "agent", types.TraceEventStepExecution, "action3", types.TraceStatusSuccess),
+	}
+	panel.SetEvents(events)
+	panel.Filter.ShowFailed = true
+
+	filtered := panel.FilteredEvents()
+	if len(filtered) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(filtered))
+	}
+	if filtered[0].Status != types.TraceStatusFailed {
+		t.Fatal("expected failed event")
+	}
+}
+
+func TestFilteredEventsFiltersByFlowID(t *testing.T) {
+	panel := components.NewTracePanelModel()
+	events := []*types.TraceEvent{
+		types.NewTraceEvent("run-1", "flow-1", "agent", types.TraceEventStepExecution, "action1", types.TraceStatusSuccess),
+		types.NewTraceEvent("run-1", "flow-2", "agent", types.TraceEventStepExecution, "action2", types.TraceStatusSuccess),
+	}
+	panel.SetEvents(events)
+	panel.Filter.FlowID = "flow-1"
+
+	filtered := panel.FilteredEvents()
+	if len(filtered) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(filtered))
+	}
+	if filtered[0].FlowID != "flow-1" {
+		t.Fatalf("expected flow-1, got %q", filtered[0].FlowID)
+	}
+}
+
+func TestFilteredEventsFiltersByEventType(t *testing.T) {
+	panel := components.NewTracePanelModel()
+	events := []*types.TraceEvent{
+		types.NewTraceEvent("run-1", "flow-1", "agent", types.TraceEventStepExecution, "action1", types.TraceStatusSuccess),
+		types.NewTraceEvent("run-1", "flow-1", "agent", types.TraceEventToolResult, "action2", types.TraceStatusSuccess),
+	}
+	panel.SetEvents(events)
+	panel.Filter.EventType = "tool_result"
+
+	filtered := panel.FilteredEvents()
+	if len(filtered) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(filtered))
+	}
+	if filtered[0].EventType != types.TraceEventToolResult {
+		t.Fatalf("expected tool_result event, got %q", filtered[0].EventType)
+	}
+	if filtered[0].EventType != types.TraceEventToolResult {
+		t.Fatalf("expected tool_call event, got %q", filtered[0].EventType)
+	}
+}
+
+func TestFilteredEventsCaseInsensitiveText(t *testing.T) {
+	panel := components.NewTracePanelModel()
+	events := []*types.TraceEvent{
+		types.NewTraceEvent("run-1", "flow-1", "agent", types.TraceEventStepExecution, "Browser Click", types.TraceStatusSuccess),
+	}
+	panel.SetEvents(events)
+	panel.Filter.Text = "browser"
+
+	filtered := panel.FilteredEvents()
+	if len(filtered) != 1 {
+		t.Fatalf("expected 1 event with case-insensitive match, got %d", len(filtered))
+	}
+}
+
+func TestFilterTextClearedOnEmptyEnter(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.currentRun = &types.Session{RunID: runID}
+	screen.activeView = ViewTraces
+	screen.tracePanel.FilterMode = true
+	screen.tracePanel.FilterInput.SetValue("")
+
+	_, _ = screen.handleFilterKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+	if screen.tracePanel.Filter.Text != "" {
+		t.Fatalf("expected filter text to be cleared, got %q", screen.tracePanel.Filter.Text)
+	}
+}
+
+func TestStatusBarHidesOnShortTerminal(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 15
+	screen.currentRun = &types.Session{RunID: runID, Status: types.RunStateRunning}
+
+	bar := screen.renderStatusBar()
+	if bar != "" {
+		t.Fatal("expected status bar to be empty on short terminal")
+	}
+}
+
+func TestStatusBarShowsRunStatusAndID(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = &types.Session{RunID: runID, Status: types.RunStateRunning}
+
+	bar := screen.renderStatusBar()
+	if !strings.Contains(bar, "RUNNING") {
+		t.Fatalf("expected status bar to contain 'RUNNING', got %q", bar)
+	}
+	truncated := runID
+	if len(truncated) > 12 {
+		truncated = truncated[:12]
+	}
+	if !strings.Contains(bar, truncated) {
+		t.Fatalf("expected status bar to contain truncated run ID %q, got %q", truncated, bar)
+	}
+}
+
+func TestStatusBarShowsIdleWhenNoRun(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = nil
+	screen.activeView = ViewDashboard
+
+	bar := screen.renderStatusBar()
+	if !strings.Contains(bar, "IDLE") {
+		t.Fatalf("expected status bar to contain 'IDLE', got %q", bar)
+	}
+}
+
+func TestStatusBarShowsRecentMessage(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = nil
+	screen.setMsg("test message")
+
+	bar := screen.renderStatusBar()
+	if !strings.Contains(bar, "test message") {
+		t.Fatalf("expected status bar to contain message, got %q", bar)
+	}
+}
+
+func TestStatusBarHidesStaleMessage(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = nil
+	screen.msg = "stale message"
+	screen.msgTime = time.Now().Add(-10 * time.Second)
+
+	bar := screen.renderStatusBar()
+	if strings.Contains(bar, "stale message") {
+		t.Fatalf("expected status bar to not contain stale message, got %q", bar)
+	}
+}
+
+func TestContextualKeysDashboardWithRun(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.currentRun = &types.Session{RunID: runID}
+	screen.activeView = ViewDashboard
+
+	keys := screen.contextualKeys()
+	if !strings.Contains(keys, "space:pause") {
+		t.Fatalf("expected dashboard keys with run to contain 'space:pause', got %q", keys)
+	}
+	if !strings.Contains(keys, "x:cancel") {
+		t.Fatalf("expected dashboard keys with run to contain 'x:cancel', got %q", keys)
+	}
+	if !strings.Contains(keys, "s:steer") {
+		t.Fatalf("expected dashboard keys with run to contain 's:steer', got %q", keys)
+	}
+}
+
+func TestContextualKeysDashboardIdle(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.currentRun = nil
+	screen.activeView = ViewDashboard
+
+	keys := screen.contextualKeys()
+	if !strings.Contains(keys, "enter:select") {
+		t.Fatalf("expected idle dashboard keys to contain 'enter:select', got %q", keys)
+	}
+	if !strings.Contains(keys, "r:refresh") {
+		t.Fatalf("expected idle dashboard keys to contain 'r:refresh', got %q", keys)
+	}
+}
+
+func TestContextualKeysTraces(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.activeView = ViewTraces
+
+	keys := screen.contextualKeys()
+	if !strings.Contains(keys, "/:filter") {
+		t.Fatalf("expected traces keys to contain '/:filter', got %q", keys)
+	}
+	if !strings.Contains(keys, "S:failures") {
+		t.Fatalf("expected traces keys to contain 'S:failures', got %q", keys)
+	}
+	if !strings.Contains(keys, "F:follow") {
+		t.Fatalf("expected traces keys to contain 'F:follow', got %q", keys)
+	}
+}
+
+func TestContextualKeysFlows(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.activeView = ViewFlows
+
+	keys := screen.contextualKeys()
+	if !strings.Contains(keys, "enter:detail") {
+		t.Fatalf("expected flows keys to contain 'enter:detail', got %q", keys)
+	}
+	if !strings.Contains(keys, "r:retry") {
+		t.Fatalf("expected flows keys to contain 'r:retry', got %q", keys)
+	}
+	if !strings.Contains(keys, "k:skip") {
+		t.Fatalf("expected flows keys to contain 'k:skip', got %q", keys)
+	}
+}
+
+func TestContextualKeysDefault(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.activeView = ViewReport
+
+	keys := screen.contextualKeys()
+	if !strings.Contains(keys, "?:help") {
+		t.Fatalf("expected default keys to contain '?:help', got %q", keys)
+	}
+}
+
+func TestViewContainsStatusBar(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = &types.Session{RunID: runID, Status: types.RunStateRunning}
+	screen.setMsg("test status")
+
+	view := screen.View()
+	if !strings.Contains(view, "RUNNING") {
+		t.Fatal("expected view to contain run status in status bar")
+	}
+	if !strings.Contains(view, "test status") {
+		t.Fatal("expected view to contain message in status bar")
+	}
+}
+
+func TestViewHidesStatusBarOnShortTerminal(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 19
+	screen.currentRun = &types.Session{RunID: runID, Status: types.RunStateRunning}
+
+	view := screen.View()
+	if strings.Contains(view, "RUNNING") {
+		t.Fatal("expected view to not contain status bar on short terminal")
+	}
 }

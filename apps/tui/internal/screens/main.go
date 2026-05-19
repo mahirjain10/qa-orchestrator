@@ -7,6 +7,7 @@ import (
 
 	"qa-orchestrator/apps/tui/internal/components"
 	"qa-orchestrator/apps/tui/internal/style"
+	"qa-orchestrator/apps/tui/internal/util"
 	"qa-orchestrator/packages/reporting"
 	"qa-orchestrator/packages/shared/types"
 	"qa-orchestrator/packages/storage/artifact"
@@ -170,8 +171,19 @@ func (m *MainScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyMsg:
+		if m.tracePanel.FilterMode {
+			return m.handleFilterKey(msg)
+		}
 		if m.steeringMode {
 			return m.handleSteeringKey(msg)
+		}
+		if m.activeView == ViewTraces {
+			switch msg.String() {
+			case "pgup", "pgdown", "home", "end":
+				if cmd := m.tracePanel.Update(msg); cmd != nil {
+					cmds = append(cmds, cmd)
+				}
+			}
 		}
 		return m.handleMainKey(msg)
 	}
@@ -196,6 +208,30 @@ func (m *MainScreen) handleSteeringKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if msg.String() == "escape" || msg.String() == "esc" {
 		m.steeringMode = false
 		m.steeringInput.SetValue("")
+	}
+	return m, cmd
+}
+
+func (m *MainScreen) handleFilterKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	m.tracePanel.FilterInput, cmd = m.tracePanel.FilterInput.Update(msg)
+
+	if msg.String() == "enter" {
+		m.tracePanel.Filter.Text = m.tracePanel.FilterInput.Value()
+		m.tracePanel.FilterMode = false
+		m.tracePanel.FilterInput.SetValue("")
+		m.tracePanel.Selected = 0
+		m.tracePanel.UpdateViewportContent()
+		if m.tracePanel.Filter.Text != "" {
+			m.setMsg(fmt.Sprintf("Filter: \"%s\"", m.tracePanel.Filter.Text))
+		} else {
+			m.setMsg("Filter cleared")
+		}
+	}
+	if msg.String() == "escape" || msg.String() == "esc" {
+		m.tracePanel.FilterMode = false
+		m.tracePanel.FilterInput.SetValue("")
+		m.setMsg("Filter cancelled")
 	}
 	return m, cmd
 }
@@ -240,13 +276,20 @@ func (m *MainScreen) handleMainKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 
 	case "enter":
-		if m.currentRun == nil {
+		if m.activeView == ViewFlows && !m.sidebarFocus {
+			m.flowStatus.Expanded = !m.flowStatus.Expanded
+		} else if m.currentRun == nil {
 			idx := m.campaignList.GetSelected()
 			if idx >= 0 && idx < len(m.sessions) {
 				runID := m.sessions[idx].RunID
 				m.currentRun = m.sessions[idx]
 				m.setMsg(fmt.Sprintf("Selected run: %s | ↑↓ navigate | TAB switch focus", runID))
 			}
+		}
+
+	case "left", "h":
+		if m.activeView == ViewFlows && m.flowStatus.Expanded && !m.sidebarFocus {
+			m.flowStatus.Expanded = false
 		}
 
 	case " ":
@@ -302,6 +345,27 @@ func (m *MainScreen) handleMainKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.setMsg("Steering mode: type command and press ENTER. ESC to cancel.")
 		} else {
 			m.setMsg("Select a run first before steering")
+		}
+
+	case "f":
+		if m.activeView == ViewTraces {
+			m.tracePanel.FollowTail = !m.tracePanel.FollowTail
+			m.setMsg(fmt.Sprintf("Follow tail: %v", m.tracePanel.FollowTail))
+		}
+
+	case "/":
+		if m.activeView == ViewTraces && !m.sidebarFocus {
+			m.tracePanel.FilterMode = true
+			m.tracePanel.FilterInput.Focus()
+			m.setMsg("Filter traces (ESC to cancel)")
+		}
+
+	case "S":
+		if m.activeView == ViewTraces && !m.sidebarFocus && !m.steeringMode {
+			m.tracePanel.Filter.ShowFailed = !m.tracePanel.Filter.ShowFailed
+			m.tracePanel.Selected = 0
+			m.tracePanel.UpdateViewportContent()
+			m.setMsg(fmt.Sprintf("Show failed only: %v", m.tracePanel.Filter.ShowFailed))
 		}
 	}
 	return m, nil
@@ -390,10 +454,64 @@ func (m *MainScreen) renderHeader() string {
 }
 
 func (m *MainScreen) renderStatusBar() string {
-	if time.Since(m.msgTime) < 5*time.Second && m.msg != "" {
-		return style.Msg.Render(" " + m.msg + " ")
+	if m.height < 20 {
+		return ""
 	}
-	return ""
+
+	var left, right string
+
+	if m.currentRun != nil {
+		statusStyle := statusStyleForRun(m.currentRun.Status)
+		truncated := m.currentRun.RunID
+		if len(truncated) > 12 {
+			truncated = truncated[:12]
+		}
+		left = statusStyle.Render(" "+string(m.currentRun.Status)+" ") +
+			style.Dim.Render(" "+truncated)
+	} else {
+		left = style.Dim.Render(" IDLE")
+	}
+
+	right = m.contextualKeys()
+
+	rightLen := lipgloss.Width(right)
+	leftLen := lipgloss.Width(left)
+	gap := m.width - leftLen - rightLen - 4
+	if gap < 0 {
+		gap = 0
+	}
+	spacer := lipgloss.NewStyle().Width(gap).Render("")
+
+	bar := lipgloss.NewStyle().
+		Background(style.BgDark).
+		Width(m.width).
+		Render(left + spacer + right)
+
+	var msgLine string
+	if time.Since(m.msgTime) < 5*time.Second && m.msg != "" {
+		msgLine = style.Msg.Render(" " + m.msg + " ")
+	}
+
+	if msgLine != "" {
+		return lipgloss.JoinVertical(lipgloss.Left, msgLine, bar)
+	}
+	return bar
+}
+
+func (m *MainScreen) contextualKeys() string {
+	switch m.activeView {
+	case ViewDashboard:
+		if m.currentRun != nil {
+			return style.Dim.Render("space:pause  x:cancel  s:steer  ?:help")
+		}
+		return style.Dim.Render("enter:select  r:refresh  ?:help")
+	case ViewTraces:
+		return style.Dim.Render("/:filter  S:failures  F:follow  ?:help")
+	case ViewFlows:
+		return style.Dim.Render("enter:detail  r:retry  k:skip  ?:help")
+	default:
+		return style.Dim.Render("?:help")
+	}
 }
 
 func (m *MainScreen) renderSteeringOverlay() string {
@@ -577,24 +695,19 @@ func (m *MainScreen) renderFlowsView() string {
 		return style.Dim.Render("  No flows")
 	}
 
-	contentWidth := m.width - 28
-	if contentWidth < 40 {
-		contentWidth = 40
-	}
-
 	lines := []string{
 		style.ViewTitle.Render(" Flows "),
 		"",
 	}
 
-	colFlow := utilSafeWidth(contentWidth/3, 16)
+	colFlow := util.SafeWidth(m.contentWidth()/3, 16)
 	colMode := 10
 	colPriority := 10
 	colStatus := 12
 
 	headerFmt := fmt.Sprintf("  %%-%ds %%-%ds %%-%ds %%-%ds", colFlow, colMode, colPriority, colStatus)
 	lines = append(lines, style.Section.Render(fmt.Sprintf(headerFmt, "Flow", "Mode", "Priority", "Status")))
-	lines = append(lines, style.Dim.Render("  "+strings.Repeat("─", contentWidth-4)))
+	lines = append(lines, style.Dim.Render("  "+strings.Repeat("─", m.contentWidth()-4)))
 
 	for i, f := range m.currentRun.Flows {
 		statusStyle := statusStyleForFlow(f.Status)
@@ -604,45 +717,74 @@ func (m *MainScreen) renderFlowsView() string {
 			cursor = style.SelectedBold.Render(" ▶ ")
 		}
 
-		flowID := f.FlowID
-		if len(flowID) > colFlow-4 {
-			flowID = flowID[:colFlow-4] + "..."
-		}
+		flowID := util.Truncate(f.FlowID, colFlow-4)
 
 		row := fmt.Sprintf("%s%%-%ds %%-%ds %%-%ds %%-%ds", cursor, colFlow, colMode, colPriority, colStatus)
 		line := fmt.Sprintf(row, flowID, string(f.Mode), string(f.Priority), statusStyle.Render(string(f.Status)))
 		lines = append(lines, line)
+
+		if i == m.flowStatus.GetSelected() && m.flowStatus.Expanded && !m.sidebarFocus {
+			detail := m.renderFlowDetail(f)
+			lines = append(lines, detail)
+		}
 	}
 
 	content := lipgloss.JoinVertical(lipgloss.Left, lines...)
-	return style.PanelBorder.Width(contentWidth).Padding(0, 1).Render(content)
+	return style.PanelBorder.Width(m.contentWidth()).Padding(0, 1).Render(content)
+}
+
+func (m *MainScreen) renderFlowDetail(f types.FlowRunState) string {
+	lines := []string{
+		style.Dim.Render("    ──────────────────────────────────────"),
+	}
+
+	if f.StartedAt != nil {
+		lines = append(lines, style.Dim.Render("    Started:  "+f.StartedAt.Format("15:04:05")))
+	}
+	if f.FinishedAt != nil {
+		lines = append(lines, style.Dim.Render("    Finished: "+f.FinishedAt.Format("15:04:05")))
+		if f.StartedAt != nil {
+			dur := f.FinishedAt.Sub(*f.StartedAt)
+			lines = append(lines, style.Dim.Render("    Duration: "+dur.Round(time.Second).String()))
+		}
+	}
+	if f.RetryCount > 0 {
+		lines = append(lines, style.StatusRetrying.Render(fmt.Sprintf("    Retries:  %d", f.RetryCount)))
+	}
+	if f.Error != "" {
+		lines = append(lines, style.StatusFailed.Render("    Error:    "+util.Truncate(f.Error, 60)))
+	}
+
+	return lipgloss.JoinVertical(lipgloss.Left, lines...)
+}
+
+func (m *MainScreen) contentWidth() int {
+	w := m.width - 26
+	if w < 40 {
+		w = 40
+	}
+	return w
 }
 
 func (m *MainScreen) renderTracesView() string {
-	contentWidth := m.width - 28
-	if contentWidth < 40 {
-		contentWidth = 40
-	}
+	cw := m.contentWidth()
 	contentHeight := m.height - 7
 	if contentHeight < 5 {
 		contentHeight = 5
 	}
 
-	m.tracePanel.SetSize(contentWidth, contentHeight)
-	return style.PanelBorder.Width(contentWidth).Height(contentHeight).Padding(0, 1).Render(m.tracePanel.View())
+	m.tracePanel.SetSize(cw, contentHeight)
+	return style.PanelBorder.Width(cw).Height(contentHeight).Padding(0, 1).Render(m.tracePanel.Viewport.View())
 }
 
 func (m *MainScreen) renderReportView() string {
-	contentWidth := m.width - 28
-	if contentWidth < 40 {
-		contentWidth = 40
-	}
+	cw := m.contentWidth()
 
 	if m.reportView == "" {
 		return style.Dim.Render("  No report generated. Select a run and press 'r' to refresh.")
 	}
 
-	return style.PanelBorder.Width(contentWidth).Padding(0, 1).Render(m.reportView)
+	return style.PanelBorder.Width(cw).Padding(0, 1).Render(m.reportView)
 }
 
 func (m *MainScreen) renderCampaignSelector() string {
@@ -683,13 +825,6 @@ func (m *MainScreen) renderCampaignSelector() string {
 		padding = 0
 	}
 	return strings.Repeat(" ", padding) + style.ModalBorder.Width(modalWidth).Padding(1, 2).Render(content)
-}
-
-func utilSafeWidth(w, min int) int {
-	if w < min {
-		return min
-	}
-	return w
 }
 
 func statusStyleForRun(status types.RunState) lipgloss.Style {
@@ -741,7 +876,7 @@ func statusCharForFlow(status types.FlowState) string {
 	case types.FlowStateFailed:
 		return "✗"
 	case types.FlowStatePaused:
-		return "❚❚"
+		return "⏸"
 	case types.FlowStatePending:
 		return "○"
 	case types.FlowStateSkippedUpstream, types.FlowStateSkippedUser:

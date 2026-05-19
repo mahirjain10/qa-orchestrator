@@ -4,69 +4,165 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/textinput"
+	"github.com/charmbracelet/bubbles/viewport"
 	"github.com/charmbracelet/lipgloss"
+	tea "github.com/charmbracelet/bubbletea"
 	"qa-orchestrator/apps/tui/internal/style"
 	"qa-orchestrator/apps/tui/internal/util"
 	"qa-orchestrator/packages/shared/types"
 	"qa-orchestrator/packages/storage/artifact"
 )
 
+type TraceFilter struct {
+	Text       string
+	ShowFailed bool
+	FlowID     string
+	EventType  string
+}
+
 type TracePanelModel struct {
-	events    []*types.TraceEvent
-	selected  int
-	maxEvents int
+	events      []*types.TraceEvent
+	Selected    int
+	Viewport    viewport.Model
+	FollowTail  bool
+	Filter      TraceFilter
+	FilterMode  bool
+	FilterInput textinput.Model
 }
 
 func NewTracePanelModel() *TracePanelModel {
+	vp := viewport.New(80, 20)
+
+	ti := textinput.New()
+	ti.Placeholder = "Filter traces..."
+	ti.Prompt = "/"
+	ti.CharLimit = 64
+	ti.Width = 30
+
 	return &TracePanelModel{
-		events:    []*types.TraceEvent{},
-		selected:  0,
-		maxEvents: 50,
+		events:      []*types.TraceEvent{},
+		Selected:    0,
+		Viewport:    vp,
+		FollowTail:  true,
+		FilterInput: ti,
 	}
 }
 
 func (m *TracePanelModel) SetEvents(events []*types.TraceEvent) {
-	if len(events) > m.maxEvents {
-		m.events = events[len(events)-m.maxEvents:]
-	} else {
-		m.events = events
+	m.events = events
+	if m.Selected >= len(m.events) {
+		m.Selected = max(0, len(m.events)-1)
 	}
-	if m.selected >= len(m.events) {
-		m.selected = 0
+	m.UpdateViewportContent()
+	if m.FollowTail {
+		m.Viewport.GotoBottom()
 	}
+}
+
+func (m *TracePanelModel) FilteredEvents() []*types.TraceEvent {
+	if m.Filter.Text == "" && !m.Filter.ShowFailed && m.Filter.FlowID == "" && m.Filter.EventType == "" {
+		return m.events
+	}
+
+	var filtered []*types.TraceEvent
+	for _, e := range m.events {
+		if m.Filter.ShowFailed && e.Status != types.TraceStatusFailed {
+			continue
+		}
+		if m.Filter.FlowID != "" && e.FlowID != m.Filter.FlowID {
+			continue
+		}
+		if m.Filter.EventType != "" && string(e.EventType) != m.Filter.EventType {
+			continue
+		}
+		if m.Filter.Text != "" && !strings.Contains(strings.ToLower(e.Action), strings.ToLower(m.Filter.Text)) {
+			continue
+		}
+		filtered = append(filtered, e)
+	}
+	return filtered
 }
 
 func (m *TracePanelModel) AppendEvent(event *types.TraceEvent) {
 	m.events = append(m.events, event)
-	if len(m.events) > m.maxEvents {
-		m.events = m.events[1:]
+	m.UpdateViewportContent()
+	if m.FollowTail {
+		m.Viewport.GotoBottom()
 	}
 }
 
 func (m *TracePanelModel) Next() {
-	if m.selected < len(m.events)-1 {
-		m.selected++
+	events := m.FilteredEvents()
+	if m.Selected < len(events)-1 {
+		m.Selected++
 	}
 }
 
 func (m *TracePanelModel) Prev() {
-	if m.selected > 0 {
-		m.selected--
+	if m.Selected > 0 {
+		m.Selected--
 	}
 }
 
 func (m *TracePanelModel) GetSelected() int {
-	return m.selected
+	return m.Selected
 }
 
 func (m *TracePanelModel) SetSize(width, height int) {
-	if height > 0 && height < m.maxEvents {
-		m.maxEvents = height
+	m.Viewport.Width = width
+	m.Viewport.Height = height
+	m.UpdateViewportContent()
+}
+
+func (m *TracePanelModel) UpdateViewportContent() {
+	var lines []string
+
+	events := m.FilteredEvents()
+
+	lines = append(lines, style.Section.Render("  TIME     S  TYPE              ACTION"))
+	lines = append(lines, style.Dim.Render("  "+strings.Repeat("─", 62)))
+
+	for i := len(events) - 1; i >= 0; i-- {
+		e := events[i]
+		timeStr := e.Timestamp.Format("15:04:05")
+		statusChar := style.TraceStatusChar(string(e.Status))
+		statusSt := style.TraceStatusStyle(string(e.Status))
+		typeStr := util.Truncate(string(e.EventType), 18)
+		actionStr := util.Truncate(e.Action, 40)
+
+		cursor := "  "
+		if i == m.Selected {
+			cursor = style.SelectedBold.Render(" ▶ ")
+		}
+
+		row := fmt.Sprintf("%s%s  %s  %-18s  %s",
+			cursor,
+			style.Dim.Render(timeStr),
+			statusSt.Render(statusChar),
+			typeStr,
+			actionStr,
+		)
+		lines = append(lines, row)
 	}
+
+	m.Viewport.SetContent(lipgloss.JoinVertical(lipgloss.Left, lines...))
+}
+
+func (m *TracePanelModel) Update(msg tea.Msg) tea.Cmd {
+	if m.FilterMode {
+		var cmd tea.Cmd
+		m.FilterInput, cmd = m.FilterInput.Update(msg)
+		return cmd
+	}
+	var cmd tea.Cmd
+	m.Viewport, cmd = m.Viewport.Update(msg)
+	return cmd
 }
 
 func (m *TracePanelModel) View() string {
-	if len(m.events) == 0 {
+	events := m.FilteredEvents()
+	if len(events) == 0 {
 		return style.Header.Render("Trace Events") + "\n\n  No trace events\n"
 	}
 
@@ -76,8 +172,8 @@ func (m *TracePanelModel) View() string {
 	lines = append(lines, style.Section.Render("  Time      Agent      Action          Status    Step"))
 	lines = append(lines, style.Dim.Render("  " + strings.Repeat("─", 70)))
 
-	for i := len(m.events) - 1; i >= 0; i-- {
-		e := m.events[i]
+	for i := len(events) - 1; i >= 0; i-- {
+		e := events[i]
 		timeStr := e.Timestamp.Format("15:04:05")
 
 		statusStr := string(e.Status)
@@ -109,7 +205,7 @@ func (m *TracePanelModel) View() string {
 			stepID,
 		)
 
-		if i == m.selected {
+		if i == m.Selected {
 			lines = append(lines, style.Selected.Render(row))
 		} else {
 			lines = append(lines, style.Normal.Render(row))
@@ -122,15 +218,16 @@ func (m *TracePanelModel) View() string {
 func (m *TracePanelModel) ViewCompact() string {
 	title := style.ViewTitle.Render(" Live Traces ")
 
-	if len(m.events) == 0 {
+	events := m.FilteredEvents()
+	if len(events) == 0 {
 		return title + "\n  No trace events\n"
 	}
 
 	var lines []string
 
-	recentEvents := m.events
-	if len(m.events) > 8 {
-		recentEvents = m.events[len(m.events)-8:]
+	recentEvents := events
+	if len(events) > 8 {
+		recentEvents = events[len(events)-8:]
 	}
 
 	for _, e := range recentEvents {
