@@ -18,23 +18,33 @@
 - **Phase 6:** TUI & Visibility — COMPLETE (hardened)
 - **Phase 7:** Validation & Sample Campaigns — COMPLETE
 
-## V3 Phases (TUI & OpenRouter Hardening)
-- **Phase 1:** OpenRouter Integration Hardening — COMPLETE (Hardened)
-- **Phase 2:** TUI Slot-based Layout Engine — PENDING
-- **Phase 3:** Interactive Pane Management — PENDING
-- **Phase 4:** Validation & Testing — PENDING
+## TUI Versions
+
+| Version | Runs | Work | Status |
+|---------|------|------|--------|
+| V1 TUI | MVP Phase 2 | Initial TUI Shell | ✅ Complete |
+| V2 TUI | Runs 026-030 | Bug fixes (CLI, visual, navigation) | ✅ Complete |
+| V3 TUI | Runs 031+ | New additions (slot layout, pane management) | 🔄 In Progress |
+
+## V3 Phases (Current)
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| 1 | OpenRouter Integration Hardening + TUI rendering fixes | ✅ COMPLETE |
+| 2 | TUI Slot-based Layout Engine (quadrant-based rendering) | ⏳ PENDING |
+| 3 | Interactive Pane Management (swap/maximize panes) | ⏳ PENDING |
+| 4 | Validation & Testing | ⏳ PENDING |
+
+**V3 Phase 1 Completed:**
+- Run 031: LLM fail-fast validation (panic if missing API key/model)
+- Run 032: TUI rendering fixes (Flow Status ANSI corruption, auto-refresh freeze)
 
 ### Test Coverage
-- `go test ./...` verified successfully across all packages.
+- `go test ./...` — 142 tests passing
 
 ## Last Run
 - Run 032: 2026-05-19 (Agent: Gemini CLI)
-  - Status: Fixed two critical TUI bugs. Fixed the Flow Status rendering bug (`%!d(...)`) caused by nested ANSI/Sprintf evaluation. Fixed the TUI freezing issue by correctly re-queueing `tea.Tick` to re-enable live auto-refreshing. 
-
-## TUI Fix Phases (In Progress)
-- **Phase 1:** CLI Execution & Engine Wiring — COMPLETE (Hardened)
-- **Phase 2:** Visual Overhaul & Layout Separation — COMPLETE (Hardened)
-- **Phase 3:** Interactive Navigation & Steering — COMPLETE
+  - Status: Fixed two critical TUI bugs. Flow Status rendering and auto-refresh freezing.
 
 ## Makefile (Updated)
 - Added `run-sample` and `run-guided` targets for quick testing
