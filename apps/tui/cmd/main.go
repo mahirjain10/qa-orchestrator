@@ -40,56 +40,9 @@ func main() {
 	}
 
 	if campaignPath != "" {
-		parser := campaign.NewCampaignParser()
-		camp, err := parser.ParseFile(campaignPath)
-		if err != nil {
-			panic(fmt.Sprintf("parsing campaign file: %v", err))
+		if err := startCampaign(campaignPath, sessionStore, traceStore, artifactStore); err != nil {
+			panic(err)
 		}
-
-		sess, err := sessionStore.Create(camp)
-		if err != nil {
-			panic(fmt.Sprintf("creating session: %v", err))
-		}
-
-		runID := sess.RunID
-
-		llmClient, llmErr := createLLMClient()
-
-		hasAutonomous := false
-		for _, f := range camp.Flows {
-			if f.Mode == sharedtypes.FlowModeAutonomous {
-				hasAutonomous = true
-				break
-			}
-		}
-
-		if hasAutonomous && llmErr != nil {
-			panic(fmt.Sprintf("Campaign contains autonomous flows but LLM configuration failed: %v", llmErr))
-		}
-
-		var agentEngine *engine.AgentEngine
-
-		if llmClient != nil {
-			cliWrapper := llm.NewSimpleClientWithClient(llmClient)
-			agentEngine = engine.NewAgentEngineWithLLM(
-				executor.NewMockToolRegistry(),
-				sessionStore,
-				cliWrapper,
-				nil,
-			)
-		} else {
-			agentEngine = engine.NewAgentEngineWithStores(
-				executor.NewMockToolRegistry(),
-				sessionStore,
-				traceStore,
-				artifactStore,
-			)
-		}
-
-		agentEngine.SetTraceStore(traceStore)
-		agentEngine.SetArtifactStore(artifactStore)
-
-		go runCampaign(agentEngine, camp, runID, sessionStore)
 	}
 
 	mainScreen := screens.NewMainScreenWithStores(sessionStore, traceStore, artifactStore)
@@ -101,6 +54,42 @@ func main() {
 		os.Stderr.WriteString("Error running TUI: " + err.Error() + "\n")
 		os.Exit(1)
 	}
+}
+
+func startCampaign(campaignPath string, sessionStore *session.SessionStore, traceStore *trace.TraceStore, artifactStore *artifact.ArtifactStore) error {
+	parser := campaign.NewCampaignParser()
+	camp, err := parser.ParseFile(campaignPath)
+	if err != nil {
+		return fmt.Errorf("parsing campaign file: %w", err)
+	}
+
+	llmClient, err := createLLMClientForCampaign(camp)
+	if err != nil {
+		return err
+	}
+
+	sess, err := sessionStore.Create(camp)
+	if err != nil {
+		return fmt.Errorf("creating session: %w", err)
+	}
+
+	agentEngine := createAgentEngine(sessionStore, traceStore, artifactStore, llmClient)
+	go runCampaign(agentEngine, camp, sess.RunID, sessionStore)
+
+	return nil
+}
+
+func createLLMClientForCampaign(camp *sharedtypes.Campaign) (*llm.HTTPClient, error) {
+	if !hasAutonomousFlow(camp) {
+		return nil, nil
+	}
+
+	llmClient, err := createLLMClient()
+	if err != nil {
+		return nil, fmt.Errorf("Campaign contains autonomous flows but LLM configuration failed: %w", err)
+	}
+
+	return llmClient, nil
 }
 
 func createLLMClient() (*llm.HTTPClient, error) {
@@ -115,6 +104,41 @@ func createLLMClient() (*llm.HTTPClient, error) {
 	}
 
 	return client, nil
+}
+
+func createAgentEngine(sessionStore *session.SessionStore, traceStore *trace.TraceStore, artifactStore *artifact.ArtifactStore, llmClient *llm.HTTPClient) *engine.AgentEngine {
+	var agentEngine *engine.AgentEngine
+
+	if llmClient != nil {
+		cliWrapper := llm.NewSimpleClientWithClient(llmClient)
+		agentEngine = engine.NewAgentEngineWithLLM(
+			executor.NewMockToolRegistry(),
+			sessionStore,
+			cliWrapper,
+			nil,
+		)
+	} else {
+		agentEngine = engine.NewAgentEngineWithStores(
+			executor.NewMockToolRegistry(),
+			sessionStore,
+			traceStore,
+			artifactStore,
+		)
+	}
+
+	agentEngine.SetTraceStore(traceStore)
+	agentEngine.SetArtifactStore(artifactStore)
+
+	return agentEngine
+}
+
+func hasAutonomousFlow(camp *sharedtypes.Campaign) bool {
+	for _, flow := range camp.Flows {
+		if flow.Mode == sharedtypes.FlowModeAutonomous {
+			return true
+		}
+	}
+	return false
 }
 
 func runCampaign(eng *engine.AgentEngine, camp *sharedtypes.Campaign, runID string, sessionStore *session.SessionStore) {

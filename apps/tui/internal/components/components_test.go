@@ -1,6 +1,7 @@
 package components
 
 import (
+	"strings"
 	"testing"
 
 	"qa-orchestrator/packages/shared/types"
@@ -188,5 +189,25 @@ func TestFlowStatusModelBounds(t *testing.T) {
 	model.Prev() // Should stay at 0
 	if model.GetSelected() != 0 {
 		t.Error("Should not go below 0")
+	}
+}
+
+func TestFlowStatusModelViewWithWidthDoesNotCorruptANSIRendering(t *testing.T) {
+	model := NewFlowStatusModel()
+	model.SetFlows([]types.FlowRunState{
+		{
+			FlowID:   "auth-flow",
+			Mode:     types.FlowModeAutonomous,
+			Priority: types.FlowPriorityHigh,
+			Status:   types.FlowStateRunning,
+		},
+	})
+
+	view := model.ViewWithWidth(80)
+	if strings.Contains(view, "%!") {
+		t.Fatalf("rendered view contains fmt corruption: %q", view)
+	}
+	if !strings.Contains(view, "RUNNING") {
+		t.Fatalf("rendered view missing status: %q", view)
 	}
 }

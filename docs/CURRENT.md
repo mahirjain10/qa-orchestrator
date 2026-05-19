@@ -30,21 +30,26 @@
 
 | Phase | Description | Status |
 |-------|-------------|--------|
-| 1 | OpenRouter Integration Hardening + TUI rendering fixes | ✅ COMPLETE |
-| 2 | TUI Slot-based Layout Engine (quadrant-based rendering) | ⏳ PENDING |
-| 3 | Interactive Pane Management (swap/maximize panes) | ⏳ PENDING |
-| 4 | Validation & Testing | ⏳ PENDING |
+| 1 | OpenRouter Integration Hardening | ✅ COMPLETE |
+| 2 | TUI Rendering Fixes | ✅ COMPLETE |
+| 3 | TUI Slot-based Layout Engine (quadrant-based rendering) | ⏳ PENDING |
+| 4 | Interactive Pane Management (swap/maximize panes) | ⏳ PENDING |
+| 5 | Validation & Testing | ⏳ PENDING |
 
 **V3 Phase 1 Completed:**
-- Run 031: LLM fail-fast validation (panic if missing API key/model)
+- Run 031: Initial LLM fail-fast validation for autonomous campaigns.
+- Run 033: Hardened LLM fail-fast validation so both `LLM_API_KEY` and `LLM_MODEL` are required before session creation.
+
+**V3 Phase 2 Completed:**
 - Run 032: TUI rendering fixes (Flow Status ANSI corruption, auto-refresh freeze)
+- Run 033: Added Flow Status ANSI rendering regression coverage.
 
 ### Test Coverage
-- `go test ./...` — 142 tests passing
+- `go test ./...` — passing
 
 ## Last Run
-- Run 032: 2026-05-19 (Agent: Gemini CLI)
-  - Status: Fixed two critical TUI bugs. Flow Status rendering and auto-refresh freezing.
+- Run 033: 2026-05-19 (Agent: Devin)
+  - Status: Fixed Phase 1 hardening gaps, added regression tests, and aligned V3 docs.
 
 ## Makefile (Updated)
 - Added `run-sample` and `run-guided` targets for quick testing
