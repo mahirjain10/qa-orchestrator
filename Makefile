@@ -28,6 +28,7 @@ deps:
 # Verify environment configuration
 check-env:
 	@$(if $(LLM_API_KEY), echo "SUCCESS: LLM_API_KEY is configured.", echo "WARNING: LLM_API_KEY is not set. Autonomous mode will fail.")
+	@$(if $(LLM_MODEL), echo "SUCCESS: LLM_MODEL is configured.", echo "WARNING: LLM_MODEL is not set. Autonomous mode will fail.")
 
 # Run all tests
 test:

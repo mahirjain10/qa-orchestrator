@@ -20,7 +20,16 @@ These phases address OpenRouter integration robustness and TUI pane management f
 3. **`packages/llm/config.go` Enhancements:**
    - Add optional `LLM_PROVIDER_PRIORITY` or `LLM_PROVIDER_ALLOW` environment variables if needed for OpenRouter routing.
 
-## Phase 2: TUI Slot-based Layout Engine
+## Phase 2: TUI Rendering Fixes
+**Goal:** Stabilize live TUI rendering while campaigns execute.
+
+1. **Flow Status ANSI Rendering:**
+   - Render fixed-width status text before applying Lipgloss styling so ANSI escape sequences never enter format strings.
+
+2. **Auto-refresh Polling:**
+   - Requeue `tea.Tick` after each `TickMsg` so live polling continues after the first refresh.
+
+## Phase 3: TUI Slot-based Layout Engine
 **Goal:** Move from a hardcoded 4-pane view to a flexible "Slot" system that allows any component in any quadrant.
 
 1. **`apps/tui/internal/screens/main.go` Refactoring:**
@@ -37,7 +46,7 @@ These phases address OpenRouter integration robustness and TUI pane management f
    - Add `maximized bool` and `maximizedSlot int` to `MainScreen`.
    - When `maximized` is true, `View()` renders only the component in `maximizedSlot` across the full screen or full right column.
 
-## Phase 3: Interactive Pane Management
+## Phase 4: Interactive Pane Management
 **Goal:** Allow users to swap and manage panes dynamically.
 
 1. **Keyboard Handlers:**
@@ -53,7 +62,7 @@ These phases address OpenRouter integration robustness and TUI pane management f
 3. **Visual Feedback:**
    - Ensure the focused quadrant has a distinct border color (already partially implemented, but needs to sync with `activeSlot`).
    - Add a small label in the border of each quadrant indicating which component it is (e.g., " [Traces] ").
-## Phase 4: Validation & Testing
+## Phase 5: Validation & Testing
 1. **OpenRouter Test:**
    - Create a test campaign that uses a specific non-OpenAI model via OpenRouter.
    - Verify usage tracking and finish reason handling.

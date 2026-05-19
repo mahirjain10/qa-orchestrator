@@ -44,7 +44,9 @@ func TestLoadConfig_Success(t *testing.T) {
 
 func TestLoadConfig_Defaults(t *testing.T) {
 	os.Setenv("LLM_API_KEY", "test-key")
+	os.Setenv("LLM_MODEL", "test/model")
 	defer os.Unsetenv("LLM_API_KEY")
+	defer os.Unsetenv("LLM_MODEL")
 
 	cfg, err := LoadConfig()
 	if err != nil {
@@ -54,8 +56,8 @@ func TestLoadConfig_Defaults(t *testing.T) {
 	if cfg.BaseURL != defaultBaseURL {
 		t.Errorf("expected default base URL %q, got %q", defaultBaseURL, cfg.BaseURL)
 	}
-	if cfg.Model != defaultModel {
-		t.Errorf("expected default model %q, got %q", defaultModel, cfg.Model)
+	if cfg.Model != "test/model" {
+		t.Errorf("expected configured model %q, got %q", "test/model", cfg.Model)
 	}
 	if cfg.Timeout != defaultTimeout*time.Second {
 		t.Errorf("expected default timeout %ds, got %v", defaultTimeout, cfg.Timeout)
@@ -67,6 +69,8 @@ func TestLoadConfig_Defaults(t *testing.T) {
 
 func TestLoadConfig_MissingAPIKey(t *testing.T) {
 	os.Unsetenv("LLM_API_KEY")
+	os.Setenv("LLM_MODEL", "test/model")
+	defer os.Unsetenv("LLM_MODEL")
 
 	_, err := LoadConfig()
 	if err == nil {
@@ -77,10 +81,26 @@ func TestLoadConfig_MissingAPIKey(t *testing.T) {
 	}
 }
 
+func TestLoadConfig_MissingModel(t *testing.T) {
+	os.Setenv("LLM_API_KEY", "test-key")
+	os.Unsetenv("LLM_MODEL")
+	defer os.Unsetenv("LLM_API_KEY")
+
+	_, err := LoadConfig()
+	if err == nil {
+		t.Error("expected error for missing model")
+	}
+	if err.Error() != "LLM_MODEL environment variable is required" {
+		t.Errorf("unexpected error message: %v", err)
+	}
+}
+
 func TestLoadConfig_InvalidTimeout(t *testing.T) {
 	os.Setenv("LLM_API_KEY", "test-key")
+	os.Setenv("LLM_MODEL", "test/model")
 	os.Setenv("LLM_TIMEOUT", "invalid")
 	defer os.Unsetenv("LLM_API_KEY")
+	defer os.Unsetenv("LLM_MODEL")
 	defer os.Unsetenv("LLM_TIMEOUT")
 
 	_, err := LoadConfig()
@@ -91,9 +111,11 @@ func TestLoadConfig_InvalidTimeout(t *testing.T) {
 
 func TestLoadConfig_ProviderSettings(t *testing.T) {
 	os.Setenv("LLM_API_KEY", "test-key")
+	os.Setenv("LLM_MODEL", "test/model")
 	os.Setenv("LLM_PROVIDER_PRIORITY", "OpenAI, Anthropic")
 	os.Setenv("LLM_PROVIDER_ALLOW", "false")
 	defer os.Unsetenv("LLM_API_KEY")
+	defer os.Unsetenv("LLM_MODEL")
 	defer os.Unsetenv("LLM_PROVIDER_PRIORITY")
 	defer os.Unsetenv("LLM_PROVIDER_ALLOW")
 

@@ -48,7 +48,7 @@ func LoadConfig() (*Config, error) {
 
 	model := os.Getenv(envModel)
 	if model == "" {
-		model = defaultModel
+		return nil, fmt.Errorf("%s environment variable is required", envModel)
 	}
 
 	timeout := defaultTimeout
