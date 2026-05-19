@@ -7,6 +7,10 @@ import (
 )
 
 var (
+	panelTitleStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("205")).
+			Bold(true)
+
 	headerStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("205")).
 			Bold(true)
@@ -17,6 +21,11 @@ var (
 	selectedStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("229")).
 			Background(lipgloss.Color("237"))
+
+	selectedBoldStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("86")).
+				Bold(true).
+				Background(lipgloss.Color("235"))
 
 	statusPending   = lipgloss.NewStyle().Foreground(lipgloss.Color("245"))
 	statusRunning   = lipgloss.NewStyle().Foreground(lipgloss.Color("75"))
@@ -71,6 +80,31 @@ func (m *CampaignListModel) View() string {
 	}
 
 	return lipgloss.JoinVertical(lipgloss.Left, lines...)
+}
+
+func (m *CampaignListModel) ViewWithWidth(width int) string {
+	title := panelTitleStyle.Width(width - 2).Render(" Campaigns ")
+
+	if len(m.campaigns) == 0 {
+		return title + "\n\n  No campaigns loaded\n"
+	}
+
+	var lines []string
+
+	for i, name := range m.campaigns {
+		truncated := name
+		if len(name) > width-6 {
+			truncated = name[:width-9] + "..."
+		}
+		if i == m.selected {
+			lines = append(lines, selectedBoldStyle.Render(fmt.Sprintf(" ▶ %s", truncated)))
+		} else {
+			lines = append(lines, itemStyle.Render(fmt.Sprintf("   %s", truncated)))
+		}
+	}
+
+	content := lipgloss.JoinVertical(lipgloss.Left, lines...)
+	return title + "\n" + content
 }
 
 func (m *CampaignListModel) Next() {

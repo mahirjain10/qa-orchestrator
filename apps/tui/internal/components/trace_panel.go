@@ -141,6 +141,51 @@ func (m *TracePanelModel) View() string {
 	return lipgloss.JoinVertical(lipgloss.Left, lines...)
 }
 
+func (m *TracePanelModel) ViewCompact() string {
+	title := panelTitleStyle.Render(" Live Traces ")
+
+	if len(m.events) == 0 {
+		return title + "\n  No trace events\n"
+	}
+
+	var lines []string
+
+	recentEvents := m.events
+	if len(m.events) > 8 {
+		recentEvents = m.events[len(m.events)-8:]
+	}
+
+	for _, e := range recentEvents {
+		timeStr := e.Timestamp.Format("15:04")
+
+		statusChar := "○"
+		statusStyle := traceEventPendingStyle
+		switch e.Status {
+		case types.TraceStatusSuccess:
+			statusChar = "✓"
+			statusStyle = traceEventSuccessStyle
+		case types.TraceStatusFailed:
+			statusChar = "✗"
+			statusStyle = traceEventFailedStyle
+		}
+
+		actionStr := e.Action
+		if len(actionStr) > 20 {
+			actionStr = actionStr[:17] + "..."
+		}
+
+		row := fmt.Sprintf(" %s %s %s",
+			traceEventTimeStyle.Render(timeStr),
+			statusStyle.Render(statusChar),
+			actionStr,
+		)
+		lines = append(lines, tracePanelCellStyle.Render(row))
+	}
+
+	content := lipgloss.JoinVertical(lipgloss.Left, lines...)
+	return title + "\n" + content
+}
+
 type ArtifactPanelModel struct {
 	artifacts []*artifact.Artifact
 	selected  int

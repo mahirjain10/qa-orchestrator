@@ -18,15 +18,31 @@ import (
 )
 
 var (
-	mainStyle = lipgloss.NewStyle().
-			Width(120).
-			Height(40)
+	baseStyle = lipgloss.NewStyle()
+
+	headerStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("86")).
+			Bold(true)
 
 	helpStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("241"))
 
 	msgStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("86"))
+
+	borderStyle = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("240"))
+
+	highlightBorderStyle = lipgloss.NewStyle().
+				Border(lipgloss.RoundedBorder()).
+				BorderForeground(lipgloss.Color("86"))
+
+	passColor    = lipgloss.Color("76")
+	failColor    = lipgloss.Color("204")
+	pausedColor  = lipgloss.Color("228")
+	runningColor = lipgloss.Color("75")
+	pendingColor = lipgloss.Color("245")
 )
 
 type TickMsg time.Time
@@ -44,6 +60,9 @@ type MainScreen struct {
 	traceStore      *trace.TraceStore
 	artifactStore   *artifact.ArtifactStore
 	reportGenerator *reporting.ReportGenerator
+
+	width  int
+	height int
 
 	reportView    string
 	command       string
@@ -95,6 +114,11 @@ func (m *MainScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Tick(time.Second, func(t time.Time) tea.Msg {
 			return TickMsg(t)
 		})
+
+	case tea.WindowSizeMsg:
+		m.width = msg.Width
+		m.height = msg.Height
+		return m, nil
 
 	case tea.KeyMsg:
 		if m.steeringMode {
@@ -230,73 +254,110 @@ func (m *MainScreen) View() string {
 	}
 	m.campaignList.SetCampaigns(campaignNames)
 
-	var content string
-
-	currentView := m.state.GetView()
-	switch currentView {
-	case state.ViewFlowStatus:
-		content = m.flowStatus.View()
-	case state.ViewTraces:
-		content = m.tracePanel.View()
-	case state.ViewArtifacts:
-		content = m.artifactPanel.View()
-	case state.ViewReport:
-		content = m.reportView
-	default:
-		leftPanel := lipgloss.JoinVertical(
-			lipgloss.Left,
-			m.campaignList.View(),
-			"",
-			lipgloss.NewStyle().Height(1).Render(""),
-			m.flowStatus.View(),
-		)
-
-		rightPanel := m.runPanel.View()
-
-		content = lipgloss.JoinHorizontal(
-			lipgloss.Top,
-			leftPanel,
-			lipgloss.NewStyle().Width(3).Render("  "),
-			rightPanel,
-		)
+	// Calculate dimensions
+	leftWidth := 40
+	rightWidth := 80
+	mainHeight := m.height - 7 // account for header, footer, steering input, padding
+	if mainHeight < 10 {
+		mainHeight = 10
 	}
 
-	footer := helpStyle.Render(" ↑↓ Navigate  Enter Select  Space Pause/Resume  x Cancel  r Refresh  f Flows  t Traces  a Artifacts  v Report  s Steer  q Quit")
+	if m.width > 0 {
+		leftWidth = m.width / 3
+		if leftWidth < 35 {
+			leftWidth = 35
+		}
+		rightWidth = m.width - leftWidth - 2
+		if rightWidth < 50 {
+			rightWidth = 50
+		}
+	}
+
+	topHeight := mainHeight / 2
+	bottomHeight := mainHeight - topHeight
+
+	panelStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("240")).
+		Padding(0, 1)
+
+	// Left Side (Campaigns & Flows)
+	campaignListView := m.campaignList.ViewWithWidth(leftWidth - 4)
+	flowStatusView := m.flowStatus.ViewWithWidth(leftWidth - 4)
+
+	leftTopPanel := panelStyle.Width(leftWidth).Height(topHeight).Render(campaignListView)
+	leftBottomPanel := panelStyle.Width(leftWidth).Height(bottomHeight).Render(flowStatusView)
+
+	leftCol := lipgloss.JoinVertical(lipgloss.Left, leftTopPanel, leftBottomPanel)
+
+	// Right Side (Run & Traces or Other Views)
+	var rightCol string
+	currentView := m.state.GetView()
+
+	switch currentView {
+	case state.ViewTraces:
+		rightCol = panelStyle.Width(rightWidth).Height(mainHeight).Render(m.tracePanel.ViewCompact())
+	case state.ViewArtifacts:
+		rightCol = panelStyle.Width(rightWidth).Height(mainHeight).Render(m.artifactPanel.View())
+	case state.ViewReport:
+		rightCol = panelStyle.Width(rightWidth).Height(mainHeight).Render(m.reportView)
+	default:
+		runPanelView := m.runPanel.View()
+		tracesView := m.tracePanel.ViewCompact()
+
+		rightTopPanel := panelStyle.Width(rightWidth).Height(topHeight).Render(runPanelView)
+		rightBottomPanel := panelStyle.Width(rightWidth).Height(bottomHeight).Render(tracesView)
+
+		rightCol = lipgloss.JoinVertical(lipgloss.Left, rightTopPanel, rightBottomPanel)
+	}
+
+	content := lipgloss.JoinHorizontal(lipgloss.Top, leftCol, rightCol)
+
+	header := headerStyle.Render("Zenact TUI - Campaign Runner") +
+		lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render(" │ ") +
+		lipgloss.NewStyle().Foreground(lipgloss.Color("245")).Render("Press ENTER to select, SPACE to pause/resume")
+
+	footer := helpStyle.Render("↑↓ Navigate │ Enter Select │ Space Pause/Resume │ x Cancel │ r Refresh │ t Traces │ a Artifacts │ v Report │ s Steer │ q Quit")
 
 	viewContent := lipgloss.JoinVertical(
 		lipgloss.Left,
-		lipgloss.NewStyle().Foreground(lipgloss.Color("86")).Bold(true).Render("Zenact TUI - Campaign Runner"),
-		lipgloss.NewStyle().Render("─────────────────────────────────────────────────────"),
-		lipgloss.NewStyle().Height(1).Render(""),
+		lipgloss.NewStyle().Bold(true).Render(header),
+		lipgloss.NewStyle().Render(strings.Repeat("─", m.width)),
 		content,
-		lipgloss.NewStyle().Height(1).Render(""),
 	)
 
 	if m.steeringMode {
 		steeringBanner := lipgloss.NewStyle().
 			Foreground(lipgloss.Color("208")).
 			Bold(true).
-			Render("STEERING MODE: Type command and press ENTER. ESC to cancel.")
+			Render(" STEERING MODE: Type command and press ENTER. ESC to cancel. ")
 		steeringInput := lipgloss.NewStyle().
 			Foreground(lipgloss.Color("86")).
-			Render(fmt.Sprintf("> %s_", m.steeringInput))
+			Render(fmt.Sprintf("│ > %s_", m.steeringInput))
+		steeringBox := lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("208")).
+			Width(m.width - 2).
+			Render(steeringBanner + "\n" + steeringInput)
 		viewContent = lipgloss.JoinVertical(
 			lipgloss.Left,
 			viewContent,
-			lipgloss.NewStyle().Height(1).Render(""),
-			steeringBanner,
-			steeringInput,
+			steeringBox,
 		)
+	} else {
+		msgBox := lipgloss.NewStyle().
+			Padding(1, 0, 0, 1).
+			Render(msgStyle.Render(m.msg))
+		viewContent = lipgloss.JoinVertical(lipgloss.Left, viewContent, msgBox)
 	}
 
 	viewContent = lipgloss.JoinVertical(
 		lipgloss.Left,
 		viewContent,
-		msgStyle.Render("  "+m.msg),
-		footer,
+		lipgloss.NewStyle().Padding(1, 0, 0, 0).Render(footer),
 	)
 
-	return mainStyle.Render(viewContent)
+	return viewContent
 }
 
 func (m *MainScreen) refreshAll() {

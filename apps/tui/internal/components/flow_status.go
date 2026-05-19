@@ -129,3 +129,56 @@ func (m *FlowStatusModel) View() string {
 
 	return lipgloss.JoinVertical(lipgloss.Left, lines...)
 }
+
+func (m *FlowStatusModel) ViewWithWidth(width int) string {
+	title := panelTitleStyle.Width(width - 2).Render(" Flow Status ")
+
+	if len(m.flows) == 0 {
+		return title + "\n\n  No flows\n"
+	}
+
+	colFlow := width / 3
+	colMode := 8
+	colPriority := 8
+	colStatus := 10
+
+	lines := []string{}
+	headerFmt := fmt.Sprintf(" %%-%ds %%-%ds %%-%ds %%-%ds", colFlow, colMode, colPriority, colStatus)
+	lines = append(lines, fmt.Sprintf(headerFmt, "Flow", "Mode", "Priority", "Status"))
+	lines = append(lines, flowTableHeaderBorder.Render(strings.Repeat("─", width-2)))
+
+	for i, f := range m.flows {
+		statusStr := string(f.Status)
+		statusColor := statusPending
+
+		switch f.Status {
+		case types.FlowStateRunning:
+			statusColor = statusRunning
+		case types.FlowStatePassed:
+			statusColor = statusPassed
+		case types.FlowStateFailed:
+			statusColor = statusFailed
+		case types.FlowStatePaused:
+			statusColor = statusPaused
+		case types.FlowStateRetrying:
+			statusColor = statusPaused
+		case types.FlowStateSkippedUpstream, types.FlowStateBlockedConfigError:
+			statusColor = statusCancelled
+		}
+
+		flowID := f.FlowID
+		if len(flowID) > colFlow-2 {
+			flowID = flowID[:colFlow-5] + "..."
+		}
+
+		row := fmt.Sprintf(fmt.Sprintf(" %%-%ds %%-%ds %%-%ds ", colFlow, colMode, colPriority)+statusColor.Render("%%-%ds"), flowID, string(f.Mode), string(f.Priority), statusStr)
+		if i == m.selected {
+			lines = append(lines, selectedStyle.Render(row))
+		} else {
+			lines = append(lines, flowTableCellStyle.Render(row))
+		}
+	}
+
+	content := lipgloss.JoinVertical(lipgloss.Left, lines...)
+	return title + "\n" + content
+}

@@ -22,11 +22,11 @@
 - `go test ./...` verified successfully across all packages.
 
 ## Last Run
-- Run 027: 2026-05-19
-- Agent: Gemini CLI (Code Reviewer)
-- Status: Performed deep code review on Phase 1 implementation. Fixed terminal corruption on exit, wired Trace/Artifact stores properly to the TUI to prevent silent data loss, and cleaned up goroutine logic. Tests and compile passed.
+- Run 028: 2026-05-19
+- Agent: Gemini CLI
+- Status: Implemented TUI Phase 2: Visual Overhaul & Layout Separation. Redesigned MainScreen layout into a responsive 4-pane grid with lipgloss.RoundedBorder, fixing the navigation flow. (Also performed code review/fixes for Phase 1 in Run 027).
 
 ## TUI Fix Phases (In Progress)
 - **Phase 1:** CLI Execution & Engine Wiring — COMPLETE (Hardened)
-- **Phase 2:** Visual Overhaul & Layout Separation — PENDING
+- **Phase 2:** Visual Overhaul & Layout Separation — COMPLETE
 - **Phase 3:** Interactive Navigation & Steering — PENDING
