@@ -1,0 +1,17 @@
+name: Autonomous E2E Test Campaign
+description: End-to-end autonomous flow test with recovery scenarios
+version: "1.0"
+config:
+  timeout: 300s
+  retry_limit: 2
+  parallel_limit: 1
+flows:
+  - id: auth-flow
+    name: Authentication Test
+    description: Test login with various credentials
+    goal: Navigate to https://practicetestautomation.com/practice-test-login/, attempt
+     login with username 'student' and password 'Password123', and verify you are logged
+     in."
+    mode: autonomous
+    priority: high
+    depends_on: []

@@ -88,9 +88,9 @@ func (e *Executor) ExecuteStep(planStep *types.PlanStep) *types.StepResult {
 	start := time.Now()
 
 	result := &types.StepResult{
-		StepID: planStep.StepID,
-		Tool:   planStep.Tool,
-		Params: planStep.Params,
+		StepID:  planStep.StepID,
+		Tool:    planStep.Tool,
+		Params:  planStep.Params,
 		Success: false,
 	}
 
@@ -114,10 +114,10 @@ func (e *Executor) ExecutePlan(plan *types.Plan) []*types.StepResult {
 	for i, step := range plan.Steps {
 		if step.Skip {
 			results = append(results, &types.StepResult{
-				StepID: step.StepID,
-				Tool:   step.Tool,
-				Params: step.Params,
-				Output: "skipped",
+				StepID:  step.StepID,
+				Tool:    step.Tool,
+				Params:  step.Params,
+				Output:  "skipped",
 				Success: true,
 			})
 			continue

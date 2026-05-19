@@ -1,11 +1,11 @@
 package llm
 
 type GenerateRequest struct {
-	Model       string        `json:"model"`
-	Messages    []Message     `json:"messages"`
-	Temperature float64       `json:"temperature,omitempty"`
-	MaxTokens   int           `json:"max_tokens,omitempty"`
-	Timeout     int           `json:"-"`
+	Model       string    `json:"model"`
+	Messages    []Message `json:"messages"`
+	Temperature float64   `json:"temperature,omitempty"`
+	MaxTokens   int       `json:"max_tokens,omitempty"`
+	Timeout     int       `json:"-"`
 }
 
 type Message struct {
@@ -14,10 +14,10 @@ type Message struct {
 }
 
 type GenerateResponse struct {
-	Content     string   `json:"content"`
-	Model       string   `json:"model"`
-	FinishReason string  `json:"finish_reason,omitempty"`
-	Usage       Usage    `json:"usage,omitempty"`
+	Content      string `json:"content"`
+	Model        string `json:"model"`
+	FinishReason string `json:"finish_reason,omitempty"`
+	Usage        Usage  `json:"usage,omitempty"`
 }
 
 type Usage struct {

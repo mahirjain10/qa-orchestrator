@@ -22,16 +22,16 @@ const (
 )
 
 type Artifact struct {
-	ArtifactID  string        `json:"artifact_id"`
-	RunID       string        `json:"run_id"`
-	FlowID      string        `json:"flow_id"`
-	Type        ArtifactType  `json:"type"`
-	Filename    string        `json:"filename"`
-	Path        string        `json:"path"`
-	Size        int64         `json:"size"`
-	MimeType    string        `json:"mime_type"`
-	CreatedAt   time.Time     `json:"created_at"`
-	Metadata    map[string]any `json:"metadata,omitempty"`
+	ArtifactID string         `json:"artifact_id"`
+	RunID      string         `json:"run_id"`
+	FlowID     string         `json:"flow_id"`
+	Type       ArtifactType   `json:"type"`
+	Filename   string         `json:"filename"`
+	Path       string         `json:"path"`
+	Size       int64          `json:"size"`
+	MimeType   string         `json:"mime_type"`
+	CreatedAt  time.Time      `json:"created_at"`
+	Metadata   map[string]any `json:"metadata,omitempty"`
 }
 
 type ArtifactStore struct {
@@ -76,15 +76,15 @@ func (s *ArtifactStore) Save(runID, flowID string, artifactType ArtifactType, fi
 
 	artifact := &Artifact{
 		ArtifactID: artifactID,
-		RunID:       runID,
-		FlowID:      flowID,
-		Type:        artifactType,
-		Filename:    actualFilename,
-		Path:        path,
-		Size:        int64(len(data)),
-		MimeType:     s.mimeType(artifactType),
-		CreatedAt:   time.Now().UTC(),
-		Metadata:    metadata,
+		RunID:      runID,
+		FlowID:     flowID,
+		Type:       artifactType,
+		Filename:   actualFilename,
+		Path:       path,
+		Size:       int64(len(data)),
+		MimeType:   s.mimeType(artifactType),
+		CreatedAt:  time.Now().UTC(),
+		Metadata:   metadata,
 	}
 
 	s.artifacts[runID] = append(s.artifacts[runID], artifact)
@@ -240,7 +240,7 @@ func (s *ArtifactStore) persistIndex() {
 	}
 
 	path := s.indexPath()
-	
+
 	if len(all) == 0 {
 		os.Remove(path)
 		return
@@ -250,7 +250,7 @@ func (s *ArtifactStore) persistIndex() {
 	if err != nil {
 		return
 	}
-	
+
 	tmpPath := path + ".tmp"
 	if err := os.WriteFile(tmpPath, data, 0644); err != nil {
 		return

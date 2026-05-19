@@ -5,8 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"qa-orchestrator/apps/tui/internal/components"
 	"qa-orchestrator/apps/tui/internal/state"
 	"qa-orchestrator/packages/reporting"
@@ -14,6 +12,9 @@ import (
 	"qa-orchestrator/packages/storage/artifact"
 	"qa-orchestrator/packages/storage/session"
 	"qa-orchestrator/packages/storage/trace"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 var (
@@ -34,14 +35,14 @@ type MainScreen struct {
 	state    *state.AppState
 	handlers *CommandHandlers
 
-	campaignList *components.CampaignListModel
-	runPanel     *components.RunPanelModel
-	flowStatus   *components.FlowStatusModel
-	tracePanel   *components.TracePanelModel
+	campaignList  *components.CampaignListModel
+	runPanel      *components.RunPanelModel
+	flowStatus    *components.FlowStatusModel
+	tracePanel    *components.TracePanelModel
 	artifactPanel *components.ArtifactPanelModel
 
-	traceStore     *trace.TraceStore
-	artifactStore  *artifact.ArtifactStore
+	traceStore      *trace.TraceStore
+	artifactStore   *artifact.ArtifactStore
 	reportGenerator *reporting.ReportGenerator
 
 	reportView    string
@@ -56,8 +57,8 @@ func NewMainScreen(store *session.SessionStore) *MainScreen {
 	handlers := NewCommandHandlers(store)
 
 	return &MainScreen{
-		state:          appState,
-		handlers:       handlers,
+		state:         appState,
+		handlers:      handlers,
 		campaignList:  components.NewCampaignListModel(),
 		runPanel:      components.NewRunPanelModel(),
 		flowStatus:    components.NewFlowStatusModel(),
@@ -91,7 +92,7 @@ func (m *MainScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return TickMsg(t)
 		})
 
-case tea.KeyMsg:
+	case tea.KeyMsg:
 		if m.steeringMode {
 			switch msg.String() {
 			case "enter":
@@ -228,15 +229,16 @@ func (m *MainScreen) View() string {
 	var content string
 
 	currentView := m.state.GetView()
-	if currentView == state.ViewFlowStatus {
+	switch currentView {
+	case state.ViewFlowStatus:
 		content = m.flowStatus.View()
-	} else if currentView == state.ViewTraces {
+	case state.ViewTraces:
 		content = m.tracePanel.View()
-	} else if currentView == state.ViewArtifacts {
+	case state.ViewArtifacts:
 		content = m.artifactPanel.View()
-	} else if currentView == state.ViewReport {
+	case state.ViewReport:
 		content = m.reportView
-	} else {
+	default:
 		leftPanel := lipgloss.JoinVertical(
 			lipgloss.Left,
 			m.campaignList.View(),
@@ -252,7 +254,7 @@ func (m *MainScreen) View() string {
 			leftPanel,
 			lipgloss.NewStyle().Width(3).Render("  "),
 			rightPanel,
-)
+		)
 	}
 
 	footer := helpStyle.Render(" ↑↓ Navigate  Enter Select  Space Pause/Resume  x Cancel  r Refresh  f Flows  t Traces  a Artifacts  v Report  s Steer  q Quit")

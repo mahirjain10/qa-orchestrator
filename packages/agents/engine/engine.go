@@ -198,7 +198,7 @@ func (e *AgentEngine) runGuidedFlow(runID string, flow sharedtypes.Flow, ctx *ag
 				<-e.lifecycle.ResumeCh()
 				e.lifecycle.AcknowledgeResume()
 			case evt := <-e.lifecycle.SteerCh():
-				e.handleSteeringEvent(evt, ctx, result, plan)
+				e.handleSteeringEvent(evt, ctx, result)
 			default:
 			}
 		}
@@ -308,7 +308,7 @@ func (e *AgentEngine) runAutonomousFlow(runID string, flow sharedtypes.Flow, ctx
 				<-e.lifecycle.ResumeCh()
 				e.lifecycle.AcknowledgeResume()
 			case evt := <-e.lifecycle.SteerCh():
-				e.handleSteeringEvent(evt, ctx, result, plan)
+				e.handleSteeringEvent(evt, ctx, result)
 			default:
 			}
 		}
@@ -559,7 +559,7 @@ func (e *AgentEngine) SetLifecycleController(lc *runtime.LifecycleController) {
 	e.lifecycle = lc
 }
 
-func (e *AgentEngine) handleSteeringEvent(evt *sharedtypes.SteeringEvent, ctx *agentstypes.ExecutionContext, result *ExecutionResult, plan *agentstypes.Plan) {
+func (e *AgentEngine) handleSteeringEvent(evt *sharedtypes.SteeringEvent, ctx *agentstypes.ExecutionContext, result *ExecutionResult) {
 	trace.EmitAgentDecision(e.traceStore, ctx.RunID, ctx.FlowID, "steering", string(evt.Command), evt.Reason)
 
 	switch evt.Command {

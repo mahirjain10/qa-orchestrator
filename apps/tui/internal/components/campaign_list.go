@@ -18,12 +18,12 @@ var (
 			Foreground(lipgloss.Color("229")).
 			Background(lipgloss.Color("237"))
 
-	statusPending    = lipgloss.NewStyle().Foreground(lipgloss.Color("245"))
-	statusRunning    = lipgloss.NewStyle().Foreground(lipgloss.Color("75"))
-	statusPassed     = lipgloss.NewStyle().Foreground(lipgloss.Color("76"))
-	statusFailed     = lipgloss.NewStyle().Foreground(lipgloss.Color("204"))
-	statusPaused     = lipgloss.NewStyle().Foreground(lipgloss.Color("228"))
-	statusCancelled  = lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
+	statusPending   = lipgloss.NewStyle().Foreground(lipgloss.Color("245"))
+	statusRunning   = lipgloss.NewStyle().Foreground(lipgloss.Color("75"))
+	statusPassed    = lipgloss.NewStyle().Foreground(lipgloss.Color("76"))
+	statusFailed    = lipgloss.NewStyle().Foreground(lipgloss.Color("204"))
+	statusPaused    = lipgloss.NewStyle().Foreground(lipgloss.Color("228"))
+	statusCancelled = lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
 )
 
 type CampaignListModel struct {

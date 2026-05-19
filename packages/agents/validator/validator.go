@@ -15,8 +15,8 @@ type ValidationResult struct {
 
 type AssertionResult struct {
 	Assertion types.Assertion
-	Passed     bool
-	Message    string
+	Passed    bool
+	Message   string
 }
 
 type Validator struct{}
@@ -128,9 +128,9 @@ func (v *Validator) ValidateResults(results []*types.StepResult, steps []types.S
 func (v *Validator) CreateObservation(result *types.StepResult) *types.Observation {
 	return &types.Observation{
 		State: map[string]any{
-			"last_step_id":  result.StepID,
+			"last_step_id":      result.StepID,
 			"last_step_success": result.Success,
-			"last_output":   result.Output,
+			"last_output":       result.Output,
 		},
 		LastStep: result,
 	}

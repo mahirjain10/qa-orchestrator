@@ -25,8 +25,8 @@ var (
 )
 
 type RunPanelModel struct {
-	session    *types.Session
-	width      int
+	session *types.Session
+	width   int
 }
 
 func NewRunPanelModel() *RunPanelModel {

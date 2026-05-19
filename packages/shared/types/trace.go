@@ -9,9 +9,9 @@ import (
 type TraceEventType string
 
 const (
-	TraceEventStepExecution  TraceEventType = "step_execution"
-	TraceEventAgentDecision  TraceEventType = "agent_decision"
-	TraceEventToolResult     TraceEventType = "tool_result"
+	TraceEventStepExecution   TraceEventType = "step_execution"
+	TraceEventAgentDecision   TraceEventType = "agent_decision"
+	TraceEventToolResult      TraceEventType = "tool_result"
 	TraceEventRecoveryAction  TraceEventType = "recovery_action"
 	TraceEventLifecycleState  TraceEventType = "lifecycle_state"
 	TraceEventSteeringCommand TraceEventType = "steering_command"
@@ -29,15 +29,15 @@ const (
 )
 
 type TraceEvent struct {
-	EventID   string          `json:"event_id"`
-	RunID     string          `json:"run_id"`
-	FlowID    string          `json:"flow_id"`
-	Agent     string          `json:"agent"`
+	EventID   string         `json:"event_id"`
+	RunID     string         `json:"run_id"`
+	FlowID    string         `json:"flow_id"`
+	Agent     string         `json:"agent"`
 	EventType TraceEventType `json:"event_type"`
-	Action    string          `json:"action"`
-	Status    TraceStatus     `json:"status"`
-	Timestamp time.Time       `json:"timestamp"`
-	Details   map[string]any  `json:"details,omitempty"`
+	Action    string         `json:"action"`
+	Status    TraceStatus    `json:"status"`
+	Timestamp time.Time      `json:"timestamp"`
+	Details   map[string]any `json:"details,omitempty"`
 }
 
 func NewTraceEvent(runID, flowID, agent string, eventType TraceEventType, action string, status TraceStatus) *TraceEvent {

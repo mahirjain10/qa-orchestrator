@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
-	"qa-orchestrator/packages/storage/artifact"
 	"qa-orchestrator/packages/shared/types"
+	"qa-orchestrator/packages/storage/artifact"
 )
 
 var (
@@ -149,7 +149,7 @@ type ArtifactPanelModel struct {
 func NewArtifactPanelModel() *ArtifactPanelModel {
 	return &ArtifactPanelModel{
 		artifacts: []*artifact.Artifact{},
-		selected: 0,
+		selected:  0,
 	}
 }
 
@@ -236,8 +236,8 @@ func truncatePath(path string) string {
 
 var (
 	artifactPanelHeaderStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("82")).
-				Bold(true)
+					Foreground(lipgloss.Color("82")).
+					Bold(true)
 
 	artifactPanelCellStyle = lipgloss.NewStyle().
 				Foreground(lipgloss.Color("252"))

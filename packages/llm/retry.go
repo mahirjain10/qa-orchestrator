@@ -6,14 +6,14 @@ import (
 )
 
 type RetryConfig struct {
-	MaxRetries    int
+	MaxRetries   int
 	InitialDelay time.Duration
 	MaxDelay     time.Duration
-	Multiplier    float64
+	Multiplier   float64
 }
 
 var DefaultRetryConfig = RetryConfig{
-	MaxRetries:    3,
+	MaxRetries:   3,
 	InitialDelay: 500 * time.Millisecond,
 	MaxDelay:     10 * time.Second,
 	Multiplier:   2.0,

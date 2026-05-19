@@ -12,8 +12,8 @@ type BrowserType string
 
 const (
 	BrowserTypeChromium BrowserType = "chromium"
-	BrowserTypeFirefox BrowserType = "firefox"
-	BrowserTypeWebkit  BrowserType = "webkit"
+	BrowserTypeFirefox  BrowserType = "firefox"
+	BrowserTypeWebkit   BrowserType = "webkit"
 )
 
 type Config struct {
