@@ -7,6 +7,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"qa-orchestrator/apps/tui/internal/style"
+	"qa-orchestrator/apps/tui/internal/util"
 	"qa-orchestrator/packages/shared/types"
 )
 
@@ -129,6 +130,8 @@ func (m *RunPanelModel) ViewWithWidth(width int) string {
 		statusColor = style.StatusRunning
 	case types.RunStatePaused, types.RunStatePausing:
 		statusColor = style.StatusPaused
+	case types.RunStateCancelled, types.RunStateCancelling:
+		statusColor = style.StatusCancelled
 	case types.RunStateCompleted:
 		statusColor = style.StatusPassed
 	case types.RunStateFailed:
@@ -140,10 +143,7 @@ func (m *RunPanelModel) ViewWithWidth(width int) string {
 		statusLine = fmt.Sprintf("Status: %s %s", style.StatusRunning.Render(m.spinner), statusColor.Render(statusStr))
 	}
 
-	runID := m.session.RunID
-	if len(runID) > width-12 {
-		runID = runID[:width-15] + "..."
-	}
+	runID := util.Truncate(m.session.RunID, util.SafeWidth(width-12, 4))
 
 	lines = append(lines, fmt.Sprintf("Run: %s", style.Normal.Render(runID)))
 	lines = append(lines, fmt.Sprintf("Campaign: %s", m.session.CampaignName))

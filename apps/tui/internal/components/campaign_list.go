@@ -5,6 +5,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"qa-orchestrator/apps/tui/internal/style"
+	"qa-orchestrator/apps/tui/internal/util"
 )
 
 type CampaignListModel struct {
@@ -64,10 +65,7 @@ func (m *CampaignListModel) ViewWithWidth(width int) string {
 	var lines []string
 
 	for i, name := range m.campaigns {
-		truncated := name
-		if len(name) > width-6 {
-			truncated = name[:width-9] + "..."
-		}
+		truncated := util.Truncate(name, util.SafeWidth(width-6, 4))
 		if i == m.selected {
 			lines = append(lines, style.SelectedBold.Render(fmt.Sprintf(" ▶ %s", truncated)))
 		} else {

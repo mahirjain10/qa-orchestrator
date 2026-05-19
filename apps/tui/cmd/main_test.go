@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	campaignparser "qa-orchestrator/packages/orchestrator/campaign"
 	sharedtypes "qa-orchestrator/packages/shared/types"
@@ -17,7 +18,7 @@ func TestStartCampaignFailsBeforeSessionCreateWhenAutonomousLLMConfigMissing(t *
 	t.Setenv("LLM_API_KEY", "")
 	t.Setenv("LLM_MODEL", "")
 
-	dataDir := t.TempDir()
+	dataDir := makeTestDir(t)
 	campaignPath := filepath.Join(dataDir, "autonomous.yaml")
 	writeCampaign(t, campaignPath, "autonomous", "")
 
@@ -44,7 +45,7 @@ func TestStartCampaignAllowsGuidedWithoutLLMConfig(t *testing.T) {
 	t.Setenv("LLM_API_KEY", "")
 	t.Setenv("LLM_MODEL", "")
 
-	dataDir := t.TempDir()
+	dataDir := makeTestDir(t)
 	campaignPath := filepath.Join(dataDir, "guided.yaml")
 	writeCampaign(t, campaignPath, "guided", `
     steps:
@@ -73,7 +74,7 @@ func TestCreateLLMClientForCampaignRequiresModelForAutonomous(t *testing.T) {
 	t.Setenv("LLM_API_KEY", "test-key")
 	t.Setenv("LLM_MODEL", "")
 
-	dataDir := t.TempDir()
+	dataDir := makeTestDir(t)
 	campaignPath := filepath.Join(dataDir, "autonomous.yaml")
 	writeCampaign(t, campaignPath, "autonomous", "")
 
@@ -94,6 +95,24 @@ func TestCreateLLMClientForCampaignRequiresModelForAutonomous(t *testing.T) {
 func parseCampaign(path string) (*sharedtypes.Campaign, error) {
 	parser := campaignparser.NewCampaignParser()
 	return parser.ParseFile(path)
+}
+
+func makeTestDir(t *testing.T) string {
+	t.Helper()
+	dir, err := os.MkdirTemp("", "qa-orchestrator-test-*")
+	if err != nil {
+		t.Fatalf("creating temp dir: %v", err)
+	}
+	t.Cleanup(func() {
+		for i := 0; i < 5; i++ {
+			err := os.RemoveAll(dir)
+			if err == nil {
+				return
+			}
+			time.Sleep(100 * time.Millisecond)
+		}
+	})
+	return dir
 }
 
 func createStores(t *testing.T, dataDir string) (*session.SessionStore, *trace.TraceStore, *artifact.ArtifactStore) {

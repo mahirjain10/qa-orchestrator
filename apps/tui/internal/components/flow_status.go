@@ -7,6 +7,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"qa-orchestrator/apps/tui/internal/style"
+	"qa-orchestrator/apps/tui/internal/util"
 	"qa-orchestrator/packages/shared/types"
 )
 
@@ -153,10 +154,7 @@ func (m *FlowStatusModel) ViewWithWidth(width int) string {
 			statusColor = style.StatusCancelled
 		}
 
-		flowID := f.FlowID
-		if len(flowID) > colFlow-2 {
-			flowID = flowID[:colFlow-5] + "..."
-		}
+		flowID := util.Truncate(f.FlowID, util.SafeWidth(colFlow-2, 4))
 
 		flowFmt := fmt.Sprintf("%%-%ds", colFlow)
 		modeFmt := fmt.Sprintf("%%-%ds", colMode)

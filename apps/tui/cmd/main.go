@@ -162,6 +162,10 @@ func hasAutonomousFlow(camp *sharedtypes.Campaign) bool {
 func runCampaign(eng *engine.AgentEngine, camp *sharedtypes.Campaign, runID string, sessionStore *session.SessionStore) {
 	for _, flow := range camp.Flows {
 		result := eng.RunFlow(runID, flow)
-		_ = result
+		if result.Outcome == engine.OutcomeFail && len(result.Errors) > 0 {
+			sessionStore.UpdateFlowState(runID, flow.ID, sharedtypes.FlowStateFailed, result.Errors[0])
+		} else if result.Outcome == engine.OutcomePass {
+			sessionStore.UpdateFlowState(runID, flow.ID, sharedtypes.FlowStatePassed, "")
+		}
 	}
 }

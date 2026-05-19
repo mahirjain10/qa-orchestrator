@@ -32,9 +32,9 @@
 | Phase | Description | Status |
 |-------|-------------|--------|
 | 1 | Design System Unification | ✅ COMPLETE |
-| 2 | Utility Functions | ⏳ Pending |
-| 3 | State Architecture Refactor | ⏳ Pending |
-| 4 | Async Event System (Replace Polling) | ⏳ Pending |
+| 2 | Utility Functions | ✅ COMPLETE |
+| 3 | State Architecture Refactor | ✅ COMPLETE |
+| 4 | Async Event System (Replace Polling) | ✅ COMPLETE |
 | 5 | Layout System: Sidebar + Main Content | ⏳ Pending |
 | 6 | Dashboard View | ⏳ Pending |
 | 7 | Viewport Integration for Traces | ⏳ Pending |
@@ -49,16 +49,29 @@
 **V4 Phase 1 Completed:**
 - Run 040: Created unified design system in `style/theme.go`. Eliminated 136 lines of duplicate style definitions across 5 component files. All colors and Lip Gloss styles now come from single source of truth. Tests pass, binary builds successfully.
 
+**V4 Phase 2 Completed:**
+- Run 041: Created `util/truncate.go` with 6 utility functions (Truncate, TruncateStart, TruncateMiddle, SafeWidth, FormatDuration, FormatDurationShort). Added 47 test cases. Replaced all inline truncation logic across 4 component files. Removed `truncatePath()` function. Tests pass, binary builds successfully.
+
+**V4 Phase 3 + 4 Completed:**
+- Run 042: Removed `state` package entirely (AppState with mutexes). Merged domain state into `MainScreen` struct. Replaced 1-second polling with async commands (`fetchSessionsCmd`, `fetchRunCmd`, `fetchTracesCmd`, `fetchArtifactsCmd`, `fetchReportCmd`). Added 26 new tests for async message/command architecture. Total 30 tests in screens package. Ticker changed to 2s, only active when run selected. Tests pass, binary builds successfully.
+- Run 043: Verified Phase 3+4 implementation integrity. Added 66 new tests covering key handling, steering commands, parsing, View rendering, constructors, edge cases. Total 96 tests in screens package. All passing, build clean, vet clean.
+
 ### Test Coverage
-- `go test ./...` — passing
+- `go test ./...` — passing (96 tests in screens package, 47 in util, 12 in style)
 
 ## Bug Fixes
 - Run 038: Fixed tool registry mismatch — `getDefaultLLMTools()` listed `get_html` and `evaluate` which `MockToolRegistry` didn't have, causing "unknown tool" → "configuration error" failures in autonomous mode.
 - Run 039: Fixed autonomous planner infinite loop — LLM generated 20 redundant verification steps because `finish` tool was never exposed in its prompt. Engine already handled `finish` at line 338 but LLM didn't know it existed.
 
 ## Last Run
-- Run 040: 2026-05-20 (Agent: qwen3.6-plus-free)
-  - Status: V4 Phase 1 COMPLETE — Design System Unification. Created `style/theme.go`, eliminated 136 lines of duplicate style definitions across 5 files.
+- Run 045: 2026-05-20 (Agent: qwen3.6-plus-free)
+  - Status: All 4 flagged issues fixed — RunFlow result used, View() side effect removed, space bar gap closed, custom itoa replaced. All 22 packages pass.
+- Run 044: 2026-05-20 (Agent: qwen3.6-plus-free)
+  - Status: Windows TempDir race fixed, code review completed. 3 bugs fixed, 4 flagged. All 22 packages pass, build clean, vet clean.
+- Run 043: 2026-05-20 (Agent: qwen3.6-plus-free)
+  - Status: V4 Phase 3+4 VERIFIED — 96 tests in screens package (was 30), all passing. Build clean, vet clean.
+- Run 042: 2026-05-20 (Agent: qwen3.6-plus-free)
+  - Status: V4 Phase 3+4 COMPLETE — Removed `state` package, merged state into `MainScreen`, replaced polling with async commands. 30 tests in screens package, all passing.
 
 ## Makefile (Updated)
 - Added `run-sample` and `run-guided` targets for quick testing

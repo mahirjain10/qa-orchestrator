@@ -6,6 +6,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"qa-orchestrator/apps/tui/internal/style"
+	"qa-orchestrator/apps/tui/internal/util"
 	"qa-orchestrator/packages/shared/types"
 	"qa-orchestrator/packages/storage/artifact"
 )
@@ -132,10 +133,7 @@ func (m *TracePanelModel) ViewCompact() string {
 		statusChar := style.TraceStatusChar(string(e.Status))
 		statusStyle := style.TraceStatusStyle(string(e.Status))
 
-		actionStr := e.Action
-		if len(actionStr) > 20 {
-			actionStr = actionStr[:17] + "..."
-		}
+		actionStr := util.Truncate(e.Action, 20)
 
 		row := fmt.Sprintf(" %s %s %s",
 			style.Dim.Render(timeStr),
@@ -205,11 +203,16 @@ func (m *ArtifactPanelModel) View() string {
 	for i, a := range m.artifacts {
 		sizeStr := formatBytes(a.Size)
 
+		idStr := a.ArtifactID
+		if len(idStr) > 12 {
+			idStr = idStr[:12]
+		}
+
 		row := fmt.Sprintf("  %-16s %-12s %-9s %s",
-			a.ArtifactID[:12],
+			idStr,
 			a.Type,
 			sizeStr,
-			truncatePath(a.Path),
+			util.TruncateStart(a.Path, 40),
 		)
 
 		if i == m.selected {
@@ -233,11 +236,4 @@ func formatBytes(bytes int64) string {
 		exp++
 	}
 	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
-}
-
-func truncatePath(path string) string {
-	if len(path) <= 40 {
-		return path
-	}
-	return "..." + path[len(path)-37:]
 }

@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"qa-orchestrator/apps/tui/internal/components"
-	"qa-orchestrator/apps/tui/internal/state"
 	"qa-orchestrator/apps/tui/internal/style"
 	"qa-orchestrator/packages/reporting"
 	"qa-orchestrator/packages/shared/types"
@@ -19,8 +18,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
-
-var spinnerFrames = []string{"⠋", "⠙", "⠹", "⠸"}
 
 type Pane string
 
@@ -35,21 +32,17 @@ const (
 	CompReport    ComponentID = "report"
 )
 
-type TickMsg time.Time
-
 type MainScreen struct {
-	state    *state.AppState
-	handlers *CommandHandlers
-
-	campaignList  *components.CampaignListModel
-	runPanel      *components.RunPanelModel
-	flowStatus    *components.FlowStatusModel
-	tracePanel    *components.TracePanelModel
-	artifactPanel *components.ArtifactPanelModel
-
+	sessionStore    *session.SessionStore
 	traceStore      *trace.TraceStore
 	artifactStore   *artifact.ArtifactStore
+	handlers        *CommandHandlers
 	reportGenerator *reporting.ReportGenerator
+
+	sessions    []*types.Session
+	currentRun  *types.Session
+	traces      []*types.TraceEvent
+	artifacts   []*artifact.Artifact
 
 	width  int
 	height int
@@ -59,17 +52,23 @@ type MainScreen struct {
 	maximized     bool
 	maximizedSlot int
 
+	campaignList  *components.CampaignListModel
+	runPanel      *components.RunPanelModel
+	flowStatus    *components.FlowStatusModel
+	tracePanel    *components.TracePanelModel
+	artifactPanel *components.ArtifactPanelModel
+
 	spinner       spinner.Model
 	steeringInput textinput.Model
 	steeringMode  bool
 
 	reportView string
-	command    string
 	msg        string
+	msgTime    time.Time
+	loading    bool
 }
 
 func NewMainScreen(store *session.SessionStore) *MainScreen {
-	appState := state.NewAppState(store)
 	handlers := NewCommandHandlers(store)
 
 	sp := spinner.New()
@@ -81,19 +80,18 @@ func NewMainScreen(store *session.SessionStore) *MainScreen {
 	ti.Width = 60
 
 	return &MainScreen{
-		state:         appState,
-		handlers:      handlers,
-		campaignList:  components.NewCampaignListModel(),
-		runPanel:      components.NewRunPanelModel(),
-		flowStatus:    components.NewFlowStatusModel(),
-		tracePanel:    components.NewTracePanelModel(),
-		artifactPanel: components.NewArtifactPanelModel(),
-		quadrants:     [4]ComponentID{CompCampaigns, CompFlows, CompRun, CompTraces},
-		activeSlot:    0,
-		spinner:       sp,
-		steeringInput: ti,
-		command:       "",
-		msg:           "TAB: switch slot | p: cycle component | m: maximize | ←↑↓→: navigate",
+		sessionStore:    store,
+		handlers:        handlers,
+		campaignList:    components.NewCampaignListModel(),
+		runPanel:        components.NewRunPanelModel(),
+		flowStatus:      components.NewFlowStatusModel(),
+		tracePanel:      components.NewTracePanelModel(),
+		artifactPanel:   components.NewArtifactPanelModel(),
+		quadrants:       [4]ComponentID{CompCampaigns, CompFlows, CompRun, CompTraces},
+		activeSlot:      0,
+		spinner:         sp,
+		steeringInput:   ti,
+		msg:             "TAB: switch slot | p: cycle component | m: maximize | ←↑↓→: navigate",
 	}
 }
 
@@ -107,109 +105,69 @@ func NewMainScreenWithStores(store *session.SessionStore, traceStore *trace.Trac
 
 func (m *MainScreen) SetMessage(msg string) {
 	m.msg = msg
+	m.msgTime = time.Now()
+}
+
+func (m *MainScreen) currentRunID() string {
+	if m.currentRun != nil {
+		return m.currentRun.RunID
+	}
+	return ""
 }
 
 func (m *MainScreen) Init() tea.Cmd {
-	m.refreshAll()
 	return tea.Batch(
-		tea.Tick(time.Second, func(t time.Time) tea.Msg {
-			return TickMsg(t)
+		fetchSessionsCmd(m.sessionStore),
+		tea.Tick(2*time.Second, func(t time.Time) tea.Msg {
+			return tickMsg(t)
 		}),
 	)
 }
 
-func (m *MainScreen) componentLabel(id ComponentID) string {
-	switch id {
-	case CompCampaigns:
-		return " [Campaigns] "
-	case CompFlows:
-		return " [Flows] "
-	case CompRun:
-		return " [Run] "
-	case CompTraces:
-		return " [Traces] "
-	case CompArtifacts:
-		return " [Artifacts] "
-	case CompReport:
-		return " [Report] "
-	default:
-		return " [?] "
-	}
-}
-
-func (m *MainScreen) renderComponent(id ComponentID, width, height int, focused bool) string {
-	var content string
-	switch id {
-	case CompCampaigns:
-		campaignNames := []string{}
-		sessions := m.state.GetSessions()
-		for _, s := range sessions {
-			campaignNames = append(campaignNames, fmt.Sprintf("%s [%s]", s.CampaignName, s.RunID))
-		}
-		m.campaignList.SetCampaigns(campaignNames)
-		content = m.campaignList.ViewWithWidth(width - 4)
-	case CompFlows:
-		content = m.flowStatus.ViewWithWidth(width - 4)
-	case CompRun:
-		content = m.runPanel.ViewWithWidth(width - 4)
-	case CompTraces:
-		content = m.tracePanel.ViewCompact()
-	case CompArtifacts:
-		content = m.artifactPanel.View()
-	case CompReport:
-		content = m.reportView
-	default:
-		content = "Unknown component"
-	}
-
-	borderColor := lipgloss.Color("240")
-	if focused {
-		borderColor = m.focusColorForSlot(m.activeSlot)
-	}
-
-	label := m.componentLabel(id)
-
-	style := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(borderColor).
-		Bold(focused).
-		Padding(0, 1).
-		Width(width).
-		Height(height)
-
-	titleStyle := lipgloss.NewStyle().
-		Foreground(borderColor).
-		Bold(focused)
-
-	return style.Render(titleStyle.Render(label) + "\n" + content)
-}
-
-func (m *MainScreen) focusColorForSlot(slot int) lipgloss.Color {
-	switch slot {
-	case 0:
-		return lipgloss.Color("75")
-	case 1:
-		return lipgloss.Color("226")
-	case 2:
-		return lipgloss.Color("208")
-	case 3:
-		return lipgloss.Color("86")
-	default:
-		return lipgloss.Color("75")
-	}
-}
-
 func (m *MainScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
+	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
-	case TickMsg:
-		m.refreshAll()
-		return m, tea.Tick(time.Second, func(t time.Time) tea.Msg {
-			return TickMsg(t)
-		})
+	case tickMsg:
+		runID := m.currentRunID()
+		cmds = append(cmds, refreshAllCmd(runID, m.sessionStore, m.traceStore, m.artifactStore, m.reportGenerator))
+		cmds = append(cmds, startRefreshTicker(runID))
+		return m, tea.Batch(cmds...)
+
+	case sessionsLoadedMsg:
+		m.sessions = msg.sessions
+		m.campaignList.SetCampaigns(m.campaignNames())
+		return m, nil
+
+	case runLoadedMsg:
+		if msg.run != nil {
+			m.currentRun = msg.run
+			m.runPanel.SetSession(msg.run)
+			m.runPanel.Tick()
+			m.flowStatus.SetFlows(msg.run.Flows)
+		}
+		return m, nil
+
+	case tracesLoadedMsg:
+		m.traces = msg.traces
+		m.tracePanel.SetEvents(msg.traces)
+		return m, nil
+
+	case artifactsLoadedMsg:
+		m.artifacts = msg.artifacts
+		m.artifactPanel.SetArtifacts(msg.artifacts)
+		return m, nil
+
+	case reportLoadedMsg:
+		m.reportView = msg.report
+		return m, nil
+
+	case errMsg:
+		m.setMsg("Error: " + msg.err.Error())
+		return m, nil
 
 	case spinner.TickMsg:
+		var cmd tea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
 
@@ -220,191 +178,208 @@ func (m *MainScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		if m.steeringMode {
-			m.steeringInput, cmd = m.steeringInput.Update(msg)
-			if msg.String() == "enter" {
-				inputVal := m.steeringInput.Value()
-				if inputVal != "" {
-					m.processSteeringCommand(inputVal)
-					m.steeringMode = false
-					m.steeringInput.SetValue("")
-				}
-			}
-			if msg.String() == "escape" || msg.String() == "esc" {
-				m.state.SetView(state.ViewCampaignList)
-				m.steeringMode = false
-				m.steeringInput.SetValue("")
-			}
-			return m, cmd
+			return m.handleSteeringKey(msg)
 		}
-
-		switch msg.String() {
-		case "ctrl+c", "q":
-			return m, tea.Quit
-
-		case "tab":
-			if m.maximized {
-				m.maximized = false
-				m.msg = "Restored 4-quadrant view"
-			} else {
-				m.activeSlot = (m.activeSlot + 1) % 4
-				m.msg = fmt.Sprintf("Slot %d: %s", m.activeSlot, m.quadrants[m.activeSlot])
-			}
-
-		case "left":
-			if !m.maximized {
-				m.activeSlot = (m.activeSlot + 3) % 4
-				m.msg = fmt.Sprintf("Slot %d: %s", m.activeSlot, m.quadrants[m.activeSlot])
-			}
-
-		case "right":
-			if !m.maximized {
-				m.activeSlot = (m.activeSlot + 1) % 4
-				m.msg = fmt.Sprintf("Slot %d: %s", m.activeSlot, m.quadrants[m.activeSlot])
-			}
-
-		case "p":
-			if !m.maximized {
-				currentID := m.quadrants[m.activeSlot]
-				allComponents := []ComponentID{CompCampaigns, CompFlows, CompRun, CompTraces, CompArtifacts, CompReport}
-				nextIdx := 0
-				for i, c := range allComponents {
-					if c == currentID {
-						nextIdx = (i + 1) % len(allComponents)
-						break
-					}
-				}
-				m.quadrants[m.activeSlot] = allComponents[nextIdx]
-				m.msg = fmt.Sprintf("Slot %d → %s", m.activeSlot, m.quadrants[m.activeSlot])
-			}
-
-		case "w":
-			if !m.maximized {
-				nextSlot := (m.activeSlot + 1) % 4
-				m.quadrants[m.activeSlot], m.quadrants[nextSlot] = m.quadrants[nextSlot], m.quadrants[m.activeSlot]
-				m.msg = fmt.Sprintf("Swapped slot %d ↔ %d", m.activeSlot, nextSlot)
-			}
-
-		case "0":
-			if !m.maximized {
-				m.activeSlot = 0
-				m.msg = fmt.Sprintf("Slot %d: %s", m.activeSlot, m.quadrants[m.activeSlot])
-			}
-		case "1":
-			if !m.maximized {
-				m.activeSlot = 1
-				m.msg = fmt.Sprintf("Slot %d: %s", m.activeSlot, m.quadrants[m.activeSlot])
-			}
-		case "2":
-			if !m.maximized {
-				m.activeSlot = 2
-				m.msg = fmt.Sprintf("Slot %d: %s", m.activeSlot, m.quadrants[m.activeSlot])
-			}
-		case "3":
-			if !m.maximized {
-				m.activeSlot = 3
-				m.msg = fmt.Sprintf("Slot %d: %s", m.activeSlot, m.quadrants[m.activeSlot])
-			}
-
-		case "m":
-			if m.maximized {
-				m.maximized = false
-				m.msg = "Restored 4-quadrant view"
-			} else {
-				m.maximized = true
-				m.maximizedSlot = m.activeSlot
-				m.msg = fmt.Sprintf("Maximized: %s", m.quadrants[m.maximizedSlot])
-			}
-
-		case "escape", "esc":
-			if m.maximized {
-				m.maximized = false
-				m.msg = "Restored 4-quadrant view"
-			}
-
-		case "up", "k":
-			activeComp := m.quadrants[m.activeSlot]
-			switch activeComp {
-			case CompCampaigns:
-				m.campaignList.Prev()
-			case CompFlows:
-				m.flowStatus.Prev()
-			case CompTraces:
-				m.tracePanel.Prev()
-			}
-
-		case "down", "j":
-			activeComp := m.quadrants[m.activeSlot]
-			switch activeComp {
-			case CompCampaigns:
-				m.campaignList.Next()
-			case CompFlows:
-				m.flowStatus.Next()
-			case CompTraces:
-				m.tracePanel.Next()
-			}
-
-		case "enter":
-			if m.quadrants[m.activeSlot] == CompCampaigns {
-				sessions := m.state.GetSessions()
-				idx := m.campaignList.GetSelected()
-				if idx >= 0 && idx < len(sessions) {
-					runID := sessions[idx].RunID
-					m.state.SetCurrentRunID(runID)
-					m.refreshRun()
-					m.msg = fmt.Sprintf("Selected run: %s | ↑↓ navigate | TAB switch slot", runID)
-				}
-			}
-
-		case " ":
-			runID := m.state.GetCurrentRunID()
-			if runID != "" {
-				sess, err := m.handlers.GetRunStatus(runID)
-				if err == nil {
-					switch sess.Status {
-					case types.RunStatePending, types.RunStateRunning:
-						err = m.handlers.PauseRun(runID)
-						m.msg = "Run paused"
-					case types.RunStatePaused:
-						err = m.handlers.ResumeRun(runID)
-						m.msg = "Run resumed"
-					}
-					if err != nil {
-						m.msg = fmt.Sprintf("Error: %v", err)
-					}
-					m.refreshRun()
-				}
-			}
-
-		case "x":
-			runID := m.state.GetCurrentRunID()
-			if runID != "" {
-				err := m.handlers.CancelRun(runID)
-				if err != nil {
-					m.msg = fmt.Sprintf("Error cancelling: %v", err)
-				} else {
-					m.msg = "Run cancelled"
-				}
-				m.refreshRun()
-			}
-
-		case "r":
-			m.refreshAll()
-			m.msg = "Refreshed"
-
-		case "s":
-			if m.state.GetCurrentRunID() != "" {
-				m.steeringMode = true
-				m.steeringInput.Focus()
-				m.msg = "Steering mode: type command and press ENTER. ESC to cancel."
-			} else {
-				m.msg = "Select a run first before steering"
-			}
-		}
-		return m, nil
+		return m.handleMainKey(msg)
 	}
 
+	var cmd tea.Cmd
 	m.spinner, cmd = m.spinner.Update(msg)
 	return m, cmd
+}
+
+func (m *MainScreen) handleSteeringKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	m.steeringInput, cmd = m.steeringInput.Update(msg)
+
+	if msg.String() == "enter" {
+		inputVal := m.steeringInput.Value()
+		if inputVal != "" {
+			m.processSteeringCommand(inputVal)
+			m.steeringMode = false
+			m.steeringInput.SetValue("")
+		}
+	}
+	if msg.String() == "escape" || msg.String() == "esc" {
+		m.steeringMode = false
+		m.steeringInput.SetValue("")
+	}
+	return m, cmd
+}
+
+func (m *MainScreen) handleMainKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "ctrl+c", "q":
+		return m, tea.Quit
+
+	case "tab":
+		if m.maximized {
+			m.maximized = false
+			m.setMsg("Restored 4-quadrant view")
+		} else {
+			m.activeSlot = (m.activeSlot + 1) % 4
+			m.setMsg(fmt.Sprintf("Slot %d: %s", m.activeSlot, m.quadrants[m.activeSlot]))
+		}
+
+	case "left":
+		if !m.maximized {
+			m.activeSlot = (m.activeSlot + 3) % 4
+			m.setMsg(fmt.Sprintf("Slot %d: %s", m.activeSlot, m.quadrants[m.activeSlot]))
+		}
+
+	case "right":
+		if !m.maximized {
+			m.activeSlot = (m.activeSlot + 1) % 4
+			m.setMsg(fmt.Sprintf("Slot %d: %s", m.activeSlot, m.quadrants[m.activeSlot]))
+		}
+
+	case "p":
+		if !m.maximized {
+			currentID := m.quadrants[m.activeSlot]
+			allComponents := []ComponentID{CompCampaigns, CompFlows, CompRun, CompTraces, CompArtifacts, CompReport}
+			nextIdx := 0
+			for i, c := range allComponents {
+				if c == currentID {
+					nextIdx = (i + 1) % len(allComponents)
+					break
+				}
+			}
+			m.quadrants[m.activeSlot] = allComponents[nextIdx]
+			m.setMsg(fmt.Sprintf("Slot %d → %s", m.activeSlot, m.quadrants[m.activeSlot]))
+		}
+
+	case "w":
+		if !m.maximized {
+			nextSlot := (m.activeSlot + 1) % 4
+			m.quadrants[m.activeSlot], m.quadrants[nextSlot] = m.quadrants[nextSlot], m.quadrants[m.activeSlot]
+			m.setMsg(fmt.Sprintf("Swapped slot %d ↔ %d", m.activeSlot, nextSlot))
+		}
+
+	case "0":
+		if !m.maximized {
+			m.activeSlot = 0
+			m.setMsg(fmt.Sprintf("Slot %d: %s", m.activeSlot, m.quadrants[m.activeSlot]))
+		}
+	case "1":
+		if !m.maximized {
+			m.activeSlot = 1
+			m.setMsg(fmt.Sprintf("Slot %d: %s", m.activeSlot, m.quadrants[m.activeSlot]))
+		}
+	case "2":
+		if !m.maximized {
+			m.activeSlot = 2
+			m.setMsg(fmt.Sprintf("Slot %d: %s", m.activeSlot, m.quadrants[m.activeSlot]))
+		}
+	case "3":
+		if !m.maximized {
+			m.activeSlot = 3
+			m.setMsg(fmt.Sprintf("Slot %d: %s", m.activeSlot, m.quadrants[m.activeSlot]))
+		}
+
+	case "m":
+		if m.maximized {
+			m.maximized = false
+			m.setMsg("Restored 4-quadrant view")
+		} else {
+			m.maximized = true
+			m.maximizedSlot = m.activeSlot
+			m.setMsg(fmt.Sprintf("Maximized: %s", m.quadrants[m.maximizedSlot]))
+		}
+
+	case "escape", "esc":
+		if m.maximized {
+			m.maximized = false
+			m.setMsg("Restored 4-quadrant view")
+		}
+
+	case "up", "k":
+		activeComp := m.quadrants[m.activeSlot]
+		switch activeComp {
+		case CompCampaigns:
+			m.campaignList.Prev()
+		case CompFlows:
+			m.flowStatus.Prev()
+		case CompTraces:
+			m.tracePanel.Prev()
+		}
+
+	case "down", "j":
+		activeComp := m.quadrants[m.activeSlot]
+		switch activeComp {
+		case CompCampaigns:
+			m.campaignList.Next()
+		case CompFlows:
+			m.flowStatus.Next()
+		case CompTraces:
+			m.tracePanel.Next()
+		}
+
+	case "enter":
+		if m.quadrants[m.activeSlot] == CompCampaigns {
+			idx := m.campaignList.GetSelected()
+			if idx >= 0 && idx < len(m.sessions) {
+				runID := m.sessions[idx].RunID
+				m.currentRun = m.sessions[idx]
+				m.setMsg(fmt.Sprintf("Selected run: %s | ↑↓ navigate | TAB switch slot", runID))
+			}
+		}
+
+	case " ":
+		runID := m.currentRunID()
+		if runID != "" {
+			sess, err := m.handlers.GetRunStatus(runID)
+			if err == nil {
+				switch sess.Status {
+				case types.RunStatePending, types.RunStateRunning:
+					err = m.handlers.PauseRun(runID)
+					if err == nil {
+						m.setMsg("Run pausing...")
+					}
+				case types.RunStatePaused:
+					err = m.handlers.ResumeRun(runID)
+					if err == nil {
+						m.setMsg("Run resuming...")
+					}
+				case types.RunStatePausing:
+					m.setMsg("Run is pausing, please wait")
+				case types.RunStateResuming:
+					m.setMsg("Run is resuming, please wait")
+				case types.RunStateCancelling:
+					m.setMsg("Run is cancelling, please wait")
+				}
+				if err != nil {
+					m.setMsg(fmt.Sprintf("Error: %v", err))
+				}
+			}
+		}
+
+	case "x":
+		runID := m.currentRunID()
+		if runID != "" {
+			err := m.handlers.CancelRun(runID)
+			if err != nil {
+				m.setMsg(fmt.Sprintf("Error cancelling: %v", err))
+			} else {
+				m.setMsg("Run cancelled")
+			}
+		}
+
+	case "r":
+		runID := m.currentRunID()
+		return m, tea.Batch(
+			refreshAllCmd(runID, m.sessionStore, m.traceStore, m.artifactStore, m.reportGenerator),
+		)
+
+	case "s":
+		if m.currentRunID() != "" {
+			m.steeringMode = true
+			m.steeringInput.Focus()
+			m.setMsg("Steering mode: type command and press ENTER. ESC to cancel.")
+		} else {
+			m.setMsg("Select a run first before steering")
+		}
+	}
+	return m, nil
 }
 
 func (m *MainScreen) View() string {
@@ -500,66 +475,140 @@ func (m *MainScreen) View() string {
 	return viewContent
 }
 
-func (m *MainScreen) refreshAll() {
-	m.state.RefreshSessions()
-	m.refreshRun()
-	m.refreshFlowStatus()
-	m.refreshTraces()
-	m.refreshArtifacts()
-	m.refreshReport()
-}
-
-func (m *MainScreen) refreshRun() {
-	sess, err := m.handlers.GetRunStatus(m.state.GetCurrentRunID())
-	if err == nil && sess != nil {
-		m.runPanel.SetSession(sess)
-		m.runPanel.Tick()
+func (m *MainScreen) componentLabel(id ComponentID) string {
+	switch id {
+	case CompCampaigns:
+		return " [Campaigns] "
+	case CompFlows:
+		return " [Flows] "
+	case CompRun:
+		return " [Run] "
+	case CompTraces:
+		return " [Traces] "
+	case CompArtifacts:
+		return " [Artifacts] "
+	case CompReport:
+		return " [Report] "
+	default:
+		return " [?] "
 	}
 }
 
-func (m *MainScreen) refreshFlowStatus() {
-	sess, err := m.handlers.GetRunStatus(m.state.GetCurrentRunID())
-	if err == nil && sess != nil {
-		m.flowStatus.SetFlows(sess.Flows)
+func (m *MainScreen) renderComponent(id ComponentID, width, height int, focused bool) string {
+	var content string
+	switch id {
+	case CompCampaigns:
+		content = m.campaignList.ViewWithWidth(width - 4)
+	case CompFlows:
+		content = m.flowStatus.ViewWithWidth(width - 4)
+	case CompRun:
+		content = m.runPanel.ViewWithWidth(width - 4)
+	case CompTraces:
+		content = m.tracePanel.ViewCompact()
+	case CompArtifacts:
+		content = m.artifactPanel.View()
+	case CompReport:
+		content = m.reportView
+	default:
+		content = "Unknown component"
+	}
+
+	borderColor := lipgloss.Color("240")
+	if focused {
+		borderColor = m.focusColorForSlot(m.activeSlot)
+	}
+
+	label := m.componentLabel(id)
+
+	panelStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(borderColor).
+		Bold(focused).
+		Padding(0, 1).
+		Width(width).
+		Height(height)
+
+	titleStyle := lipgloss.NewStyle().
+		Foreground(borderColor).
+		Bold(focused)
+
+	return panelStyle.Render(titleStyle.Render(label) + "\n" + content)
+}
+
+func (m *MainScreen) focusColorForSlot(slot int) lipgloss.Color {
+	switch slot {
+	case 0:
+		return lipgloss.Color("75")
+	case 1:
+		return lipgloss.Color("226")
+	case 2:
+		return lipgloss.Color("208")
+	case 3:
+		return lipgloss.Color("86")
+	default:
+		return lipgloss.Color("75")
 	}
 }
 
-func (m *MainScreen) refreshTraces() {
-	runID := m.state.GetCurrentRunID()
-	if runID != "" && m.traceStore != nil {
-		events, err := m.traceStore.GetRecent(runID, 50)
-		if err == nil {
-			m.tracePanel.SetEvents(events)
+func (m *MainScreen) campaignNames() []string {
+	names := []string{}
+	for _, s := range m.sessions {
+		names = append(names, fmt.Sprintf("%s [%s]", s.CampaignName, s.RunID))
+	}
+	return names
+}
+
+func (m *MainScreen) setMsg(msg string) {
+	m.msg = msg
+	m.msgTime = time.Now()
+}
+
+func (m *MainScreen) updateFromStores() {
+	sessions, err := m.sessionStore.List()
+	if err == nil {
+		m.sessions = sessions
+		m.campaignList.SetCampaigns(m.campaignNames())
+	}
+
+	runID := m.currentRunID()
+	if runID != "" {
+		sess, err := m.handlers.GetRunStatus(runID)
+		if err == nil && sess != nil {
+			m.currentRun = sess
+			m.runPanel.SetSession(sess)
+			m.runPanel.Tick()
+			m.flowStatus.SetFlows(sess.Flows)
 		}
-	}
-}
 
-func (m *MainScreen) refreshArtifacts() {
-	runID := m.state.GetCurrentRunID()
-	if runID != "" && m.artifactStore != nil {
-		artifacts, err := m.artifactStore.GetByRunID(runID)
-		if err == nil {
-			m.artifactPanel.SetArtifacts(artifacts)
+		if m.traceStore != nil {
+			events, err := m.traceStore.GetRecent(runID, 50)
+			if err == nil {
+				m.traces = events
+				m.tracePanel.SetEvents(events)
+			}
 		}
-	}
-}
 
-func (m *MainScreen) refreshReport() {
-	runID := m.state.GetCurrentRunID()
-	if runID != "" && m.reportGenerator != nil {
-		report, err := m.reportGenerator.GenerateTerminalSummary(runID)
-		if err == nil {
-			m.reportView = report
-		} else {
-			m.reportView = fmt.Sprintf("Error generating report: %v", err)
+		if m.artifactStore != nil {
+			artifacts, err := m.artifactStore.GetByRunID(runID)
+			if err == nil {
+				m.artifacts = artifacts
+				m.artifactPanel.SetArtifacts(artifacts)
+			}
+		}
+
+		if m.reportGenerator != nil {
+			report, err := m.reportGenerator.GenerateTerminalSummary(runID)
+			if err == nil {
+				m.reportView = report
+			}
 		}
 	}
 }
 
 func (m *MainScreen) processSteeringCommand(input string) {
-	runID := m.state.GetCurrentRunID()
+	runID := m.currentRunID()
 	if runID == "" {
-		m.msg = "No run selected"
+		m.setMsg("No run selected")
 		return
 	}
 
@@ -570,24 +619,24 @@ func (m *MainScreen) processSteeringCommand(input string) {
 		if len(args) > 0 {
 			err := m.handlers.RetryFlow(runID, args[0])
 			if err != nil {
-				m.msg = fmt.Sprintf("Error: %v", err)
+				m.setMsg(fmt.Sprintf("Error: %v", err))
 			} else {
-				m.msg = fmt.Sprintf("Retry scheduled for flow: %s", args[0])
+				m.setMsg(fmt.Sprintf("Retry scheduled for flow: %s", args[0]))
 			}
 		} else {
-			m.msg = "Usage: retry <flow_id>"
+			m.setMsg("Usage: retry <flow_id>")
 		}
 
 	case "skip":
 		if len(args) > 0 {
 			err := m.handlers.SkipFlow(runID, args[0])
 			if err != nil {
-				m.msg = fmt.Sprintf("Error: %v", err)
+				m.setMsg(fmt.Sprintf("Error: %v", err))
 			} else {
-				m.msg = fmt.Sprintf("Flow skipped: %s", args[0])
+				m.setMsg(fmt.Sprintf("Flow skipped: %s", args[0]))
 			}
 		} else {
-			m.msg = "Usage: skip <flow_id>"
+			m.setMsg("Usage: skip <flow_id>")
 		}
 
 	case "continue":
@@ -595,28 +644,28 @@ func (m *MainScreen) processSteeringCommand(input string) {
 		if sess != nil && sess.Status == types.RunStateWaitingInput {
 			err := m.handlers.AcknowledgeInputAndResume(runID)
 			if err != nil {
-				m.msg = fmt.Sprintf("Error: %v", err)
+				m.setMsg(fmt.Sprintf("Error: %v", err))
 			} else {
-				m.msg = "Run resumed from WAITING_FOR_INPUT"
+				m.setMsg("Run resumed from WAITING_FOR_INPUT")
 			}
 		} else {
-			m.msg = "Run is not in WAITING_FOR_INPUT state"
+			m.setMsg("Run is not in WAITING_FOR_INPUT state")
 		}
 
 	case "approve":
-		m.msg = "Approval noted"
+		m.setMsg("Approval noted")
 
 	case "status":
 		sess, err := m.handlers.GetRunStatus(runID)
 		if err == nil && sess != nil {
-			m.msg = fmt.Sprintf("Status: %s | Flow: %s | Agent: %s",
-				sess.Status, sess.CurrentFlowID, sess.CurrentAgent)
+			m.setMsg(fmt.Sprintf("Status: %s | Flow: %s | Agent: %s",
+				sess.Status, sess.CurrentFlowID, sess.CurrentAgent))
 		} else {
-			m.msg = "Could not retrieve status"
+			m.setMsg("Could not retrieve status")
 		}
 
 	default:
-		m.msg = "Unknown command. Try: retry, skip, continue, approve, status"
+		m.setMsg("Unknown command. Try: retry, skip, continue, approve, status")
 	}
 }
 
