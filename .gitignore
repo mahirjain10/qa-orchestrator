@@ -59,3 +59,6 @@ build/
 docs/workflow-review/
 
 .devin/
+
+# OpenCode project-level config and agents
+.opencode/

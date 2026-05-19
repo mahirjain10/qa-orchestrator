@@ -35,7 +35,7 @@
 | 2 | Utility Functions | ✅ COMPLETE |
 | 3 | State Architecture Refactor | ✅ COMPLETE |
 | 4 | Async Event System (Replace Polling) | ✅ COMPLETE |
-| 5 | Layout System: Sidebar + Main Content | ⏳ Pending |
+| 5 | Layout System: Sidebar + Main Content | ✅ COMPLETE |
 | 6 | Dashboard View | ⏳ Pending |
 | 7 | Viewport Integration for Traces | ⏳ Pending |
 | 8 | Flows View with Detail Panel | ⏳ Pending |
@@ -56,6 +56,9 @@
 - Run 042: Removed `state` package entirely (AppState with mutexes). Merged domain state into `MainScreen` struct. Replaced 1-second polling with async commands (`fetchSessionsCmd`, `fetchRunCmd`, `fetchTracesCmd`, `fetchArtifactsCmd`, `fetchReportCmd`). Added 26 new tests for async message/command architecture. Total 30 tests in screens package. Ticker changed to 2s, only active when run selected. Tests pass, binary builds successfully.
 - Run 043: Verified Phase 3+4 implementation integrity. Added 66 new tests covering key handling, steering commands, parsing, View rendering, constructors, edge cases. Total 96 tests in screens package. All passing, build clean, vet clean.
 
+**V4 Phase 5 Completed:**
+- Run 046: Replaced 2x2 quadrant layout with sidebar+main content system. Removed `ComponentID` type, `quadrants`, `activeSlot`, `maximized`, `maximizedSlot` fields. Added `View` type enum (`Dashboard`, `Flows`, `Traces`, `Report`) and `sidebarFocus` boolean. Rewrote `View()` method with `renderSidebar()`, `renderMainContent()`, and view-specific renderers. Replaced slot-based key bindings (tab, left/right, 0-3, p, w, m) with view switching (1-4, tab for focus toggle, up/down context-aware). Removed 18 old quadrant/slot tests, added 8 new sidebar/view tests. All 22 packages pass, build clean, vet clean.
+
 ### Test Coverage
 - `go test ./...` — passing (96 tests in screens package, 47 in util, 12 in style)
 
@@ -64,6 +67,8 @@
 - Run 039: Fixed autonomous planner infinite loop — LLM generated 20 redundant verification steps because `finish` tool was never exposed in its prompt. Engine already handled `finish` at line 338 but LLM didn't know it existed.
 
 ## Last Run
+- Run 046: 2026-05-20 (Agent: qwen3.6-plus-free)
+  - Status: V4 Phase 5 COMPLETE — Replaced 2x2 quadrant layout with sidebar+main content. All 22 packages pass, build clean, vet clean.
 - Run 045: 2026-05-20 (Agent: qwen3.6-plus-free)
   - Status: All 4 flagged issues fixed — RunFlow result used, View() side effect removed, space bar gap closed, custom itoa replaced. All 22 packages pass.
 - Run 044: 2026-05-20 (Agent: qwen3.6-plus-free)

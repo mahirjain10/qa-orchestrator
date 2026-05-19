@@ -59,6 +59,12 @@ func (m *TracePanelModel) GetSelected() int {
 	return m.selected
 }
 
+func (m *TracePanelModel) SetSize(width, height int) {
+	if height > 0 && height < m.maxEvents {
+		m.maxEvents = height
+	}
+}
+
 func (m *TracePanelModel) View() string {
 	if len(m.events) == 0 {
 		return style.Header.Render("Trace Events") + "\n\n  No trace events\n"
