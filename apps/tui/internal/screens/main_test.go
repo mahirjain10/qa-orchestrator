@@ -170,129 +170,84 @@ func TestKeyQuitAndCtrlC(t *testing.T) {
 	_ = model
 }
 
-func TestKeyTabCyclesSlots(t *testing.T) {
+func TestKeyTabTogglesFocus(t *testing.T) {
 	screen, _ := newScreenWithRun(t)
-	screen.activeSlot = 0
+	screen.sidebarFocus = false
 
 	screen.Update(tea.KeyMsg{Type: tea.KeyTab})
-	if screen.activeSlot != 1 {
-		t.Fatalf("expected slot 1 after tab, got %d", screen.activeSlot)
+	if !screen.sidebarFocus {
+		t.Fatalf("expected sidebar focus after tab, got content focus")
 	}
 
 	screen.Update(tea.KeyMsg{Type: tea.KeyTab})
-	if screen.activeSlot != 2 {
-		t.Fatalf("expected slot 2 after second tab, got %d", screen.activeSlot)
+	if screen.sidebarFocus {
+		t.Fatalf("expected content focus after second tab, got sidebar focus")
 	}
 }
 
-func TestKeyTabRestoresFromMaximized(t *testing.T) {
-	screen, _ := newScreenWithRun(t)
-	screen.maximized = true
-	screen.activeSlot = 2
-
-	screen.Update(tea.KeyMsg{Type: tea.KeyTab})
-
-	if screen.maximized {
-		t.Fatal("expected maximized to be false after tab")
-	}
-}
-
-func TestKeyLeftRightNavigation(t *testing.T) {
-	screen, _ := newScreenWithRun(t)
-	screen.activeSlot = 0
-
-	screen.Update(tea.KeyMsg{Type: tea.KeyLeft})
-	if screen.activeSlot != 3 {
-		t.Fatalf("expected slot 3 after left from 0, got %d", screen.activeSlot)
-	}
-
-	screen.Update(tea.KeyMsg{Type: tea.KeyRight})
-	if screen.activeSlot != 0 {
-		t.Fatalf("expected slot 0 after right from 3, got %d", screen.activeSlot)
-	}
-}
-
-func TestKeyLeftRightDisabledWhenMaximized(t *testing.T) {
-	screen, _ := newScreenWithRun(t)
-	screen.maximized = true
-	screen.activeSlot = 1
-
-	screen.Update(tea.KeyMsg{Type: tea.KeyLeft})
-	if screen.activeSlot != 1 {
-		t.Fatalf("expected slot unchanged when maximized, got %d", screen.activeSlot)
-	}
-
-	screen.Update(tea.KeyMsg{Type: tea.KeyRight})
-	if screen.activeSlot != 1 {
-		t.Fatalf("expected slot unchanged when maximized, got %d", screen.activeSlot)
-	}
-}
-
-func TestKeySlotJump0to3(t *testing.T) {
+func TestKey1to4SwitchViews(t *testing.T) {
 	screen, _ := newScreenWithRun(t)
 
-	screen.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'0'}})
-	if screen.activeSlot != 0 {
-		t.Fatalf("expected slot 0, got %d", screen.activeSlot)
+	screen.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'1'}})
+	if screen.activeView != ViewDashboard {
+		t.Fatalf("expected Dashboard view, got %s", screen.activeView)
 	}
 
 	screen.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'2'}})
-	if screen.activeSlot != 2 {
-		t.Fatalf("expected slot 2, got %d", screen.activeSlot)
+	if screen.activeView != ViewFlows {
+		t.Fatalf("expected Flows view, got %s", screen.activeView)
 	}
 
 	screen.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'3'}})
-	if screen.activeSlot != 3 {
-		t.Fatalf("expected slot 3, got %d", screen.activeSlot)
+	if screen.activeView != ViewTraces {
+		t.Fatalf("expected Traces view, got %s", screen.activeView)
+	}
+
+	screen.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'4'}})
+	if screen.activeView != ViewReport {
+		t.Fatalf("expected Report view, got %s", screen.activeView)
 	}
 }
 
-func TestKeyMaximizeToggle(t *testing.T) {
+func TestKeyUpDownInSidebarFocus(t *testing.T) {
 	screen, _ := newScreenWithRun(t)
+	screen.sidebarFocus = true
+	screen.activeView = ViewDashboard
 
-	screen.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'m'}})
-	if !screen.maximized {
-		t.Fatal("expected maximized after m key")
+	screen.Update(tea.KeyMsg{Type: tea.KeyDown})
+	if screen.activeView != ViewFlows {
+		t.Fatalf("expected Flows view after down in sidebar, got %s", screen.activeView)
 	}
-	if screen.maximizedSlot != screen.activeSlot {
-		t.Fatalf("expected maximizedSlot to match activeSlot, got %d vs %d", screen.maximizedSlot, screen.activeSlot)
+
+	screen.Update(tea.KeyMsg{Type: tea.KeyDown})
+	if screen.activeView != ViewTraces {
+		t.Fatalf("expected Traces view after second down, got %s", screen.activeView)
 	}
 
-	screen.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'m'}})
-	if screen.maximized {
-		t.Fatal("expected not maximized after second m key")
-	}
-}
-
-func TestKeyEscapeRestoresFromMaximized(t *testing.T) {
-	screen, _ := newScreenWithRun(t)
-	screen.maximized = true
-
-	screen.Update(tea.KeyMsg{Type: tea.KeyEsc})
-
-	if screen.maximized {
-		t.Fatal("expected maximized to be false after escape")
+	screen.Update(tea.KeyMsg{Type: tea.KeyUp})
+	if screen.activeView != ViewFlows {
+		t.Fatalf("expected Flows view after up, got %s", screen.activeView)
 	}
 }
 
-func TestKeyUpDownNavigationByComponent(t *testing.T) {
+func TestKeyUpDownInContentFocus(t *testing.T) {
 	screen, runID := newScreenWithRun(t)
 	screen.currentRun = &types.Session{RunID: runID, Flows: []types.FlowRunState{
 		{FlowID: "flow-1", Status: types.FlowStateRunning},
 		{FlowID: "flow-2", Status: types.FlowStatePending},
 	}}
 	screen.flowStatus.SetFlows(screen.currentRun.Flows)
+	screen.sidebarFocus = false
+	screen.activeView = ViewFlows
 
-	screen.activeSlot = 0
-	screen.Update(tea.KeyMsg{Type: tea.KeyUp})
-	if screen.campaignList.GetSelected() != 0 {
-		t.Fatal("expected campaign list selection to handle up at boundary")
-	}
-
-	screen.activeSlot = 1
 	screen.Update(tea.KeyMsg{Type: tea.KeyDown})
 	if screen.flowStatus.GetSelected() != 1 {
-		t.Fatalf("expected flow status selection to increment, got %d", screen.flowStatus.GetSelected())
+		t.Fatalf("expected flow selection to increment, got %d", screen.flowStatus.GetSelected())
+	}
+
+	screen.Update(tea.KeyMsg{Type: tea.KeyUp})
+	if screen.flowStatus.GetSelected() != 0 {
+		t.Fatalf("expected flow selection to decrement, got %d", screen.flowStatus.GetSelected())
 	}
 }
 
@@ -301,8 +256,6 @@ func TestKeyEnterSelectsCampaign(t *testing.T) {
 	sess := &types.Session{RunID: runID, CampaignName: "test-campaign", Status: types.RunStatePending}
 	screen.sessions = []*types.Session{sess}
 	screen.campaignList.SetCampaigns([]string{"test-campaign [" + runID + "]"})
-	screen.activeSlot = 0
-	screen.quadrants[0] = CompCampaigns
 
 	screen.Update(tea.KeyMsg{Type: tea.KeyEnter})
 
@@ -393,90 +346,43 @@ func TestViewRendersHeader(t *testing.T) {
 	}
 }
 
-func TestViewRendersFooter(t *testing.T) {
+func TestViewRendersSidebar(t *testing.T) {
 	screen, _ := newScreenWithRun(t)
 	screen.width = 120
 	screen.height = 40
 
 	view := screen.View()
-	if !strings.Contains(view, "quit") {
-		t.Fatal("expected view to contain footer help text")
+	if !strings.Contains(view, "VIEWS") {
+		t.Fatal("expected view to contain sidebar with VIEWS section")
+	}
+	if !strings.Contains(view, "Dashboard") {
+		t.Fatal("expected view to contain Dashboard in sidebar")
 	}
 }
 
-func TestViewRendersQuadrants(t *testing.T) {
+func TestViewShowsTooSmallMessage(t *testing.T) {
 	screen, _ := newScreenWithRun(t)
-	screen.width = 120
-	screen.height = 40
+	screen.width = 60
+	screen.height = 20
 
 	view := screen.View()
-	if !strings.Contains(view, "[Campaigns]") {
-		t.Fatal("expected view to contain campaigns panel")
-	}
-	if !strings.Contains(view, "[Flows]") {
-		t.Fatal("expected view to contain flows panel")
-	}
-	if !strings.Contains(view, "[Run]") {
-		t.Fatal("expected view to contain run panel")
-	}
-	if !strings.Contains(view, "[Traces]") {
-		t.Fatal("expected view to contain traces panel")
+	if !strings.Contains(view, "Terminal too small") {
+		t.Fatal("expected view to show 'Terminal too small' message")
 	}
 }
 
-func TestViewMaximizedShowsSingleComponent(t *testing.T) {
-	screen, _ := newScreenWithRun(t)
+func TestViewRendersSidebarWithRun(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
 	screen.width = 120
 	screen.height = 40
-	screen.maximized = true
-	screen.maximizedSlot = 0
+	screen.currentRun = &types.Session{RunID: runID, Status: types.RunStateRunning}
 
 	view := screen.View()
-	if !strings.Contains(view, "[Campaigns]") {
-		t.Fatal("expected maximized view to show only campaigns")
+	if !strings.Contains(view, "RUN") {
+		t.Fatal("expected view to contain RUN section in sidebar")
 	}
-}
-
-func TestComponentLabelReturnsCorrectLabels(t *testing.T) {
-	screen, _ := newScreenWithRun(t)
-
-	tests := []struct {
-		id   ComponentID
-		want string
-	}{
-		{CompCampaigns, " [Campaigns] "},
-		{CompFlows, " [Flows] "},
-		{CompRun, " [Run] "},
-		{CompTraces, " [Traces] "},
-		{CompArtifacts, " [Artifacts] "},
-		{CompReport, " [Report] "},
-		{ComponentID("unknown"), " [?] "},
-	}
-
-	for _, tt := range tests {
-		got := screen.componentLabel(tt.id)
-		if got != tt.want {
-			t.Errorf("componentLabel(%s) = %q, want %q", tt.id, got, tt.want)
-		}
-	}
-}
-
-func TestFocusColorForSlot(t *testing.T) {
-	screen, _ := newScreenWithRun(t)
-
-	colors := map[int]string{
-		0: "75",
-		1: "226",
-		2: "208",
-		3: "86",
-		4: "75",
-	}
-
-	for slot, want := range colors {
-		got := screen.focusColorForSlot(slot)
-		if string(got) != want {
-			t.Errorf("focusColorForSlot(%d) = %q, want %q", slot, got, want)
-		}
+	if !strings.Contains(view, runID[:8]) {
+		t.Fatal("expected view to contain run ID in sidebar")
 	}
 }
 
@@ -529,11 +435,11 @@ func TestNewMainScreenInitializesFields(t *testing.T) {
 	if screen.campaignList == nil {
 		t.Fatal("expected campaignList to be initialized")
 	}
-	if screen.activeSlot != 0 {
-		t.Fatalf("expected activeSlot 0, got %d", screen.activeSlot)
+	if screen.activeView != ViewDashboard {
+		t.Fatalf("expected activeView Dashboard, got %s", screen.activeView)
 	}
-	if len(screen.quadrants) != 4 {
-		t.Fatalf("expected 4 quadrants, got %d", len(screen.quadrants))
+	if screen.sidebarFocus {
+		t.Fatal("expected sidebarFocus to be false initially")
 	}
 }
 
@@ -799,72 +705,18 @@ func TestViewWithMessageBox(t *testing.T) {
 	}
 }
 
-func TestPKeyCyclesComponent(t *testing.T) {
+func TestCycleViewWrapsAround(t *testing.T) {
 	screen, _ := newScreenWithRun(t)
-	screen.activeSlot = 0
-	screen.quadrants[0] = CompCampaigns
+	screen.activeView = ViewDashboard
 
-	screen.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'p'}})
-
-	if screen.quadrants[0] != CompFlows {
-		t.Fatalf("expected component to cycle to Flows, got %s", screen.quadrants[0])
-	}
-}
-
-func TestWKeySwapsSlots(t *testing.T) {
-	screen, _ := newScreenWithRun(t)
-	screen.activeSlot = 0
-	screen.quadrants = [4]ComponentID{CompCampaigns, CompFlows, CompRun, CompTraces}
-
-	screen.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'w'}})
-
-	if screen.quadrants[0] != CompFlows {
-		t.Fatalf("expected slot 0 to be Flows after swap, got %s", screen.quadrants[0])
-	}
-	if screen.quadrants[1] != CompCampaigns {
-		t.Fatalf("expected slot 1 to be Campaigns after swap, got %s", screen.quadrants[1])
-	}
-}
-
-func TestPKeyDisabledWhenMaximized(t *testing.T) {
-	screen, _ := newScreenWithRun(t)
-	screen.maximized = true
-	screen.activeSlot = 0
-	screen.quadrants[0] = CompCampaigns
-
-	screen.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'p'}})
-
-	if screen.quadrants[0] != CompCampaigns {
-		t.Fatalf("expected component to not change when maximized, got %s", screen.quadrants[0])
-	}
-}
-
-func TestWKeyDisabledWhenMaximized(t *testing.T) {
-	screen, _ := newScreenWithRun(t)
-	screen.maximized = true
-	screen.activeSlot = 0
-	screen.quadrants = [4]ComponentID{CompCampaigns, CompFlows, CompRun, CompTraces}
-
-	screen.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'w'}})
-
-	if screen.quadrants[0] != CompCampaigns {
-		t.Fatalf("expected slots to not swap when maximized, got %s", screen.quadrants[0])
-	}
-}
-
-func TestKey0to3DisabledWhenMaximized(t *testing.T) {
-	screen, _ := newScreenWithRun(t)
-	screen.maximized = true
-	screen.activeSlot = 2
-
-	screen.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'0'}})
-	if screen.activeSlot != 2 {
-		t.Fatalf("expected slot unchanged when maximized, got %d", screen.activeSlot)
+	screen.cycleView(-1)
+	if screen.activeView != ViewReport {
+		t.Fatalf("expected Report view after cycling up from Dashboard, got %s", screen.activeView)
 	}
 
-	screen.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'1'}})
-	if screen.activeSlot != 2 {
-		t.Fatalf("expected slot unchanged when maximized, got %d", screen.activeSlot)
+	screen.cycleView(1)
+	if screen.activeView != ViewDashboard {
+		t.Fatalf("expected Dashboard view after cycling down from Report, got %s", screen.activeView)
 	}
 }
 
