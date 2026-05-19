@@ -54,6 +54,37 @@ func (r *MockToolRegistry) registerDefaultTools() {
 	r.Register("echo", func(params map[string]any) (any, error) {
 		return params["value"], nil
 	})
+
+	// Browser tool mocks for simulation
+	r.Register("navigate", func(params map[string]any) (any, error) {
+		url, _ := params["url"].(string)
+		return fmt.Sprintf("simulated: navigated to %s", url), nil
+	})
+
+	r.Register("click", func(params map[string]any) (any, error) {
+		selector, _ := params["selector"].(string)
+		return fmt.Sprintf("simulated: clicked %s", selector), nil
+	})
+
+	r.Register("type_text", func(params map[string]any) (any, error) {
+		selector, _ := params["selector"].(string)
+		value, _ := params["value"].(string)
+		return fmt.Sprintf("simulated: typed '%s' into %s", value, selector), nil
+	})
+
+	r.Register("wait_for", func(params map[string]any) (any, error) {
+		selector, _ := params["selector"].(string)
+		return fmt.Sprintf("simulated: waited for %s", selector), nil
+	})
+
+	r.Register("get_text", func(params map[string]any) (any, error) {
+		selector, _ := params["selector"].(string)
+		return fmt.Sprintf("simulated text from %s", selector), nil
+	})
+
+	r.Register("screenshot", func(params map[string]any) (any, error) {
+		return "simulated: screenshot captured", nil
+	})
 }
 
 func (r *MockToolRegistry) Register(name string, fn func(params map[string]any) (any, error)) {

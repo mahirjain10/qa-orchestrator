@@ -188,6 +188,35 @@ func TestEmitHelpersWithNilStore(t *testing.T) {
 	EmitArtifactEvent(nil, "run_1", "flow_1", "screenshot", "/path", nil)
 }
 
+func TestEmitRecoveryAction_NilDecision(t *testing.T) {
+	store, _ := setupTestStore(t)
+
+	// This should not panic
+	EmitRecoveryAction(store, "run_1", "flow_1", nil, &agentstypes.StepResult{
+		StepID: "step_1",
+		Tool:   "navigate",
+	})
+
+	events, err := store.GetByRunID("run_1")
+	if err != nil {
+		t.Fatalf("get failed: %v", err)
+	}
+	if len(events) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(events))
+	}
+
+	event := events[0]
+	if event.Action != "pending" {
+		t.Errorf("expected action pending, got %s", event.Action)
+	}
+	if event.Details["reason"] != "analyzing failure" {
+		t.Errorf("expected reason 'analyzing failure', got %v", event.Details["reason"])
+	}
+	if event.Details["failed_step"] != "step_1" {
+		t.Errorf("expected failed_step step_1, got %v", event.Details["failed_step"])
+	}
+}
+
 func TestListRunIDs(t *testing.T) {
 	store, _ := setupTestStore(t)
 

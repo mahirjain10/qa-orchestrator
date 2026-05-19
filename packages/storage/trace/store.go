@@ -231,11 +231,19 @@ func EmitRecoveryAction(store *TraceStore, runID, flowID string, decision *agent
 		return
 	}
 	status := sharedtypes.TraceStatusSuccess
-	if decision != nil && decision.Action == agentstypes.RecoveryActionFail {
-		status = sharedtypes.TraceStatusFailed
+	action := "pending"
+	reason := "analyzing failure"
+
+	if decision != nil {
+		action = string(decision.Action)
+		reason = decision.Reason
+		if decision.Action == agentstypes.RecoveryActionFail {
+			status = sharedtypes.TraceStatusFailed
+		}
 	}
-	event := sharedtypes.NewTraceEvent(runID, flowID, "recovery", sharedtypes.TraceEventRecoveryAction, string(decision.Action), status)
-	event.WithDetail("reason", decision.Reason)
+
+	event := sharedtypes.NewTraceEvent(runID, flowID, "recovery", sharedtypes.TraceEventRecoveryAction, action, status)
+	event.WithDetail("reason", reason)
 	if stepResult != nil {
 		event.WithDetail("failed_step", stepResult.StepID)
 		event.WithDetail("tool", stepResult.Tool)

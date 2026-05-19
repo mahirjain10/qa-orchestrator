@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -8,6 +9,8 @@ import (
 	"qa-orchestrator/apps/tui/internal/screens"
 	"qa-orchestrator/packages/agents/engine"
 	"qa-orchestrator/packages/agents/executor"
+	browserruntime "qa-orchestrator/packages/browser-runtime"
+	browsertools "qa-orchestrator/packages/browser-runtime/tools"
 	"qa-orchestrator/packages/llm"
 	"qa-orchestrator/packages/orchestrator/campaign"
 	sharedtypes "qa-orchestrator/packages/shared/types"
@@ -108,18 +111,33 @@ func createLLMClient() (*llm.HTTPClient, error) {
 
 func createAgentEngine(sessionStore *session.SessionStore, traceStore *trace.TraceStore, artifactStore *artifact.ArtifactStore, llmClient *llm.HTTPClient) *engine.AgentEngine {
 	var agentEngine *engine.AgentEngine
+	var registry executor.ToolRegistry = executor.NewMockToolRegistry()
+	var browserTools interface {
+		ListToolsWithDocs() []browsertools.ToolInfo
+	}
+
+	if os.Getenv("BROWSER_MODE") == "real" {
+		runtime, err := browserruntime.NewBrowserRuntime(nil)
+		if err == nil {
+			// In a real app, we'd manage this lifecycle better
+			_ = runtime.Start(context.Background())
+			browserRegistry := browsertools.NewToolRegistry(runtime)
+			registry = browserRegistry
+			browserTools = browserRegistry
+		}
+	}
 
 	if llmClient != nil {
 		cliWrapper := llm.NewSimpleClientWithClient(llmClient)
 		agentEngine = engine.NewAgentEngineWithLLM(
-			executor.NewMockToolRegistry(),
+			registry,
 			sessionStore,
 			cliWrapper,
-			nil,
+			browserTools,
 		)
 	} else {
 		agentEngine = engine.NewAgentEngineWithStores(
-			executor.NewMockToolRegistry(),
+			registry,
 			sessionStore,
 			traceStore,
 			artifactStore,
