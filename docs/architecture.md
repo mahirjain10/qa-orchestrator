@@ -1,4 +1,4 @@
-# Zenact-Style QA Campaign Orchestrator Architecture
+# qa-orchestrator Architecture
 
 This project is a terminal-first TUI application for running AI-assisted QA campaigns against web applications. It is designed as an orchestration layer around test execution: the system accepts a campaign, breaks it into flows, runs those flows through a planner/executor/validator/recovery loop, and stores run state, traces, and artifacts for pause, resume, cancel, and human steering.
 

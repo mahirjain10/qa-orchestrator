@@ -1,78 +1,74 @@
-# Zenact POC Makefile
-# Modernized build and test tools for V2 Architecture
+# qa-orchestrator Makefile
 
-.PHONY: build run test test-unit test-cover clean tidy lint deps check-env help
+.PHONY: build run run-sample run-guided test test-short test-cover lint vet fmt tidy deps check-env clean verify help
 
-# Build the TUI application
+BINARY := ./bin/qa-orchestrator
+APP := ./apps/tui/cmd/main.go
+
 build:
-	go build -v -o ./bin/qa-orchestrator ./apps/tui/cmd/main.go
+	go build -v -o $(BINARY) $(APP)
 
-# Run the TUI application (pass campaign file as argument)
-# Usage: make run ARGS="campaigns/sample-autonomous.yaml"
 run: build
-	./bin/qa-orchestrator $(ARGS)
+	$(BINARY) $(ARGS)
 
-# Run with sample campaign
 run-sample:
-	make run ARGS="campaigns/sample-autonomous.yaml"
+	$(MAKE) run ARGS="campaigns/sample-autonomous.yaml"
 
-# Run with guided campaign
 run-guided:
-	make run ARGS="campaigns/sample-guided.yaml"
+	$(MAKE) run ARGS="campaigns/sample-guided.yaml"
 
-# Install dependencies (Go + Playwright)
+test:
+	go test -v ./...
+
+test-short:
+	go test -v -short ./...
+
+test-cover:
+	go test -coverprofile=coverage.out ./...
+	go tool cover -func=coverage.out
+
+fmt:
+	go fmt ./...
+
+vet:
+	go vet ./...
+
+lint: fmt vet
+
+verify: test build
+
 deps:
 	go mod download
 	go run github.com/playwright-community/playwright-go/cmd/playwright install --with-deps
 
-# Verify environment configuration
-check-env:
-	@$(if $(LLM_API_KEY), echo "SUCCESS: LLM_API_KEY is configured.", echo "WARNING: LLM_API_KEY is not set. Autonomous mode will fail.")
-	@$(if $(LLM_MODEL), echo "SUCCESS: LLM_MODEL is configured.", echo "WARNING: LLM_MODEL is not set. Autonomous mode will fail.")
-
-# Run all tests
-test:
-	go test -v ./...
-
-# Run only unit tests (skip browser-heavy tests if tagged)
-test-unit:
-	go test -v -short ./...
-
-# Generate test coverage report
-test-cover:
-	go test -coverprofile=coverage.out ./...
-	go tool cover -html=coverage.out
-
-# Linting and Formatting
-lint:
-	go fmt ./...
-	go vet ./...
-
-# Clean up binaries and local data
-clean:
-	rm -rf ./bin/qa-orchestrator
-	rm -rf ./data/*
-	rm -rf ./logs/runs/*
-	go clean
-
-# Refresh dependencies
 tidy:
 	go mod tidy
 
-# Show available commands
+check-env:
+	@$(if $(LLM_API_KEY), echo "OK: LLM_API_KEY is configured.", echo "WARN: LLM_API_KEY is not set. Autonomous mode will fail.")
+	@$(if $(LLM_MODEL), echo "OK: LLM_MODEL is configured.", echo "WARN: LLM_MODEL is not set. Autonomous mode will fail.")
+
+clean:
+	powershell -NoProfile -Command "if (Test-Path '$(BINARY)') { Remove-Item '$(BINARY)' -Force }"
+	powershell -NoProfile -Command "if (Test-Path './coverage.out') { Remove-Item './coverage.out' -Force }"
+	go clean
+
 help:
-	@echo "Zenact POC - Available Make targets:"
+	@echo "qa-orchestrator - Available Make targets:"
 	@echo ""
-	@echo "  build        Build the TUI application"
-	@echo "  run          Run with campaign file: make run ARGS='path/to/campaign.yaml'"
-	@echo "  run-sample   Run with sample autonomous campaign"
-	@echo "  run-guided   Run with sample guided campaign"
-	@echo "  deps         Install Go and Playwright dependencies"
-	@echo "  check-env    Verify LLM_API_KEY is configured"
-	@echo "  test         Run all tests"
-	@echo "  test-unit    Run unit tests only"
-	@echo "  test-cover   Generate test coverage report"
-	@echo "  lint         Format and vet code"
-	@echo "  clean        Remove binaries and data"
-	@echo "  tidy         Refresh Go dependencies"
-	@echo "  help         Show this help message"
+	@echo "  build       Build TUI binary"
+	@echo "  run         Run with campaign: make run ARGS='campaigns/sample-guided.yaml'"
+	@echo "  run-sample  Run sample autonomous campaign"
+	@echo "  run-guided  Run sample guided campaign"
+	@echo "  test        Run all tests"
+	@echo "  test-short  Run short tests"
+	@echo "  test-cover  Generate coverage summary"
+	@echo "  fmt         Run go fmt"
+	@echo "  vet         Run go vet"
+	@echo "  lint        Run fmt + vet"
+	@echo "  verify      Run tests and build"
+	@echo "  deps        Download Go deps + install Playwright"
+	@echo "  tidy        Run go mod tidy"
+	@echo "  check-env   Validate LLM env vars"
+	@echo "  clean       Remove build/coverage artifacts"
+	@echo "  help        Show this help"

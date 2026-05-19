@@ -282,7 +282,7 @@ func (m *MainScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.steeringInput.SetValue("")
 				}
 			}
-			if msg.String() == "Escape" {
+			if msg.String() == "escape" || msg.String() == "esc" {
 				m.state.SetView(state.ViewCampaignList)
 				m.steeringMode = false
 				m.steeringInput.SetValue("")
@@ -300,7 +300,19 @@ func (m *MainScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.msg = "Restored 4-quadrant view"
 			} else {
 				m.activeSlot = (m.activeSlot + 1) % 4
-				m.msg = fmt.Sprintf("Slot %d: %s (TAB: switch | p: cycle | m: maximize)", m.activeSlot, m.quadrants[m.activeSlot])
+				m.msg = fmt.Sprintf("Slot %d: %s", m.activeSlot, m.quadrants[m.activeSlot])
+			}
+
+		case "left":
+			if !m.maximized {
+				m.activeSlot = (m.activeSlot + 3) % 4
+				m.msg = fmt.Sprintf("Slot %d: %s", m.activeSlot, m.quadrants[m.activeSlot])
+			}
+
+		case "right":
+			if !m.maximized {
+				m.activeSlot = (m.activeSlot + 1) % 4
+				m.msg = fmt.Sprintf("Slot %d: %s", m.activeSlot, m.quadrants[m.activeSlot])
 			}
 
 		case "p":
@@ -318,6 +330,34 @@ func (m *MainScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.msg = fmt.Sprintf("Slot %d → %s", m.activeSlot, m.quadrants[m.activeSlot])
 			}
 
+		case "w":
+			if !m.maximized {
+				nextSlot := (m.activeSlot + 1) % 4
+				m.quadrants[m.activeSlot], m.quadrants[nextSlot] = m.quadrants[nextSlot], m.quadrants[m.activeSlot]
+				m.msg = fmt.Sprintf("Swapped slot %d ↔ %d", m.activeSlot, nextSlot)
+			}
+
+		case "0":
+			if !m.maximized {
+				m.activeSlot = 0
+				m.msg = fmt.Sprintf("Slot %d: %s", m.activeSlot, m.quadrants[m.activeSlot])
+			}
+		case "1":
+			if !m.maximized {
+				m.activeSlot = 1
+				m.msg = fmt.Sprintf("Slot %d: %s", m.activeSlot, m.quadrants[m.activeSlot])
+			}
+		case "2":
+			if !m.maximized {
+				m.activeSlot = 2
+				m.msg = fmt.Sprintf("Slot %d: %s", m.activeSlot, m.quadrants[m.activeSlot])
+			}
+		case "3":
+			if !m.maximized {
+				m.activeSlot = 3
+				m.msg = fmt.Sprintf("Slot %d: %s", m.activeSlot, m.quadrants[m.activeSlot])
+			}
+
 		case "m":
 			if m.maximized {
 				m.maximized = false
@@ -328,7 +368,7 @@ func (m *MainScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.msg = fmt.Sprintf("Maximized: %s", m.quadrants[m.maximizedSlot])
 			}
 
-		case "escape":
+		case "escape", "esc":
 			if m.maximized {
 				m.maximized = false
 				m.msg = "Restored 4-quadrant view"
@@ -425,7 +465,7 @@ func (m *MainScreen) View() string {
 		return "Initializing..."
 	}
 
-	header := headerStyle.Render("Zenact TUI - Campaign Runner") +
+	header := headerStyle.Render("QA Orchestrator TUI - Campaign Runner") +
 		lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render(" │ ") +
 		lipgloss.NewStyle().Foreground(m.focusColorForSlot(m.activeSlot)).Render("●") +
 		lipgloss.NewStyle().Foreground(lipgloss.Color("245")).Render(fmt.Sprintf(" Slot %d: %s ", m.activeSlot, m.quadrants[m.activeSlot]))
@@ -458,7 +498,7 @@ func (m *MainScreen) View() string {
 		content = lipgloss.JoinVertical(lipgloss.Left, topRow, bottomRow)
 	}
 
-	footer := helpStyle.Render("TAB: switch slot │ p: cycle component │ m: maximize │ ↑↓ Navigate │ Enter: select │ Space: pause │ x: cancel │ s: steer │ q: quit")
+	footer := helpStyle.Render("TAB/←→: switch slot │ 0-3: jump │ p: cycle │ w: swap │ m: maximize │ ↑↓ Navigate │ Enter: select │ Space: pause │ x: cancel │ s: steer │ q: quit")
 
 	viewContent := lipgloss.JoinVertical(
 		lipgloss.Left,
@@ -517,6 +557,9 @@ func (m *MainScreen) refreshAll() {
 	m.state.RefreshSessions()
 	m.refreshRun()
 	m.refreshFlowStatus()
+	m.refreshTraces()
+	m.refreshArtifacts()
+	m.refreshReport()
 }
 
 func (m *MainScreen) refreshRun() {

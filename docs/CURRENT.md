@@ -33,8 +33,8 @@
 | 1 | OpenRouter Integration Hardening | ✅ COMPLETE |
 | 2 | TUI Rendering Fixes | ✅ COMPLETE |
 | 3 | TUI Slot-based Layout Engine (quadrant-based rendering) | ✅ COMPLETE |
-| 4 | Interactive Pane Management (swap/maximize panes) | ⏳ PENDING |
-| 5 | Validation & Testing | ⏳ PENDING |
+| 4 | Interactive Pane Management (swap/maximize panes) | ✅ COMPLETE |
+| 5 | Validation & Testing | ✅ COMPLETE |
 
 **V3 Phase 1 Completed:**
 - Run 031: Initial LLM fail-fast validation for autonomous campaigns.
@@ -47,14 +47,23 @@
 **V3 Phase 3 Completed:**
 - Run 034: Implemented slot-based layout engine with ComponentID type, quadrants array, activeSlot tracking, maximize mode, renderComponent helper, and new keyboard handlers (TAB/p/m).
 
+**V3 Phase 4 Completed:**
+- Run 035: Added left/right arrow keys for slot switching, `w` key to swap with neighbor, number keys (0-3) to jump to specific slot.
+
+**V3 Phase 5 Completed:**
+- Run 035: Tests pass, binary builds successfully.
+- Run 036: Post-implementation bug hunt fixes for Phase 3/4/5 (steering ESC handling + trace/artifact/report refresh wiring) with regression tests.
+
 ### Test Coverage
 - `go test ./...` — passing
 
 ## Last Run
-- Run 034: 2026-05-19 (Agent: Claude Code)
-  - Status: Implemented Phase 3 slot-based layout engine with ComponentID, quadrants array, activeSlot, maximized mode, renderComponent helper, and new keyboard handlers (TAB/p/m/ESC).
+- Run 037: 2026-05-19 (Agent: Codex)
+  - Status: Updated Makefile targets and added a human-readable README with architecture and usage guidance.
 
 ## Makefile (Updated)
 - Added `run-sample` and `run-guided` targets for quick testing
 - Added `help` target for available commands
 - Enhanced `run` target documentation
+- Added `fmt`, `vet`, `lint`, and `verify` workflow targets
+- Updated `clean` to be PowerShell-safe on Windows

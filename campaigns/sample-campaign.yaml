@@ -1,5 +1,5 @@
 name: Sample Web App Campaign
-description: Test the Zenact demo web app
+description: Test the demo web app
 version: "1.0"
 config:
   timeout: 300s
