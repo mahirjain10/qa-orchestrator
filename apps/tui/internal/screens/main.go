@@ -77,11 +77,15 @@ var (
 
 type Pane string
 
+type ComponentID string
+
 const (
-	PaneCampaigns Pane = "campaigns"
-	PaneFlows     Pane = "flows"
-	PaneTraces    Pane = "traces"
-	PaneRun       Pane = "run"
+	CompCampaigns ComponentID = "campaigns"
+	CompFlows     ComponentID = "flows"
+	CompRun       ComponentID = "run"
+	CompTraces    ComponentID = "traces"
+	CompArtifacts ComponentID = "artifacts"
+	CompReport    ComponentID = "report"
 )
 
 type TickMsg time.Time
@@ -103,11 +107,14 @@ type MainScreen struct {
 	width  int
 	height int
 
-	activePane     Pane
-	focusedRunPane bool
-	spinner        spinner.Model
-	steeringInput  textinput.Model
-	steeringMode   bool
+	quadrants     [4]ComponentID
+	activeSlot    int
+	maximized     bool
+	maximizedSlot int
+
+	spinner       spinner.Model
+	steeringInput textinput.Model
+	steeringMode  bool
 
 	reportView string
 	command    string
@@ -134,11 +141,12 @@ func NewMainScreen(store *session.SessionStore) *MainScreen {
 		flowStatus:    components.NewFlowStatusModel(),
 		tracePanel:    components.NewTracePanelModel(),
 		artifactPanel: components.NewArtifactPanelModel(),
-		activePane:    PaneCampaigns,
+		quadrants:     [4]ComponentID{CompCampaigns, CompFlows, CompRun, CompTraces},
+		activeSlot:    0,
 		spinner:       sp,
 		steeringInput: ti,
 		command:       "",
-		msg:           "Press ENTER to select a run, SPACE to pause/resume, TAB to switch panes",
+		msg:           "TAB: switch slot | p: cycle component | m: maximize | ←↑↓→: navigate",
 	}
 }
 
@@ -161,6 +169,87 @@ func (m *MainScreen) Init() tea.Cmd {
 			return TickMsg(t)
 		}),
 	)
+}
+
+func (m *MainScreen) componentLabel(id ComponentID) string {
+	switch id {
+	case CompCampaigns:
+		return " [Campaigns] "
+	case CompFlows:
+		return " [Flows] "
+	case CompRun:
+		return " [Run] "
+	case CompTraces:
+		return " [Traces] "
+	case CompArtifacts:
+		return " [Artifacts] "
+	case CompReport:
+		return " [Report] "
+	default:
+		return " [?] "
+	}
+}
+
+func (m *MainScreen) renderComponent(id ComponentID, width, height int, focused bool) string {
+	var content string
+	switch id {
+	case CompCampaigns:
+		campaignNames := []string{}
+		sessions := m.state.GetSessions()
+		for _, s := range sessions {
+			campaignNames = append(campaignNames, fmt.Sprintf("%s [%s]", s.CampaignName, s.RunID))
+		}
+		m.campaignList.SetCampaigns(campaignNames)
+		content = m.campaignList.ViewWithWidth(width - 4)
+	case CompFlows:
+		content = m.flowStatus.ViewWithWidth(width - 4)
+	case CompRun:
+		content = m.runPanel.ViewWithWidth(width - 4)
+	case CompTraces:
+		content = m.tracePanel.ViewCompact()
+	case CompArtifacts:
+		content = m.artifactPanel.View()
+	case CompReport:
+		content = m.reportView
+	default:
+		content = "Unknown component"
+	}
+
+	borderColor := lipgloss.Color("240")
+	if focused {
+		borderColor = m.focusColorForSlot(m.activeSlot)
+	}
+
+	label := m.componentLabel(id)
+
+	style := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(borderColor).
+		Bold(focused).
+		Padding(0, 1).
+		Width(width).
+		Height(height)
+
+	titleStyle := lipgloss.NewStyle().
+		Foreground(borderColor).
+		Bold(focused)
+
+	return style.Render(titleStyle.Render(label) + "\n" + content)
+}
+
+func (m *MainScreen) focusColorForSlot(slot int) lipgloss.Color {
+	switch slot {
+	case 0:
+		return lipgloss.Color("75")
+	case 1:
+		return lipgloss.Color("226")
+	case 2:
+		return lipgloss.Color("208")
+	case 3:
+		return lipgloss.Color("86")
+	default:
+		return lipgloss.Color("75")
+	}
 }
 
 func (m *MainScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -206,48 +295,76 @@ func (m *MainScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case "tab":
-			switch m.activePane {
-			case PaneCampaigns:
-				m.activePane = PaneFlows
-			case PaneFlows:
-				m.activePane = PaneTraces
-			case PaneTraces:
-				m.activePane = PaneRun
-			case PaneRun:
-				m.activePane = PaneCampaigns
+			if m.maximized {
+				m.maximized = false
+				m.msg = "Restored 4-quadrant view"
+			} else {
+				m.activeSlot = (m.activeSlot + 1) % 4
+				m.msg = fmt.Sprintf("Slot %d: %s (TAB: switch | p: cycle | m: maximize)", m.activeSlot, m.quadrants[m.activeSlot])
 			}
-			m.msg = fmt.Sprintf("Focus: %s (Press TAB to switch)", m.activePane)
+
+		case "p":
+			if !m.maximized {
+				currentID := m.quadrants[m.activeSlot]
+				allComponents := []ComponentID{CompCampaigns, CompFlows, CompRun, CompTraces, CompArtifacts, CompReport}
+				nextIdx := 0
+				for i, c := range allComponents {
+					if c == currentID {
+						nextIdx = (i + 1) % len(allComponents)
+						break
+					}
+				}
+				m.quadrants[m.activeSlot] = allComponents[nextIdx]
+				m.msg = fmt.Sprintf("Slot %d → %s", m.activeSlot, m.quadrants[m.activeSlot])
+			}
+
+		case "m":
+			if m.maximized {
+				m.maximized = false
+				m.msg = "Restored 4-quadrant view"
+			} else {
+				m.maximized = true
+				m.maximizedSlot = m.activeSlot
+				m.msg = fmt.Sprintf("Maximized: %s", m.quadrants[m.maximizedSlot])
+			}
+
+		case "escape":
+			if m.maximized {
+				m.maximized = false
+				m.msg = "Restored 4-quadrant view"
+			}
 
 		case "up", "k":
-			switch m.activePane {
-			case PaneCampaigns:
+			activeComp := m.quadrants[m.activeSlot]
+			switch activeComp {
+			case CompCampaigns:
 				m.campaignList.Prev()
-			case PaneFlows:
+			case CompFlows:
 				m.flowStatus.Prev()
-			case PaneTraces:
+			case CompTraces:
 				m.tracePanel.Prev()
 			}
 
 		case "down", "j":
-			switch m.activePane {
-			case PaneCampaigns:
+			activeComp := m.quadrants[m.activeSlot]
+			switch activeComp {
+			case CompCampaigns:
 				m.campaignList.Next()
-			case PaneFlows:
+			case CompFlows:
 				m.flowStatus.Next()
-			case PaneTraces:
+			case CompTraces:
 				m.tracePanel.Next()
 			}
 
 		case "enter":
-			if m.activePane == PaneCampaigns {
+			if m.quadrants[m.activeSlot] == CompCampaigns {
 				sessions := m.state.GetSessions()
 				idx := m.campaignList.GetSelected()
 				if idx >= 0 && idx < len(sessions) {
 					runID := sessions[idx].RunID
 					m.state.SetCurrentRunID(runID)
 					m.refreshRun()
-					m.activePane = PaneRun
-					m.msg = fmt.Sprintf("Selected run: %s | ↑↓ to navigate, TAB to switch panes", runID)
+					m.msg = fmt.Sprintf("Selected run: %s | ↑↓ navigate | TAB switch slot", runID)
 				}
 			}
 
@@ -287,34 +404,6 @@ func (m *MainScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.refreshAll()
 			m.msg = "Refreshed"
 
-		case "l":
-			if m.state.GetView() == state.ViewCampaignList {
-				m.state.SetView(state.ViewActiveRun)
-			} else {
-				m.state.SetView(state.ViewCampaignList)
-			}
-
-		case "f":
-			m.state.SetView(state.ViewFlowStatus)
-			m.refreshFlowStatus()
-
-		case "t":
-			m.activePane = PaneTraces
-			m.state.SetView(state.ViewTraces)
-			m.refreshTraces()
-
-		case "a":
-			m.state.SetView(state.ViewArtifacts)
-			m.refreshArtifacts()
-
-		case "v":
-			if m.state.GetCurrentRunID() != "" {
-				m.state.SetView(state.ViewReport)
-				m.refreshReport()
-			} else {
-				m.msg = "Select a run first to view report"
-			}
-
 		case "s":
 			if m.state.GetCurrentRunID() != "" {
 				m.steeringMode = true
@@ -332,101 +421,44 @@ func (m *MainScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *MainScreen) View() string {
-	sessions := m.state.GetSessions()
-
-	var campaignNames []string
-	for _, s := range sessions {
-		campaignNames = append(campaignNames, fmt.Sprintf("%s [%s]", s.CampaignName, s.RunID))
+	if m.width == 0 || m.height == 0 {
+		return "Initializing..."
 	}
-	m.campaignList.SetCampaigns(campaignNames)
-
-	// Calculate dimensions
-	leftWidth := 40
-	rightWidth := 80
-	mainHeight := m.height - 7 // account for header, footer, steering input, padding
-	if mainHeight < 10 {
-		mainHeight = 10
-	}
-
-	if m.width > 0 {
-		leftWidth = m.width / 3
-		if leftWidth < 35 {
-			leftWidth = 35
-		}
-		rightWidth = m.width - leftWidth - 2
-		if rightWidth < 50 {
-			rightWidth = 50
-		}
-	}
-
-	topHeight := mainHeight / 2
-	bottomHeight := mainHeight - topHeight
-
-	panelStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("240")).
-		Padding(0, 1)
-
-	focusedPanelStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("75")).
-		Bold(true).
-		Padding(0, 1)
-
-	campaignListView := m.campaignList.ViewWithWidth(leftWidth - 4)
-	flowStatusView := m.flowStatus.ViewWithWidth(leftWidth - 4)
-
-	var leftTopPanel, leftBottomPanel string
-	if m.activePane == PaneCampaigns {
-		leftTopPanel = focusedPanelStyle.Width(leftWidth).Height(topHeight).Render(campaignListView)
-	} else {
-		leftTopPanel = panelStyle.Width(leftWidth).Height(topHeight).Render(campaignListView)
-	}
-
-	if m.activePane == PaneFlows {
-		leftBottomPanel = focusedPanelStyle.Width(leftWidth).Height(bottomHeight).Render(flowStatusView)
-	} else {
-		leftBottomPanel = panelStyle.Width(leftWidth).Height(bottomHeight).Render(flowStatusView)
-	}
-
-	leftCol := lipgloss.JoinVertical(lipgloss.Left, leftTopPanel, leftBottomPanel)
-
-	// Right Side (Run & Traces or Other Views)
-	var rightCol string
-	currentView := m.state.GetView()
-
-	switch currentView {
-	case state.ViewTraces:
-		rightCol = panelStyle.Width(rightWidth).Height(mainHeight).Render(m.tracePanel.ViewCompact())
-	case state.ViewArtifacts:
-		rightCol = panelStyle.Width(rightWidth).Height(mainHeight).Render(m.artifactPanel.View())
-	case state.ViewReport:
-		rightCol = panelStyle.Width(rightWidth).Height(mainHeight).Render(m.reportView)
-	default:
-		runPanelView := m.runPanel.ViewWithWidth(rightWidth - 4)
-		tracesView := m.tracePanel.ViewCompact()
-
-		var rightTopStyle *lipgloss.Style
-		if m.activePane == PaneRun {
-			rightTopStyle = &focusedPanelStyle
-		} else {
-			rightTopStyle = &panelStyle
-		}
-
-		rightTopPanel := rightTopStyle.Width(rightWidth).Height(topHeight).Render(runPanelView)
-		rightBottomPanel := panelStyle.Width(rightWidth).Height(bottomHeight).Render(tracesView)
-
-		rightCol = lipgloss.JoinVertical(lipgloss.Left, rightTopPanel, rightBottomPanel)
-	}
-
-	content := lipgloss.JoinHorizontal(lipgloss.Top, leftCol, rightCol)
 
 	header := headerStyle.Render("Zenact TUI - Campaign Runner") +
 		lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render(" │ ") +
-		lipgloss.NewStyle().Foreground(lipgloss.Color("75")).Render("●") +
-		lipgloss.NewStyle().Foreground(lipgloss.Color("245")).Render(fmt.Sprintf(" Focus: %s ", m.activePane))
+		lipgloss.NewStyle().Foreground(m.focusColorForSlot(m.activeSlot)).Render("●") +
+		lipgloss.NewStyle().Foreground(lipgloss.Color("245")).Render(fmt.Sprintf(" Slot %d: %s ", m.activeSlot, m.quadrants[m.activeSlot]))
 
-	footer := helpStyle.Render("↑↓ Navigate │ Enter Select │ Space Pause/Resume │ x Cancel │ r Refresh │ t Traces │ a Artifacts │ v Report │ s Steer │ q Quit")
+	contentWidth := m.width - 2
+	contentHeight := m.height - 5
+
+	var content string
+	if m.maximized {
+		slot := m.maximizedSlot
+		focusedComp := m.quadrants[slot]
+		content = m.renderComponent(focusedComp, contentWidth, contentHeight, true)
+	} else {
+		colWidth := contentWidth / 2
+		if colWidth < 30 {
+			colWidth = 30
+		}
+		rowHeight := contentHeight / 2
+		if rowHeight < 5 {
+			rowHeight = 5
+		}
+
+		q0 := m.renderComponent(m.quadrants[0], colWidth, rowHeight, m.activeSlot == 0)
+		q1 := m.renderComponent(m.quadrants[1], colWidth, rowHeight, m.activeSlot == 1)
+		q2 := m.renderComponent(m.quadrants[2], colWidth, rowHeight, m.activeSlot == 2)
+		q3 := m.renderComponent(m.quadrants[3], colWidth, rowHeight, m.activeSlot == 3)
+
+		topRow := lipgloss.JoinHorizontal(lipgloss.Top, q0, q1)
+		bottomRow := lipgloss.JoinHorizontal(lipgloss.Top, q2, q3)
+		content = lipgloss.JoinVertical(lipgloss.Left, topRow, bottomRow)
+	}
+
+	footer := helpStyle.Render("TAB: switch slot │ p: cycle component │ m: maximize │ ↑↓ Navigate │ Enter: select │ Space: pause │ x: cancel │ s: steer │ q: quit")
 
 	viewContent := lipgloss.JoinVertical(
 		lipgloss.Left,
