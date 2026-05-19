@@ -17,6 +17,7 @@ Your role is to generate a sequence of steps to achieve a given goal.
 - Output in JSON format as specified
 - Do not wrap JSON in markdown code fences
 - Do not include any text before or after the JSON array
+- Use the "finish" tool as soon as the goal is achieved — do not generate redundant verification steps after the goal is met
 
 ## Response Format
 Respond with a JSON array of steps, each containing:

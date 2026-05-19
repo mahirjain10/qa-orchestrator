@@ -163,6 +163,10 @@ func (r *ToolRegistry) registerDefaultTools(runtime *browserruntime.BrowserRunti
 		}
 		return fmt.Sprintf("screenshot captured (%d bytes)", len(screenshot)), nil
 	})
+
+	r.Register("finish", map[string]ParameterInfo{}, func(params map[string]any) (any, error) {
+		return "goal achieved, execution complete", nil
+	})
 }
 
 func (r *ToolRegistry) Register(name string, params map[string]ParameterInfo, fn Tool) {
@@ -187,6 +191,7 @@ func getToolDescription(name string) string {
 		"get_html":   "Get the inner HTML of an element",
 		"evaluate":   "Evaluate a JavaScript expression in the browser context",
 		"screenshot": "Take a screenshot of the page",
+		"finish":     "Signal that the goal has been achieved and no more steps are needed",
 	}
 	if desc, ok := descriptions[name]; ok {
 		return desc

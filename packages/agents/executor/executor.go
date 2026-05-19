@@ -85,6 +85,11 @@ func (r *MockToolRegistry) registerDefaultTools() {
 	r.Register("screenshot", func(params map[string]any) (any, error) {
 		return "simulated: screenshot captured", nil
 	})
+
+	r.Register("assert_text_visible", func(params map[string]any) (any, error) {
+		text, _ := params["text"].(string)
+		return fmt.Sprintf("simulated: verified '%s' is visible", text), nil
+	})
 }
 
 func (r *MockToolRegistry) Register(name string, fn func(params map[string]any) (any, error)) {

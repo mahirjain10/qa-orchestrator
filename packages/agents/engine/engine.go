@@ -676,26 +676,24 @@ func getDefaultLLMTools() []llm.ToolInfo {
 			},
 		},
 		{
-			Name:        "get_html",
-			Description: "Get the inner HTML of an element",
-			Parameters: map[string]llm.ParameterInfo{
-				"selector": {Type: "string", Description: "CSS selector for the element", Required: true},
-			},
-		},
-		{
-			Name:        "evaluate",
-			Description: "Evaluate a JavaScript expression in the browser context",
-			Parameters: map[string]llm.ParameterInfo{
-				"expression": {Type: "string", Description: "JavaScript expression to evaluate", Required: true},
-			},
-		},
-		{
 			Name:        "screenshot",
 			Description: "Take a screenshot of the page",
 			Parameters: map[string]llm.ParameterInfo{
 				"path":      {Type: "string", Description: "File path to save the screenshot", Required: false},
 				"full_page": {Type: "bool", Description: "Capture full page if true", Required: false},
 			},
+		},
+		{
+			Name:        "assert_text_visible",
+			Description: "Assert that specific text is visible on the page",
+			Parameters: map[string]llm.ParameterInfo{
+				"text": {Type: "string", Description: "Text that should be visible on the page", Required: true},
+			},
+		},
+		{
+			Name:        "finish",
+			Description: "Signal that the goal has been achieved and no more steps are needed. Use this when the task is complete.",
+			Parameters:  map[string]llm.ParameterInfo{},
 		},
 	}
 }

@@ -57,9 +57,13 @@
 ### Test Coverage
 - `go test ./...` — passing
 
+## Bug Fixes
+- Run 038: Fixed tool registry mismatch — `getDefaultLLMTools()` listed `get_html` and `evaluate` which `MockToolRegistry` didn't have, causing "unknown tool" → "configuration error" failures in autonomous mode.
+- Run 039: Fixed autonomous planner infinite loop — LLM generated 20 redundant verification steps because `finish` tool was never exposed in its prompt. Engine already handled `finish` at line 338 but LLM didn't know it existed.
+
 ## Last Run
-- Run 037: 2026-05-19 (Agent: Codex)
-  - Status: Updated Makefile targets and added a human-readable README with architecture and usage guidance.
+- Run 039: 2026-05-19 (Agent: qwen3.6-plus-free)
+  - Status: Fixed autonomous planner infinite loop — added `finish` tool to LLM prompt so planner stops after goal is achieved.
 
 ## Makefile (Updated)
 - Added `run-sample` and `run-guided` targets for quick testing
