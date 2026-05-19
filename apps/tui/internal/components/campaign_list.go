@@ -4,35 +4,7 @@ import (
 	"fmt"
 
 	"github.com/charmbracelet/lipgloss"
-)
-
-var (
-	panelTitleStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("205")).
-			Bold(true)
-
-	headerStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("205")).
-			Bold(true)
-
-	itemStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("252"))
-
-	selectedStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("229")).
-			Background(lipgloss.Color("237"))
-
-	selectedBoldStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("86")).
-				Bold(true).
-				Background(lipgloss.Color("235"))
-
-	statusPending   = lipgloss.NewStyle().Foreground(lipgloss.Color("245"))
-	statusRunning   = lipgloss.NewStyle().Foreground(lipgloss.Color("75"))
-	statusPassed    = lipgloss.NewStyle().Foreground(lipgloss.Color("76"))
-	statusFailed    = lipgloss.NewStyle().Foreground(lipgloss.Color("204"))
-	statusPaused    = lipgloss.NewStyle().Foreground(lipgloss.Color("228"))
-	statusCancelled = lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
+	"qa-orchestrator/apps/tui/internal/style"
 )
 
 type CampaignListModel struct {
@@ -64,18 +36,18 @@ func (m *CampaignListModel) SetSelected(idx int) {
 
 func (m *CampaignListModel) View() string {
 	if len(m.campaigns) == 0 {
-		return headerStyle.Render("Campaigns") + "\n\n  No campaigns loaded\n"
+		return style.Header.Render("Campaigns") + "\n\n  No campaigns loaded\n"
 	}
 
 	var lines []string
-	lines = append(lines, headerStyle.Render("Campaigns"))
+	lines = append(lines, style.Header.Render("Campaigns"))
 	lines = append(lines, "")
 
 	for i, name := range m.campaigns {
 		if i == m.selected {
-			lines = append(lines, selectedStyle.Render(fmt.Sprintf("  > %s", name)))
+			lines = append(lines, style.Selected.Render(fmt.Sprintf("  > %s", name)))
 		} else {
-			lines = append(lines, itemStyle.Render(fmt.Sprintf("    %s", name)))
+			lines = append(lines, style.Normal.Render(fmt.Sprintf("    %s", name)))
 		}
 	}
 
@@ -83,7 +55,7 @@ func (m *CampaignListModel) View() string {
 }
 
 func (m *CampaignListModel) ViewWithWidth(width int) string {
-	title := panelTitleStyle.Width(width - 2).Render(" Campaigns ")
+	title := style.ViewTitle.Width(width - 2).Render(" Campaigns ")
 
 	if len(m.campaigns) == 0 {
 		return title + "\n\n  No campaigns loaded\n"
@@ -97,9 +69,9 @@ func (m *CampaignListModel) ViewWithWidth(width int) string {
 			truncated = name[:width-9] + "..."
 		}
 		if i == m.selected {
-			lines = append(lines, selectedBoldStyle.Render(fmt.Sprintf(" ▶ %s", truncated)))
+			lines = append(lines, style.SelectedBold.Render(fmt.Sprintf(" ▶ %s", truncated)))
 		} else {
-			lines = append(lines, itemStyle.Render(fmt.Sprintf("   %s", truncated)))
+			lines = append(lines, style.Normal.Render(fmt.Sprintf("   %s", truncated)))
 		}
 	}
 

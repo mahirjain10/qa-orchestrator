@@ -6,19 +6,8 @@ import (
 	"time"
 
 	"github.com/charmbracelet/lipgloss"
+	"qa-orchestrator/apps/tui/internal/style"
 	"qa-orchestrator/packages/shared/types"
-)
-
-var (
-	flowTableHeaderStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("86")).
-				Bold(true)
-
-	flowTableCellStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("252"))
-
-	flowTableHeaderBorder = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("240"))
 )
 
 type FlowStatusModel struct {
@@ -64,35 +53,33 @@ func (m *FlowStatusModel) SetSelected(idx int) {
 
 func (m *FlowStatusModel) View() string {
 	if len(m.flows) == 0 {
-		return flowTableHeaderStyle.Render("Flow Status") + "\n\n  No flows\n"
+		return style.Header.Render("Flow Status") + "\n\n  No flows\n"
 	}
 
 	header := fmt.Sprintf("  %-20s %-12s %-10s %-10s %-10s %-12s", "Flow ID", "Mode", "Priority", "Status", "Started", "Duration")
-	border := "  " + flowTableHeaderBorder.Render(strings.Repeat("─", 80))
-
 	lines := []string{}
-	lines = append(lines, flowTableHeaderStyle.Render("Flow Status"))
+	lines = append(lines, style.Header.Render("Flow Status"))
 	lines = append(lines, "")
-	lines = append(lines, flowTableHeaderBorder.Render(header))
-	lines = append(lines, border)
+	lines = append(lines, style.Section.Render(header))
+	lines = append(lines, style.Dim.Render("  "+strings.Repeat("─", 80)))
 
 	for i, f := range m.flows {
 		statusStr := string(f.Status)
-		statusColor := statusPending
+		statusColor := style.StatusPending
 
 		switch f.Status {
 		case types.FlowStateRunning:
-			statusColor = statusRunning
+			statusColor = style.StatusRunning
 		case types.FlowStatePassed:
-			statusColor = statusPassed
+			statusColor = style.StatusPassed
 		case types.FlowStateFailed:
-			statusColor = statusFailed
+			statusColor = style.StatusFailed
 		case types.FlowStatePaused:
-			statusColor = statusPaused
+			statusColor = style.StatusPaused
 		case types.FlowStateRetrying:
-			statusColor = statusPaused
+			statusColor = style.StatusRetrying
 		case types.FlowStateSkippedUpstream, types.FlowStateBlockedConfigError:
-			statusColor = statusCancelled
+			statusColor = style.StatusCancelled
 		}
 
 		startedStr := "-"
@@ -121,9 +108,9 @@ func (m *FlowStatusModel) View() string {
 			durationStr,
 		)
 		if i == m.selected {
-			lines = append(lines, selectedStyle.Render(row))
+			lines = append(lines, style.Selected.Render(row))
 		} else {
-			lines = append(lines, flowTableCellStyle.Render(row))
+			lines = append(lines, style.Normal.Render(row))
 		}
 	}
 
@@ -131,7 +118,7 @@ func (m *FlowStatusModel) View() string {
 }
 
 func (m *FlowStatusModel) ViewWithWidth(width int) string {
-	title := panelTitleStyle.Width(width - 2).Render(" Flow Status ")
+	title := style.ViewTitle.Width(width - 2).Render(" Flow Status ")
 
 	if len(m.flows) == 0 {
 		return title + "\n\n  No flows\n"
@@ -145,25 +132,25 @@ func (m *FlowStatusModel) ViewWithWidth(width int) string {
 	lines := []string{}
 	headerFmt := fmt.Sprintf(" %%-%ds %%-%ds %%-%ds %%-%ds", colFlow, colMode, colPriority, colStatus)
 	lines = append(lines, fmt.Sprintf(headerFmt, "Flow", "Mode", "Priority", "Status"))
-	lines = append(lines, flowTableHeaderBorder.Render(strings.Repeat("─", width-2)))
+	lines = append(lines, style.Dim.Render(strings.Repeat("─", width-2)))
 
 	for i, f := range m.flows {
 		statusStr := string(f.Status)
-		statusColor := statusPending
+		statusColor := style.StatusPending
 
 		switch f.Status {
 		case types.FlowStateRunning:
-			statusColor = statusRunning
+			statusColor = style.StatusRunning
 		case types.FlowStatePassed:
-			statusColor = statusPassed
+			statusColor = style.StatusPassed
 		case types.FlowStateFailed:
-			statusColor = statusFailed
+			statusColor = style.StatusFailed
 		case types.FlowStatePaused:
-			statusColor = statusPaused
+			statusColor = style.StatusPaused
 		case types.FlowStateRetrying:
-			statusColor = statusPaused
+			statusColor = style.StatusRetrying
 		case types.FlowStateSkippedUpstream, types.FlowStateBlockedConfigError:
-			statusColor = statusCancelled
+			statusColor = style.StatusCancelled
 		}
 
 		flowID := f.FlowID
@@ -183,9 +170,9 @@ func (m *FlowStatusModel) ViewWithWidth(width int) string {
 
 		row := fmt.Sprintf(" %s %s %s %s", flowStr, modeStr, priorityStr, statusColor.Render(statusPadded))
 		if i == m.selected {
-			lines = append(lines, selectedStyle.Render(row))
+			lines = append(lines, style.Selected.Render(row))
 		} else {
-			lines = append(lines, flowTableCellStyle.Render(row))
+			lines = append(lines, style.Normal.Render(row))
 		}
 	}
 

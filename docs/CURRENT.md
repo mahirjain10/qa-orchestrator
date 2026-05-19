@@ -24,35 +24,30 @@
 |---------|------|------|--------|
 | V1 TUI | MVP Phase 2 | Initial TUI Shell | ✅ Complete |
 | V2 TUI | Runs 026-030 | Bug fixes (CLI, visual, navigation) | ✅ Complete |
-| V3 TUI | Runs 031+ | New additions (slot layout, pane management) | 🔄 In Progress |
+| V3 TUI | Runs 031-039 | New additions (slot layout, pane management) | ✅ Complete |
+| V4 TUI | Runs 040+ | TUI revamp (sidebar+main, async, viewport) | 🔄 In Progress |
 
-## V3 Phases (Current)
+## V4 Phases (TUI Revamp — Current)
 
 | Phase | Description | Status |
 |-------|-------------|--------|
-| 1 | OpenRouter Integration Hardening | ✅ COMPLETE |
-| 2 | TUI Rendering Fixes | ✅ COMPLETE |
-| 3 | TUI Slot-based Layout Engine (quadrant-based rendering) | ✅ COMPLETE |
-| 4 | Interactive Pane Management (swap/maximize panes) | ✅ COMPLETE |
-| 5 | Validation & Testing | ✅ COMPLETE |
+| 1 | Design System Unification | ✅ COMPLETE |
+| 2 | Utility Functions | ⏳ Pending |
+| 3 | State Architecture Refactor | ⏳ Pending |
+| 4 | Async Event System (Replace Polling) | ⏳ Pending |
+| 5 | Layout System: Sidebar + Main Content | ⏳ Pending |
+| 6 | Dashboard View | ⏳ Pending |
+| 7 | Viewport Integration for Traces | ⏳ Pending |
+| 8 | Flows View with Detail Panel | ⏳ Pending |
+| 9 | Trace Filtering | ⏳ Pending |
+| 10 | Status Bar + Contextual Help | ⏳ Pending |
+| 11 | Campaign Selection Modal | ⏳ Pending |
+| 12 | Responsive Behavior | ⏳ Pending |
+| 13 | Goroutine Shutdown + Clean Exit | ⏳ Pending |
+| 14 | Visual Polish + Final Cleanup | ⏳ Pending |
 
-**V3 Phase 1 Completed:**
-- Run 031: Initial LLM fail-fast validation for autonomous campaigns.
-- Run 033: Hardened LLM fail-fast validation so both `LLM_API_KEY` and `LLM_MODEL` are required before session creation.
-
-**V3 Phase 2 Completed:**
-- Run 032: TUI rendering fixes (Flow Status ANSI corruption, auto-refresh freeze)
-- Run 033: Added Flow Status ANSI rendering regression coverage.
-
-**V3 Phase 3 Completed:**
-- Run 034: Implemented slot-based layout engine with ComponentID type, quadrants array, activeSlot tracking, maximize mode, renderComponent helper, and new keyboard handlers (TAB/p/m).
-
-**V3 Phase 4 Completed:**
-- Run 035: Added left/right arrow keys for slot switching, `w` key to swap with neighbor, number keys (0-3) to jump to specific slot.
-
-**V3 Phase 5 Completed:**
-- Run 035: Tests pass, binary builds successfully.
-- Run 036: Post-implementation bug hunt fixes for Phase 3/4/5 (steering ESC handling + trace/artifact/report refresh wiring) with regression tests.
+**V4 Phase 1 Completed:**
+- Run 040: Created unified design system in `style/theme.go`. Eliminated 136 lines of duplicate style definitions across 5 component files. All colors and Lip Gloss styles now come from single source of truth. Tests pass, binary builds successfully.
 
 ### Test Coverage
 - `go test ./...` — passing
@@ -62,8 +57,8 @@
 - Run 039: Fixed autonomous planner infinite loop — LLM generated 20 redundant verification steps because `finish` tool was never exposed in its prompt. Engine already handled `finish` at line 338 but LLM didn't know it existed.
 
 ## Last Run
-- Run 039: 2026-05-19 (Agent: qwen3.6-plus-free)
-  - Status: Fixed autonomous planner infinite loop — added `finish` tool to LLM prompt so planner stops after goal is achieved.
+- Run 040: 2026-05-20 (Agent: qwen3.6-plus-free)
+  - Status: V4 Phase 1 COMPLETE — Design System Unification. Created `style/theme.go`, eliminated 136 lines of duplicate style definitions across 5 files.
 
 ## Makefile (Updated)
 - Added `run-sample` and `run-guided` targets for quick testing

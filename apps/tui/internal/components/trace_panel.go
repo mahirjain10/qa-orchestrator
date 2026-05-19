@@ -5,32 +5,9 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"qa-orchestrator/apps/tui/internal/style"
 	"qa-orchestrator/packages/shared/types"
 	"qa-orchestrator/packages/storage/artifact"
-)
-
-var (
-	tracePanelHeaderStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("226")).
-				Bold(true)
-
-	tracePanelCellStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("252"))
-
-	traceEventTimeStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("245"))
-
-	traceEventSuccessStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("82"))
-
-	traceEventFailedStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("196"))
-
-	traceEventPendingStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("241"))
-
-	tracePanelHeaderBorder = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("240"))
 )
 
 type TracePanelModel struct {
@@ -83,27 +60,21 @@ func (m *TracePanelModel) GetSelected() int {
 
 func (m *TracePanelModel) View() string {
 	if len(m.events) == 0 {
-		return tracePanelHeaderStyle.Render("Trace Events") + "\n\n  No trace events\n"
+		return style.Header.Render("Trace Events") + "\n\n  No trace events\n"
 	}
 
 	lines := []string{}
-	lines = append(lines, tracePanelHeaderStyle.Render("Trace Events"))
+	lines = append(lines, style.Header.Render("Trace Events"))
 	lines = append(lines, "")
-	lines = append(lines, tracePanelHeaderBorder.Render("  Time      Agent      Action          Status    Step"))
-	lines = append(lines, tracePanelHeaderBorder.Render(strings.Repeat("─", 70)))
+	lines = append(lines, style.Section.Render("  Time      Agent      Action          Status    Step"))
+	lines = append(lines, style.Dim.Render("  " + strings.Repeat("─", 70)))
 
 	for i := len(m.events) - 1; i >= 0; i-- {
 		e := m.events[i]
 		timeStr := e.Timestamp.Format("15:04:05")
 
 		statusStr := string(e.Status)
-		statusStyle := traceEventPendingStyle
-		switch e.Status {
-		case types.TraceStatusSuccess:
-			statusStyle = traceEventSuccessStyle
-		case types.TraceStatusFailed:
-			statusStyle = traceEventFailedStyle
-		}
+		statusStyle := style.TraceStatusStyle(string(e.Status))
 
 		agentStr := e.Agent
 		if len(agentStr) > 10 {
@@ -124,7 +95,7 @@ func (m *TracePanelModel) View() string {
 		}
 
 		row := fmt.Sprintf("  %s  %-10s %-14s %s  %s",
-			traceEventTimeStyle.Render(timeStr),
+			style.Dim.Render(timeStr),
 			agentStr,
 			actionStr,
 			statusStyle.Render(statusStr),
@@ -132,9 +103,9 @@ func (m *TracePanelModel) View() string {
 		)
 
 		if i == m.selected {
-			lines = append(lines, selectedStyle.Render(row))
+			lines = append(lines, style.Selected.Render(row))
 		} else {
-			lines = append(lines, tracePanelCellStyle.Render(row))
+			lines = append(lines, style.Normal.Render(row))
 		}
 	}
 
@@ -142,7 +113,7 @@ func (m *TracePanelModel) View() string {
 }
 
 func (m *TracePanelModel) ViewCompact() string {
-	title := panelTitleStyle.Render(" Live Traces ")
+	title := style.ViewTitle.Render(" Live Traces ")
 
 	if len(m.events) == 0 {
 		return title + "\n  No trace events\n"
@@ -158,16 +129,8 @@ func (m *TracePanelModel) ViewCompact() string {
 	for _, e := range recentEvents {
 		timeStr := e.Timestamp.Format("15:04")
 
-		statusChar := "○"
-		statusStyle := traceEventPendingStyle
-		switch e.Status {
-		case types.TraceStatusSuccess:
-			statusChar = "✓"
-			statusStyle = traceEventSuccessStyle
-		case types.TraceStatusFailed:
-			statusChar = "✗"
-			statusStyle = traceEventFailedStyle
-		}
+		statusChar := style.TraceStatusChar(string(e.Status))
+		statusStyle := style.TraceStatusStyle(string(e.Status))
 
 		actionStr := e.Action
 		if len(actionStr) > 20 {
@@ -175,11 +138,11 @@ func (m *TracePanelModel) ViewCompact() string {
 		}
 
 		row := fmt.Sprintf(" %s %s %s",
-			traceEventTimeStyle.Render(timeStr),
+			style.Dim.Render(timeStr),
 			statusStyle.Render(statusChar),
 			actionStr,
 		)
-		lines = append(lines, tracePanelCellStyle.Render(row))
+		lines = append(lines, style.Normal.Render(row))
 	}
 
 	content := lipgloss.JoinVertical(lipgloss.Left, lines...)
@@ -230,14 +193,14 @@ func (m *ArtifactPanelModel) GetSelectedArtifact() *artifact.Artifact {
 
 func (m *ArtifactPanelModel) View() string {
 	if len(m.artifacts) == 0 {
-		return artifactPanelHeaderStyle.Render("Artifacts") + "\n\n  No artifacts\n"
+		return style.Header.Render("Artifacts") + "\n\n  No artifacts\n"
 	}
 
 	lines := []string{}
-	lines = append(lines, artifactPanelHeaderStyle.Render("Artifacts"))
+	lines = append(lines, style.Header.Render("Artifacts"))
 	lines = append(lines, "")
-	lines = append(lines, artifactPanelBorder.Render("  ID              Type          Size      Path"))
-	lines = append(lines, artifactPanelBorder.Render(strings.Repeat("─", 80)))
+	lines = append(lines, style.Section.Render("  ID              Type          Size      Path"))
+	lines = append(lines, style.Dim.Render("  " + strings.Repeat("─", 80)))
 
 	for i, a := range m.artifacts {
 		sizeStr := formatBytes(a.Size)
@@ -250,9 +213,9 @@ func (m *ArtifactPanelModel) View() string {
 		)
 
 		if i == m.selected {
-			lines = append(lines, selectedStyle.Render(row))
+			lines = append(lines, style.Selected.Render(row))
 		} else {
-			lines = append(lines, artifactPanelCellStyle.Render(row))
+			lines = append(lines, style.Normal.Render(row))
 		}
 	}
 
@@ -278,15 +241,3 @@ func truncatePath(path string) string {
 	}
 	return "..." + path[len(path)-37:]
 }
-
-var (
-	artifactPanelHeaderStyle = lipgloss.NewStyle().
-					Foreground(lipgloss.Color("82")).
-					Bold(true)
-
-	artifactPanelCellStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("252"))
-
-	artifactPanelBorder = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("240"))
-)
