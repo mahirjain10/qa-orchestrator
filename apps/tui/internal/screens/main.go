@@ -7,6 +7,7 @@ import (
 
 	"qa-orchestrator/apps/tui/internal/components"
 	"qa-orchestrator/apps/tui/internal/state"
+	"qa-orchestrator/apps/tui/internal/style"
 	"qa-orchestrator/packages/reporting"
 	"qa-orchestrator/packages/shared/types"
 	"qa-orchestrator/packages/storage/artifact"
@@ -19,61 +20,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-var (
-	baseStyle = lipgloss.NewStyle()
-
-	headerStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("86")).
-			Bold(true)
-
-	helpStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("241"))
-
-	msgStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("86"))
-
-	borderStyle = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("240"))
-
-	activeBorderStyle = lipgloss.NewStyle().
-				Border(lipgloss.RoundedBorder()).
-				BorderForeground(lipgloss.Color("86")).
-				Bold(true)
-
-	highlightBorderStyle = lipgloss.NewStyle().
-				Border(lipgloss.RoundedBorder()).
-				BorderForeground(lipgloss.Color("86"))
-
-	passColor    = lipgloss.Color("76")
-	failColor    = lipgloss.Color("204")
-	pausedColor  = lipgloss.Color("228")
-	runningColor = lipgloss.Color("75")
-	pendingColor = lipgloss.Color("245")
-
-	focusCampaignsStyle = lipgloss.NewStyle().
-				Border(lipgloss.RoundedBorder()).
-				BorderForeground(lipgloss.Color("75")).
-				Bold(true)
-
-	focusFlowsStyle = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("226")).
-			Bold(true)
-
-	focusTracesStyle = lipgloss.NewStyle().
-				Border(lipgloss.RoundedBorder()).
-				BorderForeground(lipgloss.Color("208")).
-				Bold(true)
-
-	steeringBarStyle = lipgloss.NewStyle().
-				Background(lipgloss.Color("235")).
-				Foreground(lipgloss.Color("86")).
-				Bold(true)
-
-	steeringInputStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("46"))
-)
+var spinnerFrames = []string{"⠋", "⠙", "⠹", "⠸"}
 
 type Pane string
 
@@ -465,7 +412,7 @@ func (m *MainScreen) View() string {
 		return "Initializing..."
 	}
 
-	header := headerStyle.Render("QA Orchestrator TUI - Campaign Runner") +
+	header := style.Header.Render("QA Orchestrator TUI - Campaign Runner") +
 		lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render(" │ ") +
 		lipgloss.NewStyle().Foreground(m.focusColorForSlot(m.activeSlot)).Render("●") +
 		lipgloss.NewStyle().Foreground(lipgloss.Color("245")).Render(fmt.Sprintf(" Slot %d: %s ", m.activeSlot, m.quadrants[m.activeSlot]))
@@ -498,7 +445,7 @@ func (m *MainScreen) View() string {
 		content = lipgloss.JoinVertical(lipgloss.Left, topRow, bottomRow)
 	}
 
-	footer := helpStyle.Render("TAB/←→: switch slot │ 0-3: jump │ p: cycle │ w: swap │ m: maximize │ ↑↓ Navigate │ Enter: select │ Space: pause │ x: cancel │ s: steer │ q: quit")
+	footer := style.Help.Render("TAB/←→: switch slot │ 0-3: jump │ p: cycle │ w: swap │ m: maximize │ ↑↓ Navigate │ Enter: select │ Space: pause │ x: cancel │ s: steer │ q: quit")
 
 	viewContent := lipgloss.JoinVertical(
 		lipgloss.Left,
@@ -540,7 +487,7 @@ func (m *MainScreen) View() string {
 	} else {
 		msgBox := lipgloss.NewStyle().
 			Padding(1, 0, 0, 1).
-			Render(msgStyle.Render(m.msg))
+			Render(style.Msg.Render(m.msg))
 		viewContent = lipgloss.JoinVertical(lipgloss.Left, viewContent, msgBox)
 	}
 
