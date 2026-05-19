@@ -22,6 +22,11 @@
 - `go test ./...` verified successfully across all packages.
 
 ## Last Run
-- Run 025: 2026-05-19
-- Agent: codex
-- Status: Fixed final cross-phase bugs (input signaling, report completion timestamp source, natural parser ID generation, user-skip state semantics, and ID entropy fallback). Tests and compile passed.
+- Run 027: 2026-05-19
+- Agent: Gemini CLI (Code Reviewer)
+- Status: Performed deep code review on Phase 1 implementation. Fixed terminal corruption on exit, wired Trace/Artifact stores properly to the TUI to prevent silent data loss, and cleaned up goroutine logic. Tests and compile passed.
+
+## TUI Fix Phases (In Progress)
+- **Phase 1:** CLI Execution & Engine Wiring — COMPLETE (Hardened)
+- **Phase 2:** Visual Overhaul & Layout Separation — PENDING
+- **Phase 3:** Interactive Navigation & Steering — PENDING

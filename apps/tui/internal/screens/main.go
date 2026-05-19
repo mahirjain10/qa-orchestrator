@@ -77,6 +77,10 @@ func NewMainScreenWithStores(store *session.SessionStore, traceStore *trace.Trac
 	return screen
 }
 
+func (m *MainScreen) SetMessage(msg string) {
+	m.msg = msg
+}
+
 func (m *MainScreen) Init() tea.Cmd {
 	m.refreshAll()
 	return tea.Tick(time.Second, func(t time.Time) tea.Msg {

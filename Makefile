@@ -9,7 +9,7 @@ build:
 
 # Run the TUI application
 run: build
-	./bin/qa-orchestrator
+	./bin/qa-orchestrator $(ARGS)
 
 # Install dependencies (Go + Playwright)
 deps:
