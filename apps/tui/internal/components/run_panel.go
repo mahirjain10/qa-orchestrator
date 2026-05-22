@@ -63,6 +63,12 @@ func (m *RunPanelModel) View() string {
 		statusColor = style.StatusPassed
 	case types.RunStateFailed:
 		statusColor = style.StatusFailed
+	case types.RunStateWaitingInput:
+		statusColor = style.StatusRetrying
+	case types.RunStateResuming:
+		statusColor = style.StatusRunning
+	case types.RunStatePending:
+		statusColor = style.StatusPending
 	}
 
 	var statusDisplay string
@@ -136,6 +142,12 @@ func (m *RunPanelModel) ViewWithWidth(width int) string {
 		statusColor = style.StatusPassed
 	case types.RunStateFailed:
 		statusColor = style.StatusFailed
+	case types.RunStateWaitingInput:
+		statusColor = style.StatusRetrying
+	case types.RunStateResuming:
+		statusColor = style.StatusRunning
+	case types.RunStatePending:
+		statusColor = style.StatusPending
 	}
 
 	statusLine := fmt.Sprintf("Status: %s", statusColor.Render(statusStr))

@@ -1,0 +1,79 @@
+name: Large Parallel Campaign
+description: Tests orchestration throughput with 8 flows - 5 independent + 3 dependent
+version: "1.0"
+config:
+  timeout: 900s
+  retry_limit: 2
+  parallel_limit: 3
+
+flows:
+  - id: flow-alpha
+    name: Alpha - Login Page
+    description: Verify login page loads
+    goal: Navigate to https://practicetestautomation.com/practice-test-login/ and verify the page loads with the login form visible including username input, password input, and submit button
+    mode: autonomous
+    priority: high
+    depends_on: []
+
+  - id: flow-beta
+    name: Beta - Students Page
+    description: Navigate to students page
+    goal: Navigate to https://practicetestautomation.com/practice-test-students/ and verify the students page loads with a table of student data visible
+    mode: autonomous
+    priority: high
+    depends_on: []
+
+  - id: flow-gamma
+    name: Gamma - Exception Page
+    description: Navigate to exceptions page
+    goal: Navigate to https://practicetestautomation.com/practice-test-exceptions/ and verify the exceptions page loads with the expected content and buttons visible
+    mode: autonomous
+    priority: high
+    depends_on: []
+
+  - id: flow-delta
+    name: Delta - Timeout Page
+    description: Navigate to timeout page
+    goal: Navigate to https://practicetestautomation.com/practice-test-timeouts/ and verify the timeout page loads with the expected content and buttons visible
+    mode: autonomous
+    priority: medium
+    depends_on: []
+
+  - id: flow-epsilon
+    name: Epsilon - File Upload Page
+    description: Navigate to file upload page
+    goal: Navigate to https://practicetestautomation.com/practice-test-file-upload/ and verify the file upload page loads with a file input field and upload button visible
+    mode: autonomous
+    priority: medium
+    depends_on: []
+
+  - id: flow-zeta
+    name: Zeta - Post-Login Validation
+    description: Validates elements after login flow
+    goal: After flow-alpha confirms the login page is accessible, navigate to the login page again and verify all form elements are properly labeled and accessible
+    start_url: https://practicetestautomation.com/practice-test-login/
+    mode: autonomous
+    priority: high
+    depends_on:
+      - flow-alpha
+
+  - id: flow-eta
+    name: Eta - Cross-Page Navigation
+    description: Tests navigation between multiple pages
+    goal: After flow-beta and flow-gamma confirm their pages load, navigate between the students page and exceptions page and verify both pages load correctly each time
+    mode: autonomous
+    priority: medium
+    depends_on:
+      - flow-beta
+      - flow-gamma
+
+  - id: flow-theta
+    name: Theta - Final Summary
+    description: Final validation after all other flows
+    goal: After flow-zeta and flow-eta complete, navigate to the main practice test page and verify the overall site structure is intact with navigation links to all sub-pages visible
+    start_url: https://practicetestautomation.com/
+    mode: autonomous
+    priority: low
+    depends_on:
+      - flow-zeta
+      - flow-eta

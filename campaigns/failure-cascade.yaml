@@ -1,0 +1,51 @@
+name: Failure Cascade Test
+description: Tests that a failed flow correctly triggers SKIPPED_UPSTREAM_FAILED for dependent flows
+version: "1.0"
+config:
+  timeout: 300s
+  retry_limit: 1
+  parallel_limit: 1
+
+flows:
+  - id: will-fail-flow
+    name: Intentional Failure
+    description: This flow is designed to fail by navigating to a non-existent page
+    goal: Navigate to https://this-domain-does-not-exist-12345.com/ and verify the page loads successfully within 5 seconds
+    mode: autonomous
+    priority: high
+    depends_on: []
+
+  - id: depends-on-fail-a
+    name: Dependent Flow A
+    description: Depends on the failing flow - should be SKIPPED_UPSTREAM_FAILED
+    goal: Navigate to https://practicetestautomation.com/practice-test-login/ and verify the login page loads with username and password fields visible
+    mode: autonomous
+    priority: high
+    depends_on:
+      - will-fail-flow
+
+  - id: depends-on-fail-b
+    name: Dependent Flow B
+    description: Also depends on the failing flow - should be SKIPPED_UPSTREAM_FAILED
+    goal: Navigate to https://practicetestautomation.com/practice-test-login/ and verify the page title contains 'Test'
+    mode: autonomous
+    priority: medium
+    depends_on:
+      - will-fail-flow
+
+  - id: independent-flow
+    name: Independent Flow
+    description: Does NOT depend on the failing flow - should still execute normally
+    goal: Navigate to https://practicetestautomation.com/practice-test-login/ and verify the login form is displayed with username field, password field, and submit button all visible
+    mode: autonomous
+    priority: high
+    depends_on: []
+
+  - id: chain-depends-on-skip
+    name: Chain Dependency Test
+    description: Depends on a skipped flow - should also be SKIPPED_UPSTREAM_FAILED
+    goal: Navigate to any page and verify it loads
+    mode: autonomous
+    priority: low
+    depends_on:
+      - depends-on-fail-a

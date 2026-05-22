@@ -11,6 +11,7 @@ flows:
     name: Authentication Test
     description: Test login with various credentials
     goal: Navigate to login page, attempt login with test credentials, and verify error handling for invalid credentials
+    start_url: https://practicetestautomation.com/practice-test-login/
     mode: autonomous
     priority: high
     depends_on: []
@@ -19,6 +20,7 @@ flows:
     name: Navigation Test
     description: Test site navigation after auth attempt
     goal: After auth-flow, navigate through main sections and verify elements are accessible
+    start_url: https://practicetestautomation.com/practice-test-login/
     mode: autonomous
     priority: medium
     depends_on:
@@ -28,6 +30,7 @@ flows:
     name: Search Functionality Test
     description: Test search feature
     goal: Use search functionality and verify results display correctly
+    start_url: https://practicetestautomation.com/
     mode: autonomous
     priority: low
     depends_on: []

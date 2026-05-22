@@ -41,8 +41,8 @@ func (h *CommandHandlers) ResumeRun(runID string) error {
 		return fmt.Errorf("getting session: %w", err)
 	}
 
-	if sess.Status != types.RunStatePaused {
-		return fmt.Errorf("cannot resume: run is in %s state, expected PAUSED", sess.Status)
+	if sess.Status != types.RunStatePaused && sess.Status != types.RunStatePausing {
+		return fmt.Errorf("cannot resume: run is in %s state, expected PAUSED or PAUSING", sess.Status)
 	}
 
 	return h.store.UpdateStatus(runID, types.RunStateResuming)
@@ -183,7 +183,7 @@ func (h *CommandHandlers) AcknowledgeInputAndResume(runID string) error {
 }
 
 func (h *CommandHandlers) SkipFlow(runID, flowID string) error {
-	return h.store.UpdateFlowState(runID, flowID, types.FlowStateSkippedUpstream, "user_skipped")
+	return h.store.UpdateFlowState(runID, flowID, types.FlowStateSkippedUser, "user_skipped")
 }
 
 func (h *CommandHandlers) RetryFlow(runID, flowID string) error {
@@ -192,12 +192,17 @@ func (h *CommandHandlers) RetryFlow(runID, flowID string) error {
 		return err
 	}
 
+	found := false
 	for i, f := range sess.Flows {
 		if f.FlowID == flowID {
 			sess.Flows[i].Status = types.FlowStateRetrying
 			sess.Flows[i].RetryCount++
+			found = true
 			break
 		}
+	}
+	if !found {
+		return fmt.Errorf("flow %q not found in run %s", flowID, runID)
 	}
 
 	return h.store.Save(sess)

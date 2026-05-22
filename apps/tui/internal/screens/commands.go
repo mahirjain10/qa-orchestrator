@@ -10,8 +10,11 @@ import (
 	"qa-orchestrator/packages/storage/trace"
 )
 
+const defaultRefreshInterval = 2 * time.Second
+
 type sessionsLoadedMsg struct{ sessions []*types.Session }
 type runLoadedMsg struct{ run *types.Session }
+type runCreatedMsg struct{ runID string }
 type tracesLoadedMsg struct{ traces []*types.TraceEvent }
 type artifactsLoadedMsg struct{ artifacts []*artifact.Artifact }
 type reportLoadedMsg struct{ report string }
@@ -74,7 +77,7 @@ func fetchReportCmd(reportGenerator interface{ GenerateTerminalSummary(string) (
 		}
 		report, err := reportGenerator.GenerateTerminalSummary(runID)
 		if err != nil {
-			return reportLoadedMsg{report: ""}
+			return errMsg{err}
 		}
 		return reportLoadedMsg{report: report}
 	}
@@ -90,11 +93,15 @@ func refreshAllCmd(runID string, sessionStore *session.SessionStore, traceStore 
 	)
 }
 
-func startRefreshTicker(runID string) tea.Cmd {
-	if runID == "" {
-		return nil
-	}
-	return tea.Tick(2*time.Second, func(t time.Time) tea.Msg {
+func startRefreshTicker() tea.Cmd {
+	return tea.Tick(defaultRefreshInterval, func(t time.Time) tea.Msg {
 		return tickMsg(t)
 	})
+}
+
+func runCreatedCmd(ch <-chan string) tea.Cmd {
+	return func() tea.Msg {
+		runID := <-ch
+		return runCreatedMsg{runID: runID}
+	}
 }

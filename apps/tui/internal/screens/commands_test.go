@@ -93,17 +93,14 @@ func TestFetchArtifactsCmdReturnsNilForNilStore(t *testing.T) {
 	}
 }
 
-func TestStartRefreshTickerReturnsNilForEmptyRunID(t *testing.T) {
-	cmd := startRefreshTicker("")
-	if cmd != nil {
-		t.Fatal("expected nil ticker for empty runID")
-	}
-}
-
-func TestStartRefreshTickerReturnsCommandForValidRunID(t *testing.T) {
-	cmd := startRefreshTicker("run-123")
+func TestStartRefreshTickerAlwaysReturnsCommand(t *testing.T) {
+	cmd := startRefreshTicker()
 	if cmd == nil {
-		t.Fatal("expected ticker command for valid runID")
+		t.Fatal("expected ticker command")
+	}
+	msg := cmd()
+	if _, ok := msg.(tickMsg); !ok {
+		t.Fatalf("expected tickMsg, got %T", msg)
 	}
 }
 
@@ -312,7 +309,12 @@ func TestUpdateFromStoresWithNoCurrentRun(t *testing.T) {
 	screen, _ := newScreenWithRun(t)
 	screen.currentRun = nil
 
-	screen.updateFromStores()
+	sessions, err := screen.sessionStore.List()
+	if err != nil {
+		t.Fatalf("list sessions: %v", err)
+	}
+	screen.sessions = sessions
+	screen.campaignList.SetCampaigns(screen.campaignNames())
 
 	if len(screen.sessions) == 0 {
 		t.Fatal("expected sessions to be loaded even without current run")
@@ -328,7 +330,18 @@ func TestUpdateFromStoresWithCurrentRun(t *testing.T) {
 		t.Fatalf("append trace: %v", err)
 	}
 
-	screen.updateFromStores()
+	sess, err := screen.handlers.GetRunStatus(runID)
+	if err != nil {
+		t.Fatalf("get run status: %v", err)
+	}
+	screen.currentRun = sess
+
+	events, err := screen.traceStore.GetRecent(runID, 50)
+	if err != nil {
+		t.Fatalf("get recent traces: %v", err)
+	}
+	screen.traces = events
+	screen.tracePanel.SetEvents(events)
 
 	if screen.currentRun == nil {
 		t.Fatal("expected currentRun to be refreshed")

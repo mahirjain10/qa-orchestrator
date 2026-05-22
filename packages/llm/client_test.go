@@ -84,14 +84,15 @@ func TestLoadConfig_MissingAPIKey(t *testing.T) {
 func TestLoadConfig_MissingModel(t *testing.T) {
 	os.Setenv("LLM_API_KEY", "test-key")
 	os.Unsetenv("LLM_MODEL")
+	os.Unsetenv("LLM_PROVIDER")
 	defer os.Unsetenv("LLM_API_KEY")
 
-	_, err := LoadConfig()
-	if err == nil {
-		t.Error("expected error for missing model")
+	cfg, err := LoadConfig()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
-	if err.Error() != "LLM_MODEL environment variable is required" {
-		t.Errorf("unexpected error message: %v", err)
+	if cfg.Model != defaultModel {
+		t.Errorf("expected default model %q, got %q", defaultModel, cfg.Model)
 	}
 }
 
@@ -132,43 +133,21 @@ func TestLoadConfig_ProviderSettings(t *testing.T) {
 	}
 }
 
-func TestParseErrorResponse_Standard(t *testing.T) {
-	json := `{"error": {"message": "Invalid API key", "type": "invalid_request_error", "code": "invalid_api_key"}}`
-	resp, err := parseErrorResponse(strings.NewReader(json))
-	if err != nil {
-		t.Fatalf("parseErrorResponse failed: %v", err)
-	}
-	if resp.Error.Message != "Invalid API key" {
-		t.Errorf("expected message 'Invalid API key', got %q", resp.Error.Message)
-	}
-	if resp.Error.Code != "invalid_api_key" {
-		t.Errorf("expected code 'invalid_api_key', got %q", resp.Error.Code)
-	}
-}
+func TestLoadConfig_ProviderOnly(t *testing.T) {
+	os.Setenv("LLM_API_KEY", "test-key")
+	os.Setenv("LLM_MODEL", "test/model")
+	os.Setenv("LLM_PROVIDER_ONLY", "openai")
+	defer os.Unsetenv("LLM_API_KEY")
+	defer os.Unsetenv("LLM_MODEL")
+	defer os.Unsetenv("LLM_PROVIDER_ONLY")
 
-func TestParseErrorResponse_Nested(t *testing.T) {
-	json := `{"error": {"message": "OpenRouter error", "inner_error": {"message": "Provider failed"}}}`
-	resp, err := parseErrorResponse(strings.NewReader(json))
+	cfg, err := LoadConfig()
 	if err != nil {
-		t.Fatalf("parseErrorResponse failed: %v", err)
+		t.Fatalf("LoadConfig failed: %v", err)
 	}
-	// It should prioritize the top-level message if present in the first unmarshal
-	if resp.Error.Message != "OpenRouter error" {
-		t.Errorf("expected message 'OpenRouter error', got %q", resp.Error.Message)
-	}
-}
 
-func TestParseErrorResponse_Inner(t *testing.T) {
-	json := `{"error": {"inner_error": {"message": "Provider failed"}}}`
-	resp, err := parseErrorResponse(strings.NewReader(json))
-	if err != nil {
-		t.Fatalf("parseErrorResponse failed: %v", err)
-	}
-	if resp.Error.Message != "Provider failed" {
-		t.Errorf("expected message 'Provider failed', got %q", resp.Error.Message)
-	}
-	if resp.Error.Type != "provider_error" {
-		t.Errorf("expected type 'provider_error', got %q", resp.Error.Type)
+	if cfg.ProviderOnly != "openai" {
+		t.Errorf("expected provider only 'openai', got %q", cfg.ProviderOnly)
 	}
 }
 
@@ -250,16 +229,6 @@ func TestConfig_Validate(t *testing.T) {
 				t.Errorf("Config.Validate() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
-	}
-}
-
-func TestConfig_Endpoint(t *testing.T) {
-	cfg := &Config{
-		BaseURL: "https://openrouter.ai/api/v1",
-	}
-	expected := "https://openrouter.ai/api/v1/chat/completions"
-	if cfg.Endpoint() != expected {
-		t.Errorf("expected endpoint %q, got %q", expected, cfg.Endpoint())
 	}
 }
 
@@ -374,7 +343,7 @@ func TestBuildSystemPrompt(t *testing.T) {
 		},
 	}
 
-	prompt := BuildSystemPrompt(tools)
+	prompt := BuildSystemPrompt(tools, "")
 
 	if len(prompt) == 0 {
 		t.Error("expected non-empty prompt")

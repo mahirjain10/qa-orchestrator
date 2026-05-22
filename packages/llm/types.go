@@ -1,21 +1,22 @@
 package llm
 
 type GenerateRequest struct {
-	Model       string            `json:"model"`
-	Messages    []Message         `json:"messages"`
-	Temperature float64           `json:"temperature,omitempty"`
-	MaxTokens   int               `json:"max_tokens,omitempty"`
-	TopP        float64           `json:"top_p,omitempty"`
-	Stop        []string          `json:"stop,omitempty"`
-	Provider    *ProviderSettings `json:"provider,omitempty"`
-	Timeout     int               `json:"-"`
+	Model               string    `json:"model"`
+	Messages            []Message `json:"messages"`
+	Temperature         float64   `json:"temperature,omitempty"`
+	MaxTokens           int       `json:"max_tokens,omitempty"`
+	MaxCompletionTokens int       `json:"max_completion_tokens,omitempty"`
+	TopP                float64   `json:"top_p,omitempty"`
+	Stop                []string  `json:"stop,omitempty"`
+	Timeout             int       `json:"-"`
 }
 
 type ProviderSettings struct {
 	Order             []string `json:"order,omitempty"`
+	Only              []string `json:"only,omitempty"`
 	AllowFallbacks    *bool    `json:"allow_fallbacks,omitempty"`
 	RequireParameters *bool    `json:"require_parameters,omitempty"`
-	DataCollection    string   `json:"data_collection,omitempty"` // "allow" or "deny"
+	DataCollection    string   `json:"data_collection,omitempty"`
 }
 
 type Message struct {
@@ -43,16 +44,6 @@ type Usage struct {
 	PromptTokens     int `json:"prompt_tokens"`
 	CompletionTokens int `json:"completion_tokens"`
 	TotalTokens      int `json:"total_tokens"`
-}
-
-type ErrorResponse struct {
-	Error ErrorDetail `json:"error"`
-}
-
-type ErrorDetail struct {
-	Message string `json:"message"`
-	Type    string `json:"type"`
-	Code    string `json:"code,omitempty"`
 }
 
 const (

@@ -44,6 +44,28 @@ func TestRecoveryDecideOnTimeoutError(t *testing.T) {
 	}
 }
 
+func TestRecoveryDecideOnSelectorTimeout(t *testing.T) {
+	r := NewRecovery(nil)
+
+	err := errors.New("wait_for failed: playwright: Timeout 30000ms exceeded waiting for selector .my-class")
+	decision := r.Decide(err, nil, nil)
+
+	if decision.Action != types.RecoveryActionReplan {
+		t.Errorf("Action = %s, want replan for selector timeout", decision.Action)
+	}
+}
+
+func TestRecoveryDecideOnGenericTimeout(t *testing.T) {
+	r := NewRecovery(nil)
+
+	err := errors.New("operation timed out")
+	decision := r.Decide(err, nil, nil)
+
+	if decision.Action != types.RecoveryActionRetry {
+		t.Errorf("Action = %s, want retry for generic timeout", decision.Action)
+	}
+}
+
 func TestRecoveryDecideOnLocatorError(t *testing.T) {
 	r := NewRecovery(nil)
 

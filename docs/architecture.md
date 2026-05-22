@@ -24,13 +24,15 @@ Example user actions from the TUI:
 1. The user launches the TUI and submits a campaign file in YAML/JSON or natural-language form.
 2. The system validates the campaign YAML schema — required fields, mode value, dependency references, and no cycles.
 3. The application creates a `run_id` and `session_id` and stores initial run state.
-4. The orchestrator selects the next eligible flow whose dependencies are satisfied.
-5. The Mode Router checks the flow `mode` field and routes to guided or autonomous execution path.
-6. The selected flow enters the agent loop: Planner -> Executor -> Validator -> Recovery.
-7. The Executor uses trusted primitive tools implemented with Playwright to interact with the target web app.
-8. After each important step, the system writes a checkpoint to the session store, emits trace events, and saves artifacts such as screenshots or logs.
-9. The TUI streams current status and accepts pause/resume/cancel/steering commands.
-10. When all eligible flows finish, the system generates a campaign summary and report with pass/fail/skip states and linked evidence.
+4. The orchestrator builds a dependency graph and launches flows using a worker pool, respecting `parallel_limit` from campaign config.
+5. Each flow waits for its `depends_on` flows to complete before acquiring a semaphore slot.
+6. In real browser mode, each flow gets its own isolated `BrowserContext` + `Page` (per-flow browser runtime).
+7. The Mode Router checks the flow `mode` field and routes to guided or autonomous execution path.
+8. The selected flow enters the agent loop: Planner -> Executor -> Validator -> Recovery.
+9. The Executor uses trusted primitive tools implemented with Playwright to interact with the target web app.
+10. After each important step, the system writes a checkpoint to the session store, emits trace events, and saves artifacts such as screenshots or logs.
+11. The TUI streams current status and accepts pause/resume/cancel/steering commands.
+12. When all eligible flows finish, the system generates a campaign summary and report with pass/fail/skip states and linked evidence.
 
 ## High-level architecture
 
@@ -64,6 +66,7 @@ Example user actions from the TUI:
 |  Campaign Orchestrator      |
 | graph, eligibility, retry   |
 | session management          |
+| worker pool + semaphore     |
 +------+------------+---------+
        |            |
        v            v
@@ -102,18 +105,29 @@ Example user actions from the TUI:
 | Flow Execution Engine       |
 | Planner -> Executor         |
 | -> Validator -> Recovery    |
+| + dependency context        |
 +-------------+---------------+
               |
               v
 +-----------------------------+
 | Tool Registry               |
 | trusted primitives          |
+| accepts BrowserRuntimeInterface |
++-------------+---------------+
+              |
+              v
++-----------------------------+
+| Browser Runtime             |
+| BrowserRuntimeInterface     |
+| - BrowserRuntime (global)   |
+| - FlowBrowserRuntime (per)  |
 +-------------+---------------+
               |
               v
 +-----------------------------+
 | Playwright Runtime          |
 | browser automation          |
+| per-flow BrowserContext     |
 +-------------+---------------+
               |
               v
@@ -134,10 +148,12 @@ version: string     # required
 config:
   timeout: string   # required, e.g. "300s"
   retry_limit: int  # required
-  parallel_limit: int  # required
+  parallel_limit: int  # optional, default 1 (sequential)
 flows:              # required, at least one flow
-  - id: string      # required, unique
+  - id: string      # required, unique — used for identification and dependency references
+    name: string    # optional display name, not used for identification
     goal: string    # required
+    start_url: string  # optional, URL to navigate to before LLM generates first step
     mode: guided | autonomous   # required
     priority: high | medium | low  # required
     depends_on: []  # required, empty list if no deps
@@ -193,11 +209,12 @@ version: "1.0"
 config:
   timeout: 300s
   retry_limit: 2
-  parallel_limit: 1
+  parallel_limit: 2
 
 flows:
-  - id: auth-flow
-    goal: "Test login with invalid credentials and verify the error message"
+      - id: auth-flow
+    goal: "Test login with invalid credentials"
+    start_url: "https://practicetestautomation.com/practice-test-login/"
     mode: autonomous
     priority: high
     depends_on: []
@@ -212,6 +229,13 @@ flows:
     goal: "Verify deep link routing to user profile"
     mode: autonomous
     priority: medium
+    depends_on: []
+
+  - id: search-flow
+    goal: "Use search functionality and verify results"
+    start_url: "https://practicetestautomation.com/"
+    mode: autonomous
+    priority: low
     depends_on: []
 ```
 
@@ -286,6 +310,19 @@ Primary responsibilities:
 - Mark blocked/skipped flows
 - Aggregate final release decision
 
+#### Parallel execution
+
+The orchestrator uses a worker pool to execute flows concurrently, controlled by `config.parallel_limit` in the campaign YAML.
+
+- Flows are launched in topological order but execute concurrently up to `parallel_limit`.
+- Each flow waits for all `depends_on` flows to complete before starting.
+- If any dependency failed, the dependent flow is marked `SKIPPED_UPSTREAM_FAILED`.
+- A semaphore channel limits the number of concurrent flow executions.
+- Per-flow completion channels signal readiness to dependent flows.
+- Pause/cancel commands affect all running and pending flows.
+
+Default `parallel_limit` is 1 (sequential execution) for safety.
+
 ### 5. Mode router
 
 The mode router sits between the orchestrator and the flow execution engine. It reads the `mode` field of the selected flow and routes execution to the correct path.
@@ -304,22 +341,131 @@ Flow sequence:
 - **Validator:** determines pass/fail/assertion result.
 - **Recovery:** decides retry, replan, skip, or human escalation.
 
+#### Dependency context injection
+
+To prevent LLM URL hallucination in autonomous flows with dependencies, the engine injects upstream flow context:
+
+- Before launching a flow, the orchestrator extracts URLs from completed upstream flow goals using regex.
+- The dependency context string is passed to the engine via `SetDependencyContext()`.
+- The engine includes this context in the `ExecutionContext` for the flow.
+- The planner injects the dependency context into both the system prompt and user prompt.
+- The LLM sees upstream URLs as explicit context and is instructed to use them verbatim.
+
+Additionally, each flow can specify a `start_url` in its YAML config. This is a deterministic config field separate from the natural-language `goal`. When set, the engine tracks it in the `ExecutionContext.StartURL` and injects it into the LLM user prompt under `## URL Context`.
+
+#### URL tracking (CurrentURL)
+
+After every successful `navigate()` step in an autonomous flow, the resolved URL is stored in `ctx.CurrentURL`. On subsequent LLM turns, the prompt shows `Current URL: <url>` (or `Start URL: <url>` if no navigate has occurred yet). This grounds the LLM in the actual page URL rather than requiring regex extraction from goals.
+
+```go
+// Priority: CurrentURL > StartURL > "No URL context available."
+func (d PlannerPromptData) URLContext() string
+```
+
+#### Failure context injection
+
+Before each LLM call, the planner scans all observations for the most recent failure (via `scanForRecentFailure()`). If found, it prepends `⚠ RECENT FAILURE: tool=X error=Y` to the observation block. This makes failures visible to the LLM even if the step itself was retried, preventing persistent errors from going unnoticed.
+
+#### Safety-nets
+
+Four safety-nets prevent pathological LLM behavior:
+
+1. **Repeat detection** — If the LLM generates a step with identical tool+params as the previous step, a steering instruction is injected and the step is skipped. Uses `stepSignature()` which produces a deterministic hash from tool name + sorted param keys/values. A hard-break counter (`consecutiveRepeats`) aborts execution after 3 consecutive repeats, setting `OutcomeFail` with a distinct error string (`"LLM stuck in loop — repeated same step 3+ times despite steering"`).
+
+2. **Observe_ui loop detection** — If the LLM calls `observe_ui` 4+ consecutive times without making progress, a steering instruction is injected telling the LLM to try a different approach.
+
+3. **Early exit prevention** — If the LLM calls `finish(fail)` before step 3, a steering instruction is injected telling it to make at least 3 attempts before giving up. Actual finish(fail) at step 3+ includes the LLM's `planStep.Reason` in the error message for debuggability.
+
+4. **Selector validation** — Before executing interaction tools (click, type_text, wait_for), the engine checks whether the selector exists in the most recent `observe_ui` output. Read-only tools (get_text, get_html, evaluate) skip this validation since they cannot cause timeout on phantom selectors. A fast pre-execution JS `querySelector()` check exists in the browser tools layer for sub-second failure detection.
+
+All safety-nets use the existing steering instruction mechanism — instructions are appended to `ctx.SteeringInstructions` and included in every subsequent LLM prompt under `IMPORTANT — Steering instructions`. When steering instructions exceed 5, the oldest are rotated out.
+
 ### 7. Tool layer
 
 The system uses a small set of reliable primitive tools.
 
 Recommended built-in tools:
 
-- `navigate(url)`
-- `observe_ui()`
-- `click_element(locator)`
-- `type_text(locator, value)`
-- `wait_for(locator_or_text)`
-- `assert_text_visible(text)`
-- `take_screenshot()`
-- `set_network_profile(profile)`
-- `fetch_test_data()`
-- `fetch_otp_mock()`
+- `navigate(url)` — Navigate to a URL in the browser
+- `click(selector)` — Click on an element identified by CSS selector
+- `type_text(selector, value)` — Type text into an input field
+- `wait_for(selector, state)` — Wait for an element to reach a specific state
+- `get_text(selector)` — Get the text content of an element
+- `get_html(selector)` — Get the inner HTML of an element
+- `evaluate(expression)` — Evaluate a JavaScript expression in the browser context
+- `screenshot(path, full_page)` — Take a screenshot of the page
+- `finish()` — Signal that the goal has been achieved and no more steps are needed
+- `assert_text_visible(text)` — Assert that specific text is visible on the page
+- `observe_ui()` — Inspect the current page and return visible interactive elements with selectors
+
+Test/mock tools (used by MockToolRegistry for simulation):
+
+- `log(message)` — Log a message
+- `delay(ms)` — Simulate a delay
+- `assert_true(condition)` — Assert a condition is true
+- `echo(value)` — Return a value unchanged
+
+#### BrowserRuntimeInterface
+
+The tool layer accepts a `BrowserRuntimeInterface` rather than a concrete browser type. This allows:
+
+- `BrowserRuntime` — the global browser instance with a single context + page (used in mock/sequential mode).
+- `FlowBrowserRuntime` — a per-flow isolated context + page sharing the same browser instance (used in parallel mode).
+
+Both types implement the same interface: `Navigate`, `Click`, `Fill`, `WaitForSelector`, `TextContent`, `InnerHTML`, `Evaluate`, `Screenshot`, `Page`, `IsRunning`.
+
+#### Per-flow browser isolation
+
+In parallel execution mode, each flow gets its own `FlowBrowserRuntime`:
+
+- Created via `BrowserRuntime.NewFlowRuntime()` which creates a new `BrowserContext` + `Page`.
+- Each flow has isolated cookies, storage, and navigation state.
+- `FlowBrowserRuntime.Close()` closes only its context + page, not the parent browser.
+- All flows share the same underlying browser process (chromium/firefox/webkit).
+
+#### Security: Safe selector evaluation
+
+The `checkSelectorExists` function embeds user-supplied selectors into a JavaScript expression that is evaluated in the browser context. To prevent JS injection via malicious selectors, selector values are escaped using `json.Marshal()` before concatenation into JS code:
+```go
+selectorJSON, _ := json.Marshal(selector)
+js := selectorExistsJS + `(` + string(selectorJSON) + `)`
+```
+
+This produces a properly quoted JSON string literal, so selectors containing `"`, `)`, or backtick characters cannot escape the string context.
+
+#### Grounded UI Observation (observe_ui)
+
+To prevent LLM selector hallucination, the system includes a grounded observation mechanism:
+
+**How it works:**
+- After every successful `navigate()`, the engine automatically calls `observe_ui()`.
+- On any failed interaction (click timeout, selector missing, stale element), the engine re-runs `observe_ui()` before recovery.
+- The observation is appended to `ExecutionContext.Observations` and appears as "Current Observation" in the LLM prompt.
+- The LLM is instructed via system prompt to use observed selectors instead of inventing them.
+
+**Implementation:**
+- `observe_ui()` uses `page.Evaluate()` with a single browser-side JS extraction script.
+- The script finds all visible interactive elements (input, button, textarea, select, a, role-based).
+- Filters out hidden, zero-size elements.
+- Generates selectors using priority: `#id` → `tag[name]` → `text selector` → `nth-of-type`.
+- Caps at 50 elements, prioritizes inputs → buttons → forms → links.
+- Returns: `{"page_state": "loaded"|"empty", "interactive": [{tag, text, id, name, placeholder, selector}, ...]}`
+
+**LLM prompt rule:**
+```
+## Selector Rules (CRITICAL)
+- Use selectors from Current Observation whenever possible
+- Do not invent selectors if observed elements exist
+- If Current Observation contains interactive elements, use their exact selectors
+```
+
+### Planned Tools
+
+The following tools are documented as future extensions and are not yet implemented:
+
+- `set_network_profile(profile)` — Apply a network throttling profile (e.g. 3G, 4G)
+- `fetch_test_data()` — Fetch test data from an external source
+- `fetch_otp_mock()` — Mock OTP retrieval for testing
 
 ### 8. Execution substrate
 
@@ -341,6 +487,15 @@ Example fields:
 - `last_completed_step`
 - `retry_count`
 - `checkpoint_payload`
+
+#### Thread safety
+
+The session store uses a clone-before-mutate pattern for concurrent access:
+
+- All write methods (`UpdateStatus`, `UpdateFlowState`, `SaveCheckpoint`, `Save`) clone the session via JSON marshal/unmarshal before modifying.
+- The cloned session replaces the pointer in the internal map.
+- Read methods (`Get`, `List`) always return clones.
+- This prevents data races between concurrent goroutines reading and writing the same session object.
 
 ### Trace store
 
@@ -386,8 +541,10 @@ Flow states:
 - `FAILED`
 - `RETRYING`
 - `SKIPPED_UPSTREAM_FAILED`
+- `SKIPPED_USER` — Flow skipped by user steering command
 - `BLOCKED_CONFIG_ERROR`
 - `PAUSED`
+- `WAITING_FOR_INPUT` — Flow paused awaiting human input
 
 ## Pause, resume, cancel, steering
 
@@ -402,7 +559,7 @@ Flow states:
 ### Resume
 
 - Load latest checkpoint from session store
-- Reconstruct flow context
+- Reconstruct flow context (including `CurrentURL`, `LastStepSignature`, `ConsecutiveObserveCount` from checkpoint payload)
 - Transition to `RESUMING` then `RUNNING`
 - Continue from next pending step
 
@@ -459,111 +616,84 @@ Suggested custom-tool lifecycle:
 qa-orchestrator/
 ├── apps/
 │   └── tui/
-│       ├── cmd/
-│       │   └── main.go
+│       ├── cmd/              # entry point (main.go)
 │       └── internal/
-│           ├── screens/
-│           ├── components/
-│           ├── commands/
-│           └── state/
+│           ├── screens/      # MainScreen, TUI state, key handling
+│           ├── components/   # reusable Bubble Tea models
+│           ├── style/        # design system (colors, lipgloss styles)
+│           ├── util/         # truncation, formatting helpers
+│           └── logging/      # log redirection
 │
 ├── packages/
-│   ├── orchestrator/
 │   ├── agents/
-│   ├── tools/
+│   │   ├── engine/           # flow execution engine (guided + autonomous loops)
+│   │   ├── executor/         # tool execution + MockToolRegistry
+│   │   ├── planner/          # step planning (guided + autonomous LLM)
+│   │   ├── recovery/         # failure recovery decisions
+│   │   ├── tools/            # ToolInfo→LLM adapter
+│   │   ├── types/            # execution context, plan step, observation
+│   │   └── validator/        # step validation + CreateObservation
+│   │
 │   ├── browser-runtime/
-│   ├── storage/
-│   ├── reporting/
-│   └── shared/
+│   │   ├── runtime.go        # BrowserRuntimeInterface, Playwright wrapper
+│   │   └── tools/            # ToolRegistry, checkSelectorExists, observe_ui JS
+│   │
+│   ├── runtime/              # LifecycleController (pause/resume/cancel/steer)
+│   │
+│   ├── llm/                  # LLM client abstraction (OpenRouter, Gemini providers)
+│   │
+│   ├── orchestrator/
+│   │   ├── campaign/         # flow scheduler, dependency graph, worker pool
+│   │   └── validator/        # campaign YAML validation (schema, deps, cycles)
+│   │
+│   ├── reporting/            # campaign summary generation (Markdown/terminal)
+│   │
+│   ├── shared/
+│   │   └── types/            # shared types (campaign, session, flow, checkpoint, trace)
+│   │
+│   └── storage/
+│       ├── session/          # SessionStore (clone-before-mutate, checkpoint save)
+│       ├── trace/            # TraceStore (event emission)
+│       └── artifact/         # ArtifactStore (screenshots, logs, reports)
 │
-├── campaigns/
-│   ├── sample-guided.yaml
-│   └── sample-autonomous.yaml
+├── campaigns/                # 10 sample campaign YAMLs (guided + autonomous)
 │
-├── artifacts/
+├── bin/                      # build output (gitignored)
 │
-├── bin/
-│   └── qa-orchestrator
-│
-├── logs/
+├── logs/                     # app.log + run logs
 │   └── runs/
 │       └── 2026-05/
-│           ├── run-001.jsonl
-│           ├── run-002.jsonl
-│           └── ...
+│           ├── run-001.jsonl ... run-074.jsonl
 │
 ├── docs/
-│   ├── run-summaries/
-│   │   ├── run-001.md
-│   │   ├── run-002.md
-│   │   └── ...
-│   ├── architecture.md
-│   ├── phases.md
-│   ├── CURRENT.md
+│   ├── run-summaries/        # one .md per run (run-001.md ... run-075.md)
+│   ├── architecture.md       # this file
+│   ├── CURRENT.md            # live project state and run history
 │   ├── CURRENT_TEMPLATE.md
-│   └── LOG_CONVENTIONS.md
+│   └── LOG_CONVENTIONS.md    # naming, folder, slice strategy
 │
-├── agents.md
-├── go.mod
-├── go.sum
+├── agents.md                 # AI agent workflow rules
+├── data/                     # runtime session/trace data (gitignored)
+├── .gocache/                 # local Go build cache (gitignored)
+├── .env / .env.example
+├── go.mod / go.sum
 ├── Makefile
 ├── .gitignore
 └── README.md
 ```
 
-## MVP scope
+## Current scope (all delivered)
 
-- TUI with start/pause/resume/cancel/steer
-- YAML campaign input with schema validation
-- 3 sample flows (mix of guided and autonomous)
-- 4 predefined agents
-- 8 to 10 built-in tools
-- Playwright-backed web execution
-- Session store
-- Trace store
-- Artifact store
-- Final Markdown/HTML report
+All MVP phases, V2 autonomous upgrade, and V4 TUI revamp are complete. See [docs/CURRENT.md](CURRENT.md) for detailed phase status.
 
-## Build phases
-
-### Phase 1: Core runtime
-
-- Parse campaign file
-- Validate YAML schema, fields, dependencies, and mode values
-- Create run/session
-- Persist state
-
-### Phase 2: TUI shell
-
-- Show campaign list and active run
-- Start/pause/resume/cancel commands
-- Display basic flow states
-
-### Phase 3: Agent loop
-
-- Planner, Executor, Validator, Recovery agents wired together
-- Observe -> Act -> Verify loop working on one flow
-- Planner handles both guided and autonomous mode
-
-### Phase 4: Tooling and Playwright integration
-
-- Primitive tools implemented
-- Browser automation works on sample app
-- Screenshots and assertions available
-
-### Phase 5: Trace and artifact pipeline
-
-- Every major step writes a trace event
-- Artifacts stored and visible from TUI
-- Resume/checkpointing works
-
-### Phase 6: Steering and lifecycle controls
-
-- Pause, resume, cancel, and steering commands work correctly
-- `WAITING_FOR_INPUT` flow supported
-
-### Phase 7: Final reporting
-
-- Campaign summary generated
-- Flow-level outcomes + links to artifacts included
-- Final user-facing terminal summary available
+- TUI with start/pause/resume/cancel/steer, 4 views (Dashboard, Flows, Traces, Report)
+- YAML campaign input with schema validation (10 campaign YAMLs)
+- 10 built-in browser tools + 4 mock tools
+- Guided and autonomous execution with per-flow browser isolation
+- 4 safety-nets for pathological LLM behavior (repeat detection, observe_ui loop, early exit prevention, selector validation)
+- Checkpoint save/restore with runtime state (CurrentURL, step signature, observe count)
+- Steering instruction pipeline (TUI → lifecycle → engine → LLM prompt)
+- Parallel flow execution with worker pool + semaphore
+- Session store (clone-before-mutate), Trace store, Artifact store
+- Markdown/terminal campaign summary reporting
+- `--resume` flag for session recovery

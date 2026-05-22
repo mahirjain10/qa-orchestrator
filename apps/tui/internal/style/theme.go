@@ -45,16 +45,22 @@ var (
 	SelectedBold = lipgloss.NewStyle().Foreground(Cyan).Bold(true).Background(BgDark)
 	Help         = lipgloss.NewStyle().Foreground(DimGray)
 	Msg          = lipgloss.NewStyle().Foreground(Cyan)
+	DimmedBg     = lipgloss.NewStyle().Foreground(lipgloss.Color("242"))
+
+	CommandSuggestion      = lipgloss.NewStyle().Foreground(Gray)
+	CommandSuggestionMatch = lipgloss.NewStyle().Foreground(Cyan).Bold(true)
+	CommandDesc            = lipgloss.NewStyle().Foreground(DimGray)
 )
 
 // Border styles
 var (
-	ActiveBorder   = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(Cyan).Bold(true)
-	InactiveBorder = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).BorderForeground(Border)
-	PanelBorder    = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(Border)
-	FocusBorder    = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(Cyan).Bold(true)
-	ModalBorder    = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(Cyan)
-	SidebarBorder  = lipgloss.NewStyle().Border(lipgloss.Border{Right: "│"}).BorderForeground(Border)
+	ActiveBorder         = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(Cyan).Bold(true)
+	InactiveBorder       = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).BorderForeground(Border)
+	PanelBorder          = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(Border)
+	FocusBorder          = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(Cyan).Bold(true)
+	ModalBorder          = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(Cyan)
+	SidebarBorder        = lipgloss.NewStyle().Border(lipgloss.Border{Right: "│"}).BorderForeground(Border)
+	CommandPaletteBorder = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(Pink)
 )
 
 // Trace status helpers

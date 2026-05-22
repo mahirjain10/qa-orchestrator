@@ -33,6 +33,25 @@ func (m *FlowStatusModel) SetFlows(flows []types.FlowRunState) {
 	}
 }
 
+func (m *FlowStatusModel) SyncFlows(flows []types.FlowRunState) {
+	var selectedID string
+	if len(m.flows) > 0 && m.selected < len(m.flows) {
+		selectedID = m.flows[m.selected].FlowID
+	}
+	m.flows = flows
+	if selectedID != "" {
+		for i, f := range m.flows {
+			if f.FlowID == selectedID {
+				m.selected = i
+				return
+			}
+		}
+	}
+	if m.selected >= len(flows) {
+		m.selected = 0
+	}
+}
+
 func (m *FlowStatusModel) Next() {
 	if m.selected < len(m.flows)-1 {
 		m.selected++
@@ -80,10 +99,14 @@ func (m *FlowStatusModel) View() string {
 			statusColor = style.StatusFailed
 		case types.FlowStatePaused:
 			statusColor = style.StatusPaused
+		case types.FlowStatePending:
+			statusColor = style.StatusPending
 		case types.FlowStateRetrying:
 			statusColor = style.StatusRetrying
-		case types.FlowStateSkippedUpstream, types.FlowStateBlockedConfigError:
+		case types.FlowStateSkippedUpstream, types.FlowStateSkippedUser, types.FlowStateBlockedConfigError:
 			statusColor = style.StatusCancelled
+		case types.FlowStateWaitingInput:
+			statusColor = style.StatusPaused
 		}
 
 		startedStr := "-"
@@ -151,10 +174,14 @@ func (m *FlowStatusModel) ViewWithWidth(width int) string {
 			statusColor = style.StatusFailed
 		case types.FlowStatePaused:
 			statusColor = style.StatusPaused
+		case types.FlowStatePending:
+			statusColor = style.StatusPending
 		case types.FlowStateRetrying:
 			statusColor = style.StatusRetrying
-		case types.FlowStateSkippedUpstream, types.FlowStateBlockedConfigError:
+		case types.FlowStateSkippedUpstream, types.FlowStateSkippedUser, types.FlowStateBlockedConfigError:
 			statusColor = style.StatusCancelled
+		case types.FlowStateWaitingInput:
+			statusColor = style.StatusPaused
 		}
 
 		flowID := util.Truncate(f.FlowID, util.SafeWidth(colFlow-2, 4))

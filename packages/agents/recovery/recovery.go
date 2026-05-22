@@ -41,6 +41,12 @@ func (r *Recovery) Decide(err error, stepResult *types.StepResult, ctx *types.Ex
 	if err != nil {
 		errStr := err.Error()
 
+		if isSelectorTimeout(errStr) {
+			decision.Action = types.RecoveryActionReplan
+			decision.Reason = "selector timeout, replanning with fresh observation"
+			return decision
+		}
+
 		if isNetworkError(errStr) {
 			decision.Action = types.RecoveryActionRetry
 			decision.Reason = "network error, retrying"
@@ -87,9 +93,14 @@ func (r *Recovery) Decide(err error, stepResult *types.StepResult, ctx *types.Ex
 	return decision
 }
 
+func isSelectorTimeout(err string) bool {
+	err = strings.ToLower(err)
+	return strings.Contains(err, "playwright") && strings.Contains(err, "timeout") && strings.Contains(err, "selector")
+}
+
 func isNetworkError(err string) bool {
 	err = strings.ToLower(err)
-	networkErrors := []string{"connection refused", "timeout", "network", "dns", "econnreset", "enotfound"}
+	networkErrors := []string{"connection refused", "network", "dns", "econnreset", "enotfound"}
 	for _, ne := range networkErrors {
 		if strings.Contains(err, ne) {
 			return true
@@ -111,7 +122,7 @@ func isTimeoutError(err string) bool {
 
 func isLocatorError(err string) bool {
 	err = strings.ToLower(err)
-	locatorErrors := []string{"locator", "element not found", "no such element", "not visible", "not attached"}
+	locatorErrors := []string{"locator", "element not found", "no such element", "not visible", "not attached", "not found on page", "does not exist in current dom"}
 	for _, l := range locatorErrors {
 		if strings.Contains(err, l) {
 			return true
@@ -127,7 +138,7 @@ func isAssertionError(err string) bool {
 
 func isConfigError(err string) bool {
 	err = strings.ToLower(err)
-	configErrors := []string{"config", "invalid", "not found", "unknown tool"}
+	configErrors := []string{"config", "unknown tool", "invalid configuration", "missing required"}
 	for _, c := range configErrors {
 		if strings.Contains(err, c) {
 			return true

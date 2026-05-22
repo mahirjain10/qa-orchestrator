@@ -35,9 +35,10 @@ const (
 
 type Flow struct {
 	ID          string       `json:"id" yaml:"id"`
-	Name        string       `json:"name" yaml:"name"`
+	Name        string       `json:"name" yaml:"name"` // optional display name, not used for identification
 	Description string       `json:"description" yaml:"description"`
 	Goal        string       `json:"goal" yaml:"goal"`
+	StartURL    string       `json:"start_url,omitempty" yaml:"start_url,omitempty"`
 	Mode        FlowMode     `json:"mode" yaml:"mode"`
 	Priority    FlowPriority `json:"priority" yaml:"priority"`
 	DependsOn   []string     `json:"depends_on" yaml:"depends_on"`
@@ -46,8 +47,9 @@ type Flow struct {
 }
 
 type FlowConfig struct {
-	Timeout    time.Duration `json:"timeout" yaml:"timeout"`
-	RetryLimit int           `json:"retry_limit" yaml:"retry_limit"`
+	Timeout            time.Duration `json:"timeout" yaml:"timeout"`
+	RetryLimit         int           `json:"retry_limit" yaml:"retry_limit"`
+	MaxAutonomousSteps int           `json:"max_autonomous_steps" yaml:"max_autonomous_steps"`
 }
 
 type Step struct {

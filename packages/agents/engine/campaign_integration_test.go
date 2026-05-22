@@ -3,6 +3,7 @@ package engine
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"qa-orchestrator/packages/orchestrator/campaign"
@@ -11,10 +12,11 @@ import (
 
 func TestAutonomousCampaign_ParseAndValidate(t *testing.T) {
 	parser := campaign.NewCampaignParser()
-	camp, err := parser.ParseFile("../../../campaigns/sample-autonomous.yaml")
+	parsed, err := parser.ParseFile("../../../campaigns/sample-autonomous.yaml")
 	if err != nil {
 		t.Fatalf("Failed to parse autonomous campaign: %v", err)
 	}
+	camp := parsed.Campaign
 
 	if camp.Name != "Autonomous E2E Test Campaign" {
 		t.Errorf("Campaign name = %q, want %q", camp.Name, "Autonomous E2E Test Campaign")
@@ -47,10 +49,11 @@ func TestAutonomousCampaign_ParseAndValidate(t *testing.T) {
 
 func TestAutonomousCampaign_DependencyGraph(t *testing.T) {
 	parser := campaign.NewCampaignParser()
-	camp, err := parser.ParseFile("../../../campaigns/sample-autonomous.yaml")
+	parsed, err := parser.ParseFile("../../../campaigns/sample-autonomous.yaml")
 	if err != nil {
 		t.Fatalf("Failed to parse autonomous campaign: %v", err)
 	}
+	camp := parsed.Campaign
 
 	flowMap := make(map[string]*sharedtypes.Flow)
 	for i := range camp.Flows {
@@ -75,10 +78,11 @@ func TestAutonomousCampaign_DependencyGraph(t *testing.T) {
 
 func TestAutonomousCampaign_PriorityOrdering(t *testing.T) {
 	parser := campaign.NewCampaignParser()
-	camp, err := parser.ParseFile("../../../campaigns/sample-autonomous.yaml")
+	parsed, err := parser.ParseFile("../../../campaigns/sample-autonomous.yaml")
 	if err != nil {
 		t.Fatalf("Failed to parse autonomous campaign: %v", err)
 	}
+	camp := parsed.Campaign
 
 	priorityOrder := map[string]int{
 		"high":   3,
@@ -115,10 +119,11 @@ func TestAutonomousCampaign_FileExists(t *testing.T) {
 
 func TestAutonomousCampaign_RecoveryReplanIntegration(t *testing.T) {
 	parser := campaign.NewCampaignParser()
-	camp, err := parser.ParseFile("../../../campaigns/sample-autonomous.yaml")
+	parsed, err := parser.ParseFile("../../../campaigns/sample-autonomous.yaml")
 	if err != nil {
 		t.Fatalf("Failed to parse autonomous campaign: %v", err)
 	}
+	camp := parsed.Campaign
 
 	authFlow := camp.Flows[0]
 	if authFlow.Mode != sharedtypes.FlowModeAutonomous {
@@ -132,4 +137,66 @@ func TestAutonomousCampaign_RecoveryReplanIntegration(t *testing.T) {
 	t.Logf("Autonomous flow %s has goal: %s", authFlow.ID, authFlow.Goal)
 	t.Logf("Recovery agent can trigger replanning on locator errors (verified in recovery_test.go)")
 	t.Logf("Engine runAutonomousFlow handles RecoveryActionReplan at lines 227-238")
+}
+
+func TestAllCampaigns_ParseAndValidate(t *testing.T) {
+	parser := campaign.NewCampaignParser()
+	campaignDir := "../../../campaigns"
+
+	files, err := filepath.Glob(filepath.Join(campaignDir, "*.yaml"))
+	if err != nil {
+		t.Fatalf("Failed to glob campaign files: %v", err)
+	}
+
+	if len(files) == 0 {
+		t.Fatal("No campaign YAML files found in campaigns/ directory")
+	}
+
+	for _, f := range files {
+		name := filepath.Base(f)
+		t.Run(name, func(t *testing.T) {
+			parsed, err := parser.ParseFile(f)
+			if err != nil {
+				t.Fatalf("Failed to parse %s: %v", name, err)
+			}
+			camp := parsed.Campaign
+			if camp.Name == "" {
+				t.Error("Campaign name is empty")
+			}
+			if len(camp.Flows) == 0 {
+				t.Error("Campaign has no flows")
+			}
+			if parsed.TopologicalOrder == nil {
+				t.Error("TopologicalOrder is nil after ParseFile")
+			}
+			t.Logf("Campaign %q: %d flows, topological order: %v", camp.Name, len(camp.Flows), parsed.TopologicalOrder)
+		})
+	}
+}
+
+func TestAllCampaigns_StartURLValidation(t *testing.T) {
+	parser := campaign.NewCampaignParser()
+	campaignDir := "../../../campaigns"
+
+	files, err := filepath.Glob(filepath.Join(campaignDir, "*.yaml"))
+	if err != nil {
+		t.Fatalf("Failed to glob campaign files: %v", err)
+	}
+
+	for _, f := range files {
+		name := filepath.Base(f)
+		t.Run(name, func(t *testing.T) {
+			parsed, err := parser.ParseFile(f)
+			if err != nil {
+				t.Fatalf("Failed to parse %s: %v", name, err)
+			}
+			for _, flow := range parsed.Campaign.Flows {
+				if flow.StartURL != "" {
+					if !strings.HasPrefix(flow.StartURL, "http://") && !strings.HasPrefix(flow.StartURL, "https://") {
+						t.Errorf("Flow %q has invalid start_url %q: must start with http:// or https://", flow.ID, flow.StartURL)
+					}
+				}
+			}
+		})
+	}
 }

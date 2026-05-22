@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/rs/zerolog/log"
 	agentstypes "qa-orchestrator/packages/agents/types"
 	sharedtypes "qa-orchestrator/packages/shared/types"
 )
@@ -188,7 +189,7 @@ func (s *TraceStore) loadFromFile(runID string) ([]*sharedtypes.TraceEvent, erro
 		}
 		var event sharedtypes.TraceEvent
 		if err := json.Unmarshal([]byte(line), &event); err != nil {
-			fmt.Fprintf(os.Stderr, "failed to unmarshal trace event line: %v\n", err)
+			log.Error().Err(err).Str("line", line).Msg("failed to unmarshal trace event line, skipping")
 			continue
 		}
 		events = append(events, &event)

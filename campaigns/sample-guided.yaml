@@ -11,6 +11,8 @@ flows:
     name: Login Test
     description: Test login functionality
     goal: Login to the demo app with test credentials
+    mode: guided
+    priority: high
     depends_on: []
     steps:
       - id: nav-to-login
@@ -46,6 +48,8 @@ flows:
     name: Dashboard Test
     description: Test dashboard elements
     goal: Verify dashboard displays correctly after login
+    mode: guided
+    priority: medium
     depends_on:
       - login-flow
     steps:
@@ -64,6 +68,8 @@ flows:
     name: Logout Test
     description: Test logout functionality
     goal: Logout from the application
+    mode: guided
+    priority: low
     depends_on:
       - dashboard-flow
     steps:

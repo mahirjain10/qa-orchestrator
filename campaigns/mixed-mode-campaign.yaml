@@ -1,0 +1,107 @@
+name: Mixed Mode Campaign
+description: Tests guided and autonomous flows in the same campaign with mixed dependencies
+version: "1.0"
+config:
+  timeout: 600s
+  retry_limit: 2
+  parallel_limit: 1
+
+flows:
+  - id: guided-login
+    name: Guided Login
+    description: Predefined login steps using guided mode
+    goal: Login with test credentials using predefined steps
+    mode: guided
+    priority: high
+    depends_on: []
+    steps:
+      - id: nav-to-login
+        name: Navigate to Login
+        tool: navigate
+        params:
+          url: "https://practicetestautomation.com/practice-test-login/"
+      - id: enter-username
+        name: Enter Username
+        tool: type_text
+        params:
+          selector: "#username"
+          value: "student"
+      - id: enter-password
+        name: Enter Password
+        tool: type_text
+        params:
+          selector: "#password"
+          value: "Password123"
+      - id: click-submit
+        name: Click Submit
+        tool: click
+        params:
+          selector: "#submit"
+      - id: verify-success
+        name: Verify Login Success
+        tool: wait_for
+        params:
+          selector: ".post-content"
+          state: "visible"
+
+  - id: guided-dashboard
+    name: Guided Dashboard Check
+    description: Verify dashboard elements after login
+    goal: Check that dashboard elements are visible after login
+    mode: guided
+    priority: high
+    depends_on:
+      - guided-login
+    steps:
+      - id: check-header
+        name: Check Header
+        tool: get_text
+        params:
+          selector: ".post-header"
+      - id: check-content
+        name: Check Content
+        tool: get_text
+        params:
+          selector: ".post-content"
+
+  - id: autonomous-explore
+    name: Autonomous Explore
+    description: Explore the site after guided login
+    goal: After the guided login and dashboard check, explore the website navigation, click on available links, and verify that pages load correctly without errors
+    start_url: https://practicetestautomation.com/logged-in-successfully/
+    mode: autonomous
+    priority: medium
+    depends_on:
+      - guided-dashboard
+
+  - id: guided-logout
+    name: Guided Logout
+    description: Logout using predefined steps
+    goal: Logout from the application
+    mode: guided
+    priority: medium
+    depends_on:
+      - guided-login
+      - autonomous-explore
+    steps:
+      - id: click-logout
+        name: Click Logout
+        tool: click
+        params:
+          selector: "#logout"
+      - id: verify-logged-out
+        name: Verify Logout
+        tool: wait_for
+        params:
+          selector: "#username"
+          state: "visible"
+
+  - id: autonomous-validate
+    name: Autonomous Validation
+    description: Validate the full session after all flows
+    goal: Verify that the application is in a clean state after logout, confirm no session tokens remain, and validate the login page is fully accessible
+    start_url: https://practicetestautomation.com/practice-test-login/
+    mode: autonomous
+    priority: low
+    depends_on:
+      - guided-logout

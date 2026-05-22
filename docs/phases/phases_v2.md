@@ -1,6 +1,6 @@
 # Project Phases V2: Hybrid & Autonomous Architecture
 
-This document outlines the implementation phases for the Zenact Major Update, transitioning the system into a hybrid (Guided/Autonomous) orchestrator.
+This document outlines the implementation phases for the QA Orchestrator Major Update, transitioning the system into a hybrid (Guided/Autonomous) orchestrator.
 
 ## Phase 1: Hybrid Schema & Validation
 **Goal:** Update types and validation to support mode-based execution.

@@ -30,33 +30,46 @@ Detailed design is in [docs/architecture.md](docs/architecture.md).
 ## Repository layout
 
 ```text
-apps/tui/                   # terminal application
-packages/orchestrator/      # flow scheduling and execution control
-packages/agents/            # planner/executor/validator/recovery
-packages/browser-runtime/   # browser execution substrate
-packages/storage/           # session/trace/artifact stores
-packages/reporting/         # terminal/summary reporting
-campaigns/                  # sample campaigns
-docs/                       # phases, architecture, current state, summaries
-logs/runs/                  # run logs (jsonl)
+apps/tui/                        # terminal application (TUI)
+packages/orchestrator/           # flow scheduling and execution control
+packages/agents/                 # planner/executor/validator/recovery
+  ├── engine/                    #   flow execution engine + agent loop
+  ├── executor/                  #   tool execution
+  ├── planner/                   #   step planning (guided + autonomous)
+  ├── recovery/                  #   failure recovery decisions
+  ├── validator/                 #   step validation + observations
+  ├── tools/                     #   ToolInfo adapter for LLM prompts
+  └── types/                     #   shared agent types
+packages/browser-runtime/        # Playwright runtime + ToolRegistry
+packages/runtime/                # LifecycleController (pause/resume/cancel/steer)
+packages/llm/                    # LLM client abstraction (OpenRouter, Gemini)
+packages/storage/                # session/trace/artifact stores
+packages/reporting/              # campaign summary reporting
+packages/shared/                 # shared types (campaign, session, trace)
+campaigns/                       # 10 sample campaign YAMLs
+logs/                            # app.log + run logs (jsonl)
+docs/                            # architecture, phases, run summaries
 ```
 
 ## TUI behavior and controls
 
 Main controls:
 
-- `TAB` / `←` / `→`: switch active slot
-- `0-3`: jump to slot
-- `p`: cycle component in active slot
-- `w`: swap active slot with neighbor
-- `m`: maximize/restore active slot
-- `↑` / `↓` or `j` / `k`: navigate list items
-- `Enter`: select run from campaign list
-- `Space`: pause/resume run
-- `x`: cancel run
-- `s`: steering mode (retry/skip/continue/status)
-- `esc`: exit steering or restore from maximize
-- `q`: quit
+- `1-4`: Switch views (Dashboard, Flows, Traces, Report)
+- `TAB`: Toggle sidebar/content focus
+- `↑/k` `↓/j`: Navigate list items (context-aware)
+- `Enter`: Select campaign from list / expand flow detail
+- `Left/h`: Collapse flow detail
+- `Space`: Pause/resume run
+- `x`: Cancel run
+- `:`: Enter command mode (type `retry`, `skip`, `continue`, `status`)
+- `r`: Manual refresh
+- `/`: Filter traces (Traces view only)
+- `S`: Toggle failures-only filter (Traces view only)
+- `f`: Toggle follow-tail (Traces view only)
+- `?`: Toggle help modal overlay
+- `Esc`: Dismiss help modal / exit command or filter mode
+- `q`: Quit
 
 ## Prerequisites
 

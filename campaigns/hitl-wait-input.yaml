@@ -1,0 +1,34 @@
+name: HITL Wait Input Test
+description: Tests WAITING_FOR_INPUT state and human-in-the-loop pause/resume/steering
+version: "1.0"
+config:
+  timeout: 600s
+  retry_limit: 2
+  parallel_limit: 1
+
+flows:
+  - id: pre-input-flow
+    name: Pre-Input Setup
+    description: Navigate to login page before waiting for human input
+    goal: Navigate to https://practicetestautomation.com/practice-test-login/ and verify the login page loads with username and password fields visible. Then pause and wait for human confirmation before proceeding
+    mode: autonomous
+    priority: high
+    depends_on: []
+
+  - id: wait-for-approval
+    name: Wait for Human Approval
+    description: This flow should enter WAITING_FOR_INPUT state
+    goal: After the pre-input flow confirms the login page is ready, wait for human approval to proceed with entering credentials. The human should verify the page is correct and approve continuation
+    mode: autonomous
+    priority: high
+    depends_on:
+      - pre-input-flow
+
+  - id: post-approval-flow
+    name: Post-Approval Execution
+    description: Continue after human approves the input
+    goal: After human approval, enter username 'student' and password 'Password123' into the login form, click submit, and verify successful login with the 'Logged In Successfully' message visible
+    mode: autonomous
+    priority: high
+    depends_on:
+      - wait-for-approval

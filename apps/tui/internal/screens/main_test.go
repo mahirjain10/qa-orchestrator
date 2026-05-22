@@ -9,7 +9,9 @@ import (
 
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"qa-orchestrator/apps/tui/internal/components"
+	"qa-orchestrator/packages/runtime"
 	"qa-orchestrator/packages/shared/types"
 	"qa-orchestrator/packages/storage/artifact"
 	"qa-orchestrator/packages/storage/session"
@@ -147,11 +149,12 @@ func TestSteeringCommandNoRunSelected(t *testing.T) {
 
 func TestSteeringCommandApprove(t *testing.T) {
 	screen, runID := newScreenWithRun(t)
-	screen.currentRun = &types.Session{RunID: runID}
+	screen.currentRun = &types.Session{RunID: runID, Status: types.RunStateWaitingInput}
+	screen.handlers.store.UpdateStatus(runID, types.RunStateWaitingInput)
 
 	screen.processSteeringCommand("approve")
 
-	if screen.msg != "Approval noted" {
+	if screen.msg != "Approval noted and run resumed" {
 		t.Fatalf("expected approval message, got %q", screen.msg)
 	}
 }
@@ -289,28 +292,28 @@ func TestKeyXCancel(t *testing.T) {
 	}
 }
 
-func TestKeySteeringMode(t *testing.T) {
+func TestKeyCommandMode(t *testing.T) {
 	screen, runID := newScreenWithRun(t)
 	screen.currentRun = &types.Session{RunID: runID}
 
-	screen.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'s'}})
+	screen.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
 
-	if !screen.steeringMode {
-		t.Fatal("expected steering mode to be enabled")
+	if !screen.commandBar.Focused {
+		t.Fatal("expected command focus to be enabled")
 	}
-	if !screen.steeringInput.Focused() {
-		t.Fatal("expected steering input to be focused")
+	if !screen.commandBar.Input.Focused() {
+		t.Fatal("expected command input to be focused")
 	}
 }
 
-func TestKeySteeringModeNoRun(t *testing.T) {
+func TestKeyCommandModeNoRun(t *testing.T) {
 	screen, _ := newScreenWithRun(t)
 	screen.currentRun = nil
 
-	screen.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'s'}})
+	screen.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{':'}})
 
-	if screen.steeringMode {
-		t.Fatal("expected steering mode to not be enabled without a run")
+	if screen.commandBar.Focused {
+		t.Fatal("expected command focus to not be enabled without a run")
 	}
 }
 
@@ -367,8 +370,8 @@ func TestViewShowsTooSmallMessage(t *testing.T) {
 	screen.height = 20
 
 	view := screen.View()
-	if !strings.Contains(view, "Terminal too small") {
-		t.Fatal("expected view to show 'Terminal too small' message")
+	if !strings.Contains(view, "too narrow") {
+		t.Fatalf("expected view to show 'too narrow' message, got %q", view)
 	}
 }
 
@@ -500,37 +503,37 @@ func TestUnknownMessageTypeDoesNotCrash(t *testing.T) {
 	}
 }
 
-func TestSteeringModeEnterProcessesCommand(t *testing.T) {
+func TestCommandModeEnterProcessesCommand(t *testing.T) {
 	screen, runID := newScreenWithRun(t)
 	screen.currentRun = &types.Session{RunID: runID}
-	screen.steeringMode = true
-	screen.steeringInput.SetValue("status")
+	screen.commandBar.Focused = true
+	screen.commandBar.Input.SetValue("status")
 
 	model, _ := screen.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	updated := model.(*MainScreen)
 
-	if updated.steeringMode {
-		t.Fatal("expected steering mode to be disabled after enter")
+	if updated.commandBar.Focused {
+		t.Fatal("expected command focus to be disabled after enter")
 	}
-	if updated.steeringInput.Value() != "" {
-		t.Fatalf("expected steering input to be cleared, got %q", updated.steeringInput.Value())
+	if updated.commandBar.Input.Value() != "" {
+		t.Fatalf("expected command input to be cleared, got %q", updated.commandBar.Input.Value())
 	}
 	if !strings.Contains(updated.msg, "Status:") {
 		t.Fatalf("expected status message, got %q", updated.msg)
 	}
 }
 
-func TestSteeringModeEnterWithEmptyInput(t *testing.T) {
+func TestCommandModeEnterWithEmptyInput(t *testing.T) {
 	screen, runID := newScreenWithRun(t)
 	screen.currentRun = &types.Session{RunID: runID}
-	screen.steeringMode = true
-	screen.steeringInput.SetValue("")
+	screen.commandBar.Focused = true
+	screen.commandBar.Input.SetValue("")
 
 	model, _ := screen.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	updated := model.(*MainScreen)
 
-	if !updated.steeringMode {
-		t.Fatal("expected steering mode to remain active with empty input")
+	if !updated.commandBar.Focused {
+		t.Fatal("expected command focus to remain active with empty input")
 	}
 }
 
@@ -551,7 +554,11 @@ func TestUpdateFromStoresHandlesMissingStores(t *testing.T) {
 	screen.artifactStore = nil
 	screen.reportGenerator = nil
 
-	screen.updateFromStores()
+	sess, err := screen.handlers.GetRunStatus(runID)
+	if err != nil {
+		t.Fatalf("get run status: %v", err)
+	}
+	screen.currentRun = sess
 
 	if screen.currentRun == nil {
 		t.Fatal("expected currentRun to persist when stores are nil")
@@ -662,7 +669,7 @@ func TestInitReturnsBatchCommand(t *testing.T) {
 	}
 }
 
-func TestMultipleSteeringCommandsInSequence(t *testing.T) {
+func TestMultipleCommandInputsInSequence(t *testing.T) {
 	screen, runID := newScreenWithRun(t)
 	screen.currentRun = &types.Session{RunID: runID, Flows: []types.FlowRunState{
 		{FlowID: "flow-1", Status: types.FlowStateFailed},
@@ -680,17 +687,17 @@ func TestMultipleSteeringCommandsInSequence(t *testing.T) {
 	}
 }
 
-func TestViewWithSteeringModeOverlay(t *testing.T) {
+func TestViewWithCommandBar(t *testing.T) {
 	screen, runID := newScreenWithRun(t)
 	screen.width = 120
 	screen.height = 40
 	screen.currentRun = &types.Session{RunID: runID}
-	screen.steeringMode = true
-	screen.steeringInput.SetValue("test input")
+	screen.commandBar.Focused = true
+	screen.commandBar.Input.SetValue("test input")
 
 	view := screen.View()
-	if !strings.Contains(view, "STEERING MODE") {
-		t.Fatal("expected steering mode overlay in view")
+	if !strings.Contains(view, "test input") {
+		t.Fatal("expected command bar in view")
 	}
 }
 
@@ -825,7 +832,32 @@ func TestRefreshAllUpdatesTraceArtifactAndReportPanels(t *testing.T) {
 		cmd()
 	}
 	screen.currentRun = &types.Session{RunID: runID}
-	screen.updateFromStores()
+
+	sess, err := screen.handlers.GetRunStatus(runID)
+	if err == nil && sess != nil {
+		screen.currentRun = sess
+		screen.flowStatus.SyncFlows(sess.Flows)
+	}
+	if screen.traceStore != nil {
+		events, err := screen.traceStore.GetRecent(runID, 50)
+		if err == nil {
+			screen.traces = events
+			screen.tracePanel.SetEvents(events)
+		}
+	}
+	if screen.artifactStore != nil {
+		artifacts, err := screen.artifactStore.GetByRunID(runID)
+		if err == nil {
+			screen.artifacts = artifacts
+			screen.artifactPanel.SetArtifacts(artifacts)
+		}
+	}
+	if screen.reportGenerator != nil {
+		report, err := screen.reportGenerator.GenerateTerminalSummary(runID)
+		if err == nil {
+			screen.reportView = report
+		}
+	}
 
 	if !strings.Contains(screen.tracePanel.ViewCompact(), "click_button") {
 		t.Fatal("expected trace panel to include latest event after refresh")
@@ -949,10 +981,10 @@ func TestRenderDashboardViewWithActiveRun(t *testing.T) {
 	screen.width = 120
 	screen.height = 40
 	screen.currentRun = &types.Session{
-		RunID:        runID,
-		CampaignName: "test-campaign",
-		Status:       types.RunStateRunning,
-		CurrentAgent: "executor",
+		RunID:         runID,
+		CampaignName:  "test-campaign",
+		Status:        types.RunStateRunning,
+		CurrentAgent:  "executor",
 		CurrentFlowID: "flow-1",
 		Flows: []types.FlowRunState{
 			{FlowID: "flow-1", Status: types.FlowStateRunning},
@@ -979,10 +1011,10 @@ func TestRenderRunSummaryShowsStatusAndCampaign(t *testing.T) {
 	screen.width = 120
 	screen.height = 40
 	screen.currentRun = &types.Session{
-		RunID:        runID,
-		CampaignName: "my-campaign",
-		Status:       types.RunStateRunning,
-		CurrentAgent: "planner",
+		RunID:         runID,
+		CampaignName:  "my-campaign",
+		Status:        types.RunStateRunning,
+		CurrentAgent:  "planner",
 		CurrentFlowID: "flow-1",
 		Flows: []types.FlowRunState{
 			{FlowID: "flow-1", Status: types.FlowStateRunning},
@@ -1454,8 +1486,8 @@ func TestContentWidthCalculatesCorrectly(t *testing.T) {
 	screen.width = 120
 
 	w := screen.contentWidth()
-	if w != 94 {
-		t.Fatalf("expected width 94, got %d", w)
+	if w != 92 {
+		t.Fatalf("expected width 92, got %d", w)
 	}
 }
 
@@ -1769,8 +1801,8 @@ func TestContextualKeysDashboardWithRun(t *testing.T) {
 	if !strings.Contains(keys, "x:cancel") {
 		t.Fatalf("expected dashboard keys with run to contain 'x:cancel', got %q", keys)
 	}
-	if !strings.Contains(keys, "s:steer") {
-		t.Fatalf("expected dashboard keys with run to contain 's:steer', got %q", keys)
+	if !strings.Contains(keys, ":command") {
+		t.Fatalf("expected dashboard keys with run to contain ':command', got %q", keys)
 	}
 }
 
@@ -1855,5 +1887,1215 @@ func TestViewHidesStatusBarOnShortTerminal(t *testing.T) {
 	view := screen.View()
 	if strings.Contains(view, "RUNNING") {
 		t.Fatal("expected view to not contain status bar on short terminal")
+	}
+}
+
+func TestCampaignSelectorShowsTitle(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = nil
+	screen.sessions = []*types.Session{}
+
+	selector := screen.renderCampaignSelector()
+	if !strings.Contains(selector, "Select a Campaign") {
+		t.Fatalf("expected selector to contain title, got %q", selector)
+	}
+}
+
+func TestCampaignSelectorShowsEmptyState(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = nil
+	screen.sessions = []*types.Session{}
+
+	selector := screen.renderCampaignSelector()
+	if !strings.Contains(selector, "No campaigns found") {
+		t.Fatalf("expected selector to show empty state message, got %q", selector)
+	}
+}
+
+func TestCampaignSelectorShowsCampaigns(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = nil
+	screen.sessions = []*types.Session{
+		{RunID: "run-001", CampaignName: "login-test"},
+		{RunID: "run-002", CampaignName: "checkout-test"},
+	}
+	screen.campaignList.SetCampaigns(screen.campaignNames())
+
+	selector := screen.renderCampaignSelector()
+	if !strings.Contains(selector, "login-test") {
+		t.Fatal("expected selector to contain first campaign")
+	}
+	if !strings.Contains(selector, "checkout-test") {
+		t.Fatal("expected selector to contain second campaign")
+	}
+	if !strings.Contains(selector, "run-001") {
+		t.Fatal("expected selector to contain first run ID")
+	}
+	if !strings.Contains(selector, "run-002") {
+		t.Fatal("expected selector to contain second run ID")
+	}
+}
+
+func TestCampaignSelectorShowsSelectedIndicator(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = nil
+	screen.sessions = []*types.Session{
+		{RunID: "run-001", CampaignName: "login-test"},
+		{RunID: "run-002", CampaignName: "checkout-test"},
+	}
+	screen.campaignList.SetCampaigns(screen.campaignNames())
+	screen.campaignList.SetSelected(1)
+
+	selector := screen.renderCampaignSelector()
+	if !strings.Contains(selector, "▶") {
+		t.Fatal("expected selector to contain selected indicator")
+	}
+}
+
+func TestCampaignSelectorModalWidthConstrained(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 200
+	screen.height = 40
+	screen.currentRun = nil
+	screen.sessions = []*types.Session{}
+
+	selector := screen.renderCampaignSelector()
+	width := lipgloss.Width(selector)
+	if width > 74 {
+		t.Fatalf("expected modal width <= 74 (70 + padding), got %d", width)
+	}
+}
+
+func TestCampaignSelectorModalWidthMinimum(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 80
+	screen.height = 40
+	screen.currentRun = nil
+	screen.sessions = []*types.Session{}
+
+	selector := screen.renderCampaignSelector()
+	if selector == "" {
+		t.Fatal("expected non-empty selector")
+	}
+}
+
+func TestDashboardViewCentersCampaignSelector(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = nil
+	screen.sessions = []*types.Session{
+		{RunID: "run-001", CampaignName: "test-campaign"},
+	}
+	screen.campaignList.SetCampaigns(screen.campaignNames())
+
+	view := screen.renderDashboardView()
+	if !strings.Contains(view, "Select a Campaign") {
+		t.Fatal("expected dashboard view to contain campaign selector")
+	}
+}
+
+func TestDashboardViewCentersSelectorWithPadding(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = nil
+	screen.sessions = []*types.Session{}
+
+	view := screen.renderDashboardView()
+	contentW := screen.contentWidth()
+	expectedPadding := (contentW - 70) / 2
+	if expectedPadding < 0 {
+		expectedPadding = 0
+	}
+	if expectedPadding > 0 {
+		if !strings.HasPrefix(view, strings.Repeat(" ", expectedPadding)) {
+			t.Fatalf("expected view to start with %d spaces of padding, got different prefix", expectedPadding)
+		}
+	}
+}
+
+func TestCampaignSelectorShowsNavigationHints(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = nil
+	screen.sessions = []*types.Session{}
+
+	selector := screen.renderCampaignSelector()
+	if !strings.Contains(selector, "navigate") {
+		t.Fatal("expected selector to show navigate hint")
+	}
+	if !strings.Contains(selector, "enter") {
+		t.Fatal("expected selector to show enter hint")
+	}
+	if !strings.Contains(selector, "quit") {
+		t.Fatal("expected selector to show quit hint")
+	}
+}
+
+func TestCampaignSelectorUsesModalBorderStyle(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = nil
+	screen.sessions = []*types.Session{}
+
+	selector := screen.renderCampaignSelector()
+	if !strings.Contains(selector, "│") {
+		t.Fatal("expected selector to have border characters")
+	}
+}
+
+func TestViewShowsErrorOnNarrowTerminal(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 70
+	screen.height = 40
+
+	view := screen.View()
+	if !strings.Contains(view, "too narrow") {
+		t.Fatalf("expected 'too narrow' error, got %q", view)
+	}
+	if !strings.Contains(view, "70") {
+		t.Fatalf("expected current width in error, got %q", view)
+	}
+}
+
+func TestViewShowsErrorOnShortTerminal(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 15
+
+	view := screen.View()
+	if !strings.Contains(view, "too short") {
+		t.Fatalf("expected 'too short' error, got %q", view)
+	}
+	if !strings.Contains(view, "15") {
+		t.Fatalf("expected current height in error, got %q", view)
+	}
+}
+
+func TestViewShowsInitializingOnZeroSize(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 0
+	screen.height = 0
+
+	view := screen.View()
+	if view != "Initializing..." {
+		t.Fatalf("expected 'Initializing...', got %q", view)
+	}
+}
+
+func TestSidebarWidthReturns24AtWideTerminal(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 120
+
+	w := screen.sidebarWidth()
+	if w != 24 {
+		t.Fatalf("expected sidebar width 24 at width 120, got %d", w)
+	}
+}
+
+func TestSidebarWidthReturns20AtMediumTerminal(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 95
+
+	w := screen.sidebarWidth()
+	if w != 20 {
+		t.Fatalf("expected sidebar width 20 at width 95, got %d", w)
+	}
+}
+
+func TestSidebarWidthReturns16AtNarrowTerminal(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 85
+
+	w := screen.sidebarWidth()
+	if w != 16 {
+		t.Fatalf("expected sidebar width 16 at width 85, got %d", w)
+	}
+}
+
+func TestSidebarWidthAtBoundary90(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 90
+
+	w := screen.sidebarWidth()
+	if w != 20 {
+		t.Fatalf("expected sidebar width 20 at width 90 (not < 90), got %d", w)
+	}
+}
+
+func TestSidebarWidthAtBoundary100(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 100
+
+	w := screen.sidebarWidth()
+	if w != 24 {
+		t.Fatalf("expected sidebar width 24 at width 100 (not < 100), got %d", w)
+	}
+}
+
+func TestContentHeightReturnsFullAtTallTerminal(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.height = 40
+
+	h := screen.contentHeight()
+	if h != 35 {
+		t.Fatalf("expected content height 35 at height 40, got %d", h)
+	}
+}
+
+func TestContentHeightReturnsReducedAtShortTerminal(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.height = 22
+
+	h := screen.contentHeight()
+	if h != 19 {
+		t.Fatalf("expected content height 19 at height 22, got %d", h)
+	}
+}
+
+func TestContentHeightAtBoundary25(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.height = 25
+
+	h := screen.contentHeight()
+	if h != 20 {
+		t.Fatalf("expected content height 20 at height 25, got %d", h)
+	}
+}
+
+func TestContentWidthAdaptsAtNarrowTerminal(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 85
+
+	w := screen.contentWidth()
+	if w < 40 {
+		t.Fatalf("expected minimum width 40, got %d", w)
+	}
+}
+
+func TestContentWidthAdaptsAtMediumTerminal(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 95
+
+	w := screen.contentWidth()
+	expected := 95 - 20 - 4
+	if w < expected {
+		t.Fatalf("expected width at least %d, got %d", expected, w)
+	}
+}
+
+func TestViewRendersAtMinimumSize(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.width = 80
+	screen.height = 20
+	screen.currentRun = &types.Session{RunID: runID, Status: types.RunStateRunning}
+
+	view := screen.View()
+	if strings.Contains(view, "too narrow") || strings.Contains(view, "too short") {
+		t.Fatalf("expected no error at minimum size, got %q", view)
+	}
+	if view == "" {
+		t.Fatal("expected non-empty view at minimum size")
+	}
+}
+
+func TestViewRendersAtStandardSize(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = &types.Session{RunID: runID, Status: types.RunStateRunning}
+
+	view := screen.View()
+	if strings.Contains(view, "too narrow") || strings.Contains(view, "too short") {
+		t.Fatalf("expected no error at standard size, got %q", view)
+	}
+	if !strings.Contains(view, "QA Orchestrator TUI") {
+		t.Fatal("expected header in view")
+	}
+}
+
+func TestViewRendersAtWideTerminal(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.width = 200
+	screen.height = 60
+	screen.currentRun = &types.Session{RunID: runID, Status: types.RunStateCompleted}
+
+	view := screen.View()
+	if strings.Contains(view, "too narrow") || strings.Contains(view, "too short") {
+		t.Fatalf("expected no error at wide terminal, got %q", view)
+	}
+}
+
+func TestErrorMessagesUseStyledFailed(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 70
+	screen.height = 40
+
+	view := screen.View()
+	if !strings.Contains(view, "Terminal too narrow") {
+		t.Fatalf("expected styled error message, got %q", view)
+	}
+}
+
+func TestNarrowTerminalErrorShowsCurrentWidth(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 60
+	screen.height = 40
+
+	view := screen.View()
+	if !strings.Contains(view, "60") {
+		t.Fatalf("expected current width 60 in error, got %q", view)
+	}
+}
+
+func TestShortTerminalErrorShowsCurrentHeight(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 10
+
+	view := screen.View()
+	if !strings.Contains(view, "10") {
+		t.Fatalf("expected current height 10 in error, got %q", view)
+	}
+}
+
+func TestSetCancelFuncStoresFunction(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	cancelled := false
+	cancelFn := func() {
+		cancelled = true
+	}
+
+	screen.SetCancelFunc(cancelFn)
+	if screen.cancelFunc == nil {
+		t.Fatal("expected cancelFunc to be set")
+	}
+
+	screen.cancelFunc()
+	if !cancelled {
+		t.Fatal("expected cancelFunc to be callable")
+	}
+}
+
+func TestCancelKeyCallsCancelFunc(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = &types.Session{RunID: runID, Status: types.RunStateRunning}
+
+	cancelled := false
+	screen.SetCancelFunc(func() {
+		cancelled = true
+	})
+
+	screen.handleMainKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}})
+
+	if !cancelled {
+		t.Fatal("expected cancelFunc to be called on 'x' key")
+	}
+}
+
+func TestCancelKeyWithoutCancelFunc(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = &types.Session{RunID: runID, Status: types.RunStateRunning}
+	screen.cancelFunc = nil
+
+	screen.handleMainKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}})
+
+	if screen.msg != "Run cancelled" {
+		t.Fatalf("expected 'Run cancelled' message, got %q", screen.msg)
+	}
+}
+
+func TestCancelKeyWithNoRun(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = nil
+
+	cancelled := false
+	screen.SetCancelFunc(func() {
+		cancelled = true
+	})
+
+	screen.handleMainKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}})
+
+	if cancelled {
+		t.Fatal("expected cancelFunc to not be called when no run selected")
+	}
+}
+
+func TestCancelKeyShowsErrorMessage(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = &types.Session{RunID: runID, Status: types.RunStateRunning}
+
+	screen.handleMainKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}})
+
+	if screen.msg != "Run cancelled" {
+		t.Fatalf("expected 'Run cancelled' message, got %q", screen.msg)
+	}
+}
+
+func TestKeyQuestionTogglesHelp(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+
+	if screen.showHelp {
+		t.Fatal("expected showHelp to be false initially")
+	}
+
+	screen.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
+	if !screen.showHelp {
+		t.Fatal("expected showHelp to be true after ?")
+	}
+
+	screen.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
+	if screen.showHelp {
+		t.Fatal("expected showHelp to be false after second ?")
+	}
+}
+
+func TestHelpModalRendersWithContent(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.activeView = ViewDashboard
+	screen.showHelp = true
+
+	view := screen.View()
+	if !strings.Contains(view, "Keyboard Shortcuts") {
+		t.Fatal("expected view to contain help modal title")
+	}
+	if !strings.Contains(view, "Global") {
+		t.Fatal("expected view to contain Global section")
+	}
+	if !strings.Contains(view, "Quit") {
+		t.Fatal("expected view to contain Quit key hint")
+	}
+}
+
+func TestHelpModalShowsDashboardKeys(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = &types.Session{RunID: runID}
+	screen.activeView = ViewDashboard
+	screen.showHelp = true
+
+	modal := screen.renderHelpOverlay("")
+	if !strings.Contains(modal, "space:pause") && !strings.Contains(modal, "Pause") {
+		t.Fatal("expected help modal to contain pause key for dashboard")
+	}
+	if !strings.Contains(modal, "Command mode") {
+		t.Fatal("expected help modal to contain command key for dashboard")
+	}
+}
+
+func TestHelpModalShowsTraceKeys(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.activeView = ViewTraces
+	screen.showHelp = true
+
+	modal := screen.renderHelpOverlay("")
+	if !strings.Contains(modal, "filter") {
+		t.Fatal("expected help modal to contain filter key for traces")
+	}
+	if !strings.Contains(modal, "follow") {
+		t.Fatal("expected help modal to contain follow key for traces")
+	}
+}
+
+func TestHelpModalShowsFlowKeys(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.activeView = ViewFlows
+	screen.showHelp = true
+
+	modal := screen.renderHelpOverlay("")
+	if !strings.Contains(modal, "Expand") && !strings.Contains(modal, "expand") {
+		t.Fatal("expected help modal to contain expand key for flows")
+	}
+}
+
+func TestGlobalQuitWorksInCommandMode(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.currentRun = &types.Session{RunID: runID}
+	screen.commandBar.Focused = true
+	screen.commandBar.Input.SetValue("test")
+
+	_, cmd := screen.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
+	if cmd == nil {
+		t.Fatal("expected tea.Quit command for q in command mode")
+	}
+}
+
+func TestGlobalQuitWorksInFilterMode(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.currentRun = &types.Session{RunID: runID}
+	screen.activeView = ViewTraces
+	screen.tracePanel.FilterMode = true
+	screen.tracePanel.FilterInput.SetValue("test")
+
+	_, cmd := screen.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
+	if cmd == nil {
+		t.Fatal("expected tea.Quit command for q in filter mode")
+	}
+}
+
+func TestGlobalCtrlCWorksInCommandMode(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.currentRun = &types.Session{RunID: runID}
+	screen.commandBar.Focused = true
+
+	_, cmd := screen.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
+	if cmd == nil {
+		t.Fatal("expected tea.Quit command for ctrl+c in command mode")
+	}
+}
+
+func TestGlobalCtrlCWorksInFilterMode(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.currentRun = &types.Session{RunID: runID}
+	screen.activeView = ViewTraces
+	screen.tracePanel.FilterMode = true
+
+	_, cmd := screen.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
+	if cmd == nil {
+		t.Fatal("expected tea.Quit command for ctrl+c in filter mode")
+	}
+}
+
+func TestQuestionKeyWorksInCommandMode(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.currentRun = &types.Session{RunID: runID}
+	screen.commandBar.Focused = true
+	screen.commandBar.Input.SetValue("test")
+
+	screen.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
+	if !screen.showHelp {
+		t.Fatal("expected showHelp to be toggled even in command mode")
+	}
+}
+
+func TestQuestionKeyWorksInFilterMode(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.currentRun = &types.Session{RunID: runID}
+	screen.activeView = ViewTraces
+	screen.tracePanel.FilterMode = true
+
+	screen.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
+	if !screen.showHelp {
+		t.Fatal("expected showHelp to be toggled even in filter mode")
+	}
+}
+
+func TestViewShowsHelpModalOverlay(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.currentRun = &types.Session{RunID: runID}
+	screen.showHelp = true
+
+	view := screen.View()
+	if !strings.Contains(view, "Keyboard Shortcuts") {
+		t.Fatal("expected view to contain help modal overlay")
+	}
+	if !strings.Contains(view, "Global") {
+		t.Fatal("expected view to contain Global section in help modal")
+	}
+}
+
+func TestHelpModalDoesNotCrashAtMinimumSize(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 80
+	screen.height = 20
+	screen.showHelp = true
+
+	modal := screen.renderHelpOverlay("")
+	if modal == "" {
+		t.Fatal("expected help modal to render at minimum size")
+	}
+}
+
+func TestEscDismissesHelpModal(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.showHelp = true
+
+	screen.Update(tea.KeyMsg{Type: tea.KeyEscape})
+	if screen.showHelp {
+		t.Fatal("expected help modal to be dismissed after ESC")
+	}
+}
+
+func TestEscDoesNotQuitWhenHelpModalOpen(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.showHelp = true
+
+	_, cmd := screen.Update(tea.KeyMsg{Type: tea.KeyEscape})
+	if cmd != nil {
+		t.Fatal("expected no tea.Quit command when ESC dismisses help modal")
+	}
+}
+
+func TestFormatSessionAgeJustNow(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	age := screen.formatSessionAge(time.Now())
+	if age != "just now" {
+		t.Fatalf("expected 'just now', got %q", age)
+	}
+}
+
+func TestFormatSessionAgeMinutes(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	age := screen.formatSessionAge(time.Now().Add(-5 * time.Minute))
+	if age != "5m ago" {
+		t.Fatalf("expected '5m ago', got %q", age)
+	}
+}
+
+func TestFormatSessionAgeHours(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	age := screen.formatSessionAge(time.Now().Add(-3 * time.Hour))
+	if age != "3h ago" {
+		t.Fatalf("expected '3h ago', got %q", age)
+	}
+}
+
+func TestFormatSessionAgeDays(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	age := screen.formatSessionAge(time.Now().Add(-48 * time.Hour))
+	if age != "2d ago" {
+		t.Fatalf("expected '2d ago', got %q", age)
+	}
+}
+
+func TestFormatSessionAgeZeroTime(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	age := screen.formatSessionAge(time.Time{})
+	if age != "unknown" {
+		t.Fatalf("expected 'unknown' for zero time, got %q", age)
+	}
+}
+
+func TestCampaignSelectorShowsCurrentSessionFirst(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.sessions = []*types.Session{
+		{RunID: "old-run", CampaignName: "Old Campaign", StartedAt: time.Now().Add(-2 * time.Hour)},
+		{RunID: runID, CampaignName: "Current Campaign", StartedAt: time.Now()},
+	}
+	screen.currentRun = &types.Session{RunID: runID}
+	screen.campaignList.SetCampaigns(screen.campaignNames())
+
+	selector := screen.renderCampaignSelector()
+	currentIdx := strings.Index(selector, "Current Campaign")
+	oldIdx := strings.Index(selector, "Old Campaign")
+	if currentIdx < 0 || oldIdx < 0 {
+		t.Fatal("expected both campaigns in selector")
+	}
+	if currentIdx > oldIdx {
+		t.Fatal("expected current session to appear before old session")
+	}
+}
+
+func TestCampaignSelectorShowsCurrentIndicator(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.sessions = []*types.Session{
+		{RunID: runID, CampaignName: "Current Campaign", StartedAt: time.Now()},
+	}
+	screen.currentRun = &types.Session{RunID: runID}
+	screen.campaignList.SetCampaigns(screen.campaignNames())
+
+	selector := screen.renderCampaignSelector()
+	if !strings.Contains(selector, "●") {
+		t.Fatal("expected current session indicator (●) in selector")
+	}
+}
+
+func TestCampaignSelectorShowsSessionAge(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.sessions = []*types.Session{
+		{RunID: runID, CampaignName: "Test Campaign", StartedAt: time.Now().Add(-30 * time.Minute)},
+	}
+	screen.currentRun = &types.Session{RunID: runID}
+	screen.campaignList.SetCampaigns(screen.campaignNames())
+
+	selector := screen.renderCampaignSelector()
+	if !strings.Contains(selector, "30m ago") {
+		t.Fatalf("expected session age '30m ago' in selector, got %q", selector)
+	}
+}
+
+func TestCampaignSelectorShowsSeparatorBetweenCurrentAndPrevious(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.sessions = []*types.Session{
+		{RunID: runID, CampaignName: "Current", StartedAt: time.Now()},
+		{RunID: "old-1", CampaignName: "Old One", StartedAt: time.Now().Add(-1 * time.Hour)},
+	}
+	screen.currentRun = &types.Session{RunID: runID}
+	screen.campaignList.SetCampaigns(screen.campaignNames())
+
+	selector := screen.renderCampaignSelector()
+	if !strings.Contains(selector, "─") {
+		t.Fatal("expected separator line between current and previous sessions")
+	}
+}
+
+func TestCampaignNamesIncludesAgeAndCurrentMarker(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.sessions = []*types.Session{
+		{RunID: runID, CampaignName: "Current Campaign", StartedAt: time.Now()},
+		{RunID: "old-run", CampaignName: "Old Campaign", StartedAt: time.Now().Add(-2 * time.Hour)},
+	}
+	screen.currentRun = &types.Session{RunID: runID}
+
+	names := screen.campaignNames()
+	if len(names) != 2 {
+		t.Fatalf("expected 2 names, got %d", len(names))
+	}
+	if !strings.Contains(names[0], "[CURRENT]") {
+		t.Fatalf("expected first name to contain [CURRENT] marker, got %q", names[0])
+	}
+	if !strings.Contains(names[0], "just now") {
+		t.Fatalf("expected first name to contain age, got %q", names[0])
+	}
+	if !strings.Contains(names[1], "2h ago") {
+		t.Fatalf("expected second name to contain age, got %q", names[1])
+	}
+}
+
+func TestCampaignNamesWithoutCurrentRun(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.sessions = []*types.Session{
+		{RunID: "run-1", CampaignName: "Campaign A", StartedAt: time.Now().Add(-1 * time.Hour)},
+	}
+	screen.currentRun = nil
+
+	names := screen.campaignNames()
+	if len(names) != 1 {
+		t.Fatalf("expected 1 name, got %d", len(names))
+	}
+	if strings.Contains(names[0], "[CURRENT]") {
+		t.Fatalf("expected no [CURRENT] marker when no run selected, got %q", names[0])
+	}
+}
+
+func TestCampaignSelectorSortsPreviousByStartedAt(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	older := time.Now().Add(-2 * time.Hour)
+	newer := time.Now().Add(-30 * time.Minute)
+	screen.sessions = []*types.Session{
+		{RunID: runID, CampaignName: "Current", StartedAt: time.Now()},
+		{RunID: "older", CampaignName: "Older Campaign", StartedAt: older},
+		{RunID: "newer", CampaignName: "Newer Campaign", StartedAt: newer},
+	}
+	screen.currentRun = &types.Session{RunID: runID}
+	screen.campaignList.SetCampaigns(screen.campaignNames())
+
+	selector := screen.renderCampaignSelector()
+	newerIdx := strings.Index(selector, "Newer Campaign")
+	olderIdx := strings.Index(selector, "Older Campaign")
+	if newerIdx < 0 || olderIdx < 0 {
+		t.Fatal("expected both previous campaigns in selector")
+	}
+	if newerIdx > olderIdx {
+		t.Fatal("expected newer session to appear before older session")
+	}
+}
+
+func TestStartRefreshTickerAlwaysReturnsCmd(t *testing.T) {
+	cmd := startRefreshTicker()
+	if cmd == nil {
+		t.Fatal("expected startRefreshTicker to always return a command")
+	}
+	msg := cmd()
+	if _, ok := msg.(tickMsg); !ok {
+		t.Fatalf("expected tickMsg from ticker command, got %T", msg)
+	}
+}
+
+func TestTickMsgReSchedulesTicker(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.currentRun = &types.Session{RunID: runID}
+
+	_, cmd := screen.Update(tickMsg{})
+	if cmd == nil {
+		t.Fatal("expected tickMsg handler to return a command (re-scheduled ticker)")
+	}
+}
+
+func TestTickMsgWithNoCurrentRunStillSchedulesTicker(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.currentRun = nil
+
+	_, cmd := screen.Update(tickMsg{})
+	if cmd == nil {
+		t.Fatal("expected ticker to be re-scheduled even with no current run")
+	}
+}
+
+func TestInitReturnsBatchWithTicker(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+
+	cmd := screen.Init()
+	if cmd == nil {
+		t.Fatal("expected Init to return a command")
+	}
+}
+
+func TestSelectingCampaignTriggersImmediateRefresh(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	sess := &types.Session{RunID: runID, CampaignName: "test-campaign", Status: types.RunStatePending, StartedAt: time.Now()}
+	screen.sessions = []*types.Session{sess}
+	screen.campaignList.SetCampaigns([]string{"test-campaign [" + runID + "]"})
+	screen.currentRun = nil
+
+	_, cmd := screen.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	if cmd == nil {
+		t.Fatal("expected refresh command after selecting campaign")
+	}
+	if screen.currentRun == nil || screen.currentRun.RunID != runID {
+		t.Fatal("expected currentRun to be set after selecting campaign")
+	}
+}
+
+func TestRefreshAllCmdFetchesAllData(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+
+	event := types.NewTraceEvent(runID, "flow-1", "executor", types.TraceEventStepExecution, "test_action", types.TraceStatusSuccess)
+	if err := screen.traceStore.Append(event); err != nil {
+		t.Fatalf("append trace: %v", err)
+	}
+
+	cmd := refreshAllCmd(runID, screen.sessionStore, screen.traceStore, screen.artifactStore, screen.reportGenerator)
+	if cmd == nil {
+		t.Fatal("expected refresh command")
+	}
+}
+
+func TestRefreshAllCmdWithEmptyRunID(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+
+	cmd := refreshAllCmd("", screen.sessionStore, screen.traceStore, screen.artifactStore, screen.reportGenerator)
+	if cmd == nil {
+		t.Fatal("expected refresh command even with empty runID")
+	}
+	msg := cmd()
+	if msg == nil {
+		t.Fatal("expected command to return a message")
+	}
+}
+
+func TestSteeringCommandPause(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.currentRun = &types.Session{RunID: runID, Status: types.RunStateRunning}
+	screen.handlers.store.UpdateStatus(runID, types.RunStateRunning)
+
+	screen.processSteeringCommand("pause")
+
+	if screen.msg != "Run pausing..." {
+		t.Fatalf("expected 'Run pausing...' message, got %q", screen.msg)
+	}
+	sess, _ := screen.handlers.GetRunStatus(runID)
+	if sess.Status != types.RunStatePausing {
+		t.Fatalf("expected pausing status, got %s", sess.Status)
+	}
+}
+
+func TestSteeringCommandResume(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.currentRun = &types.Session{RunID: runID, Status: types.RunStatePaused}
+	screen.handlers.store.UpdateStatus(runID, types.RunStatePaused)
+
+	screen.processSteeringCommand("resume")
+
+	if screen.msg != "Run resuming..." {
+		t.Fatalf("expected 'Run resuming...' message, got %q", screen.msg)
+	}
+	sess, _ := screen.handlers.GetRunStatus(runID)
+	if sess.Status != types.RunStateResuming {
+		t.Fatalf("expected resuming status, got %s", sess.Status)
+	}
+}
+
+func TestSteeringCommandResumeNotPaused(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.currentRun = &types.Session{RunID: runID, Status: types.RunStateRunning}
+	screen.handlers.store.UpdateStatus(runID, types.RunStateRunning)
+
+	screen.processSteeringCommand("resume")
+
+	if !strings.Contains(strings.ToLower(screen.msg), "error") && !strings.Contains(strings.ToLower(screen.msg), "resuming") {
+		t.Fatalf("expected error or resuming message, got %q", screen.msg)
+	}
+}
+
+func TestSteeringCommandPauseNoRunSelected(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.currentRun = nil
+
+	screen.processSteeringCommand("pause")
+
+	if screen.msg != "No run selected" {
+		t.Fatalf("expected 'No run selected' message, got %q", screen.msg)
+	}
+}
+
+func TestResumeRunFromPausingState(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.handlers.store.UpdateStatus(runID, types.RunStatePausing)
+
+	err := screen.handlers.ResumeRun(runID)
+	if err != nil {
+		t.Fatalf("expected ResumeRun to accept PAUSING state, got error: %v", err)
+	}
+	sess, _ := screen.handlers.GetRunStatus(runID)
+	if sess.Status != types.RunStateResuming {
+		t.Fatalf("expected resuming status, got %s", sess.Status)
+	}
+}
+
+func TestResumeRunFromPausedState(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.handlers.store.UpdateStatus(runID, types.RunStatePaused)
+
+	err := screen.handlers.ResumeRun(runID)
+	if err != nil {
+		t.Fatalf("expected ResumeRun to accept PAUSED state, got error: %v", err)
+	}
+	sess, _ := screen.handlers.GetRunStatus(runID)
+	if sess.Status != types.RunStateResuming {
+		t.Fatalf("expected resuming status, got %s", sess.Status)
+	}
+}
+
+func TestResumeRunRejectsWrongState(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+
+	wrongStates := []types.RunState{
+		types.RunStateRunning,
+		types.RunStateCompleted,
+		types.RunStateCancelled,
+		types.RunStatePending,
+	}
+
+	for _, state := range wrongStates {
+		screen.handlers.store.UpdateStatus(runID, state)
+		err := screen.handlers.ResumeRun(runID)
+		if err == nil {
+			t.Fatalf("expected error when resuming from %s state", state)
+		}
+	}
+}
+
+func TestSpaceBarWaitingInputState(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.currentRun = &types.Session{RunID: runID, Status: types.RunStateWaitingInput}
+	screen.handlers.store.UpdateStatus(runID, types.RunStateWaitingInput)
+
+	screen.Update(tea.KeyMsg{Type: tea.KeySpace})
+
+	sess, _ := screen.handlers.GetRunStatus(runID)
+	if sess.Status != types.RunStateRunning {
+		t.Fatalf("expected running status after space on WAITING_FOR_INPUT, got %s", sess.Status)
+	}
+	if screen.msg != "Run resumed from WAITING_FOR_INPUT" {
+		t.Fatalf("expected resume message, got %q", screen.msg)
+	}
+}
+
+func TestHelpOverlayListsTextCommands(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.width = 120
+	screen.height = 40
+	screen.activeView = ViewDashboard
+	screen.showHelp = true
+
+	modal := screen.renderHelpOverlay("")
+
+	requiredCommands := []string{"retry", "skip", "continue", "approve", "status", "pause", "resume", "steer"}
+	for _, cmd := range requiredCommands {
+		if !strings.Contains(modal, cmd) {
+			t.Fatalf("expected help modal to contain text command %q", cmd)
+		}
+	}
+	if !strings.Contains(modal, "Text Commands") {
+		t.Fatal("expected help modal to contain 'Text Commands' section header")
+	}
+}
+
+func TestSteeringCommandReturnsRefreshCmd(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.currentRun = &types.Session{RunID: runID, Status: types.RunStateRunning}
+	screen.handlers.store.UpdateStatus(runID, types.RunStateRunning)
+
+	cmd := screen.processSteeringCommand("pause")
+	if cmd == nil {
+		t.Fatal("expected pause to return a refresh Cmd")
+	}
+	msg := cmd()
+	if _, ok := msg.(runLoadedMsg); !ok {
+		t.Fatalf("expected runLoadedMsg, got %T", msg)
+	}
+}
+
+func TestSteeringCommandResumeReturnsRefreshCmd(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.currentRun = &types.Session{RunID: runID, Status: types.RunStatePaused}
+	screen.handlers.store.UpdateStatus(runID, types.RunStatePaused)
+
+	cmd := screen.processSteeringCommand("resume")
+	if cmd == nil {
+		t.Fatal("expected resume to return a refresh Cmd")
+	}
+	msg := cmd()
+	if _, ok := msg.(runLoadedMsg); !ok {
+		t.Fatalf("expected runLoadedMsg, got %T", msg)
+	}
+}
+
+func TestSteeringCommandRetryReturnsRefreshCmd(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.currentRun = &types.Session{RunID: runID, Status: types.RunStateRunning}
+	screen.handlers.store.UpdateStatus(runID, types.RunStateRunning)
+
+	cmd := screen.processSteeringCommand("retry flow-1")
+	if cmd == nil {
+		t.Fatal("expected retry to return a refresh Cmd")
+	}
+	msg := cmd()
+	if _, ok := msg.(runLoadedMsg); !ok {
+		t.Fatalf("expected runLoadedMsg, got %T", msg)
+	}
+}
+
+func TestSteeringCommandUnknownReturnsNil(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.currentRun = &types.Session{RunID: runID, Status: types.RunStateRunning}
+
+	cmd := screen.processSteeringCommand("foobar")
+	if cmd != nil {
+		t.Fatal("expected unknown command to return nil Cmd")
+	}
+}
+
+func TestSteeringCommandNoRunReturnsNil(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.currentRun = nil
+
+	cmd := screen.processSteeringCommand("pause")
+	if cmd != nil {
+		t.Fatal("expected no run to return nil Cmd")
+	}
+}
+
+func TestRunCreatedMsgAutoSelectsNewSession(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.currentRun = nil
+
+	newRunID := "new-run-12345"
+	model, cmd := screen.Update(runCreatedMsg{runID: newRunID})
+	if cmd == nil {
+		t.Fatal("expected runCreatedMsg to return refresh commands")
+	}
+	_ = model
+}
+
+func TestRunCreatedMsgSetsMessage(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.currentRun = nil
+
+	newRunID := "new-run-abcdef123456"
+	screen.Update(runCreatedMsg{runID: newRunID})
+
+	if !strings.Contains(screen.msg, "New session started") {
+		t.Fatalf("expected message about new session, got %q", screen.msg)
+	}
+	if !strings.Contains(screen.msg, "new-run-") {
+		t.Fatalf("expected message to contain runID prefix, got %q", screen.msg)
+	}
+}
+
+func TestSteerCommandWithLifecycle(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.currentRun = &types.Session{RunID: runID, Status: types.RunStateRunning}
+	lc := runtime.NewLifecycleController(runID)
+	screen.lifecycle = lc
+
+	cmd := screen.processSteeringCommand("steer try a different approach")
+	if cmd == nil {
+		t.Fatal("expected steer to return a refresh Cmd")
+	}
+
+	events := lc.DrainSteeringEvents()
+	if len(events) != 1 {
+		t.Fatalf("expected 1 steering event, got %d", len(events))
+	}
+	if events[0].Command != types.SteerInstruction {
+		t.Fatalf("expected SteerInstruction, got %s", events[0].Command)
+	}
+	if events[0].Instruction != "try a different approach" {
+		t.Fatalf("expected instruction text, got %q", events[0].Instruction)
+	}
+}
+
+func TestSteerCommandWithoutLifecycle(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.currentRun = &types.Session{RunID: runID, Status: types.RunStateRunning}
+	screen.lifecycle = nil
+
+	cmd := screen.processSteeringCommand("steer do something")
+	if cmd != nil {
+		t.Fatal("expected steer without lifecycle to return nil Cmd")
+	}
+	if !strings.Contains(screen.msg, "not available") {
+		t.Fatalf("expected error message, got %q", screen.msg)
+	}
+}
+
+func TestSteerCommandNoArgs(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.currentRun = &types.Session{RunID: runID, Status: types.RunStateRunning}
+	lc := runtime.NewLifecycleController(runID)
+	screen.lifecycle = lc
+
+	cmd := screen.processSteeringCommand("steer")
+	if cmd != nil {
+		t.Fatal("expected steer without args to return nil Cmd")
+	}
+	if !strings.Contains(screen.msg, "Usage") {
+		t.Fatalf("expected usage message, got %q", screen.msg)
 	}
 }

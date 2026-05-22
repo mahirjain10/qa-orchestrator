@@ -65,8 +65,14 @@ func (r *ReportGenerator) GenerateCampaignSummary(runID string) (*CampaignSummar
 		return nil, fmt.Errorf("getting session: %w", err)
 	}
 
-	artifacts, _ := r.artifactStore.GetByRunID(runID)
-	traces, _ := r.traceStore.GetByRunID(runID)
+	artifacts, err := r.artifactStore.GetByRunID(runID)
+	if err != nil {
+		return nil, fmt.Errorf("getting artifacts for run %s: %w", runID, err)
+	}
+	traces, err := r.traceStore.GetByRunID(runID)
+	if err != nil {
+		return nil, fmt.Errorf("getting traces for run %s: %w", runID, err)
+	}
 
 	summary := &CampaignSummary{
 		RunID:          sess.RunID,
@@ -161,7 +167,7 @@ func (r *ReportGenerator) GenerateMarkdownReport(runID string) (string, error) {
 
 	sb.WriteString("## Flow Details\n\n")
 	sb.WriteString("| Flow ID | Name | Status | Duration | Error |\n")
-	sb.WriteString(fmt.Sprintf("|---------|------|--------|----------|-------|\n"))
+	fmt.Fprintf(&sb, "|---------|------|--------|----------|-------|\n")
 
 	for _, flow := range summary.Flows {
 		duration := flow.Duration.Round(time.Second).String()
@@ -247,11 +253,4 @@ func (r *ReportGenerator) GenerateTerminalSummary(runID string) (string, error) 
 	sb.WriteString(fmt.Sprintf("\nArtifacts: %d | Traces: %d\n", summary.ArtifactsCount, summary.TracesCount))
 
 	return sb.String(), nil
-}
-
-func GetReportPath(runID, outputDir string) string {
-	if outputDir == "" {
-		outputDir = "reports"
-	}
-	return filepath.Join(outputDir, fmt.Sprintf("report_%s.md", runID))
 }

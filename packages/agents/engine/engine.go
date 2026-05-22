@@ -4,6 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
+	"sort"
+	"strings"
+	"sync"
 	"time"
 
 	"qa-orchestrator/packages/agents/executor"
@@ -19,6 +23,22 @@ import (
 	"qa-orchestrator/packages/storage/artifact"
 	"qa-orchestrator/packages/storage/session"
 	"qa-orchestrator/packages/storage/trace"
+)
+
+const (
+	retryBackoffBaseMs     = 100
+	resumePollInitialDelay = 200 * time.Millisecond
+	resumePollMaxDelay     = 2 * time.Second
+
+	cancelledErrPrefix = "cancelled "
+)
+
+type pauseAction int
+
+const (
+	pauseContinue pauseAction = iota
+	pauseFail
+	pauseSkip
 )
 
 type FlowOutcome string
@@ -41,6 +61,7 @@ type ExecutionResult struct {
 }
 
 type AgentEngine struct {
+	mu            sync.RWMutex
 	planner       *planner.Planner
 	executor      *executor.Executor
 	validator     *validator.Validator
@@ -54,6 +75,7 @@ type AgentEngine struct {
 	browserTools  interface {
 		ListToolsWithDocs() []browsertools.ToolInfo
 	}
+	dependencyContext string
 }
 
 func NewAgentEngine() *AgentEngine {
@@ -89,18 +111,21 @@ func NewAgentEngineWithStores(registry executor.ToolRegistry, sessionStore *sess
 	}
 }
 
-func NewAgentEngineWithLLM(registry executor.ToolRegistry, sessionStore *session.SessionStore, llmClient planner.LLMClient, browserTools interface {
+func NewAgentEngineWithLLM(registry executor.ToolRegistry, sessionStore *session.SessionStore, traceStore *trace.TraceStore, artifactStore *artifact.ArtifactStore, llmClient planner.LLMClient, browserTools interface {
 	ListToolsWithDocs() []browsertools.ToolInfo
 }) *AgentEngine {
 	return &AgentEngine{
-		planner:      planner.NewPlanner(),
-		executor:     executor.NewExecutor(registry),
-		validator:    validator.NewValidator(),
-		recovery:     recovery.NewRecovery(nil),
-		sessionStore: sessionStore,
-		llmClient:    llmClient,
-		toolRegistry: registry,
-		browserTools: browserTools,
+		planner:       planner.NewPlanner(),
+		executor:      executor.NewExecutor(registry),
+		validator:     validator.NewValidator(),
+		recovery:      recovery.NewRecovery(nil),
+		sessionStore:  sessionStore,
+		traceStore:    traceStore,
+		artifactStore: artifactStore,
+		llmClient:     llmClient,
+		toolRegistry:  registry,
+		browserTools:  browserTools,
+		lifecycle:     runtime.NewLifecycleController(""),
 	}
 }
 
@@ -115,6 +140,7 @@ func (e *AgentEngine) SetBrowserTools(tools interface {
 }
 
 func (e *AgentEngine) RunFlow(runID string, flow sharedtypes.Flow) *ExecutionResult {
+	e.SetLifecycleRunID(runID)
 	start := time.Now()
 	result := &ExecutionResult{
 		FlowID:       flow.ID,
@@ -124,27 +150,32 @@ func (e *AgentEngine) RunFlow(runID string, flow sharedtypes.Flow) *ExecutionRes
 		IsAutonomous: flow.Mode == sharedtypes.FlowModeAutonomous,
 	}
 
+	e.mu.RLock()
+	depCtx := e.dependencyContext
+	e.mu.RUnlock()
+
 	ctx := &agentstypes.ExecutionContext{
-		RunID:  runID,
-		FlowID: flow.ID,
-		Goal:   flow.Goal,
-		Mode:   flow.Mode,
-		Steps:  flow.Steps,
+		RunID:             runID,
+		FlowID:            flow.ID,
+		Goal:              flow.Goal,
+		StartURL:          flow.StartURL,
+		Mode:              flow.Mode,
+		Steps:             flow.Steps,
+		DependencyContext: depCtx,
 	}
 
 	if e.sessionStore != nil {
 		e.syncSessionStore(runID, flow.ID, "update_flow_running", func() error {
 			return e.sessionStore.UpdateFlowState(runID, flow.ID, sharedtypes.FlowStateRunning, "")
 		})
-		sess, err := e.sessionStore.Get(runID)
-		if sess != nil {
+		e.syncSessionStore(runID, flow.ID, "set_current_flow", func() error {
+			sess, err := e.sessionStore.Get(runID)
+			if err != nil || sess == nil {
+				return err
+			}
 			sess.CurrentFlowID = flow.ID
-			e.syncSessionStore(runID, flow.ID, "save_current_flow", func() error {
-				return e.sessionStore.Save(sess)
-			})
-		} else if err != nil {
-			trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "session_sync", "get_failed", err.Error())
-		}
+			return e.sessionStore.Save(sess)
+		})
 	}
 
 	if e.lifecycle != nil {
@@ -186,22 +217,19 @@ func (e *AgentEngine) runGuidedFlow(runID string, flow sharedtypes.Flow, ctx *ag
 	trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "plan_created", fmt.Sprintf("created plan with %d steps", len(plan.Steps)))
 
 	for !e.planner.ShouldStop(plan) {
-		if e.lifecycle != nil {
-			select {
-			case <-e.lifecycle.CancelCh():
-				result.Outcome = OutcomeSkip
-				result.Errors = append(result.Errors, "cancelled during execution")
-				goto done
-			case <-e.lifecycle.PauseCh():
-				e.setCurrentAgent(ctx.RunID, "idle (paused)")
-				e.lifecycle.AcknowledgePause()
-				<-e.lifecycle.ResumeCh()
-				e.lifecycle.AcknowledgeResume()
-			case evt := <-e.lifecycle.SteerCh():
-				e.handleSteeringEvent(evt, ctx, result)
-			default:
-			}
+		switch e.handlePauseResume(ctx.RunID, ctx) {
+		case pauseFail:
+			result.Outcome = OutcomeFail
+			result.Errors = append(result.Errors, "session deleted during execution")
+			trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "engine", "error", "session deleted")
+			goto done
+		case pauseSkip:
+			result.Outcome = OutcomeSkip
+			result.Errors = append(result.Errors, "cancelled during execution")
+			goto done
 		}
+
+		e.drainSteeringEvents(ctx, ctx.RunID, flow.ID)
 
 		planStep := e.planner.GetNextStep(plan)
 		if planStep == nil {
@@ -224,12 +252,6 @@ func (e *AgentEngine) runGuidedFlow(runID string, flow sharedtypes.Flow, ctx *ag
 				result.Retries++
 				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "recovery", "retry", decision.Reason)
 				continue
-			case agentstypes.RecoveryActionReplan:
-				// Guided plans are static YAML-defined steps; replanning just recreates the same plan.
-				// Downgrade to retry so locator errors can recover without resetting progress.
-				result.Retries++
-				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "recovery", "retry_instead_of_replan", decision.Reason)
-				continue
 			case agentstypes.RecoveryActionSkip:
 				e.planner.UpdatePlan(plan, planStep.StepIndex, true, decision.Reason)
 				e.planner.Advance(plan)
@@ -247,22 +269,7 @@ func (e *AgentEngine) runGuidedFlow(runID string, flow sharedtypes.Flow, ctx *ag
 	}
 
 done:
-	result.DurationMs = time.Since(start).Milliseconds()
-	if result.Outcome == OutcomePass && len(result.Errors) > 0 {
-		result.Outcome = OutcomeFail
-	}
-
-	if e.sessionStore != nil {
-		e.finalizeFlowState(runID, flow.ID, result)
-		e.setCurrentAgent(runID, "")
-	}
-
-	if result.Outcome == OutcomePass {
-		trace.EmitLifecycleEvent(e.traceStore, runID, flow.ID, sharedtypes.RunStateCompleted, map[string]any{"duration_ms": result.DurationMs})
-	} else {
-		trace.EmitLifecycleEvent(e.traceStore, runID, flow.ID, sharedtypes.RunStateFailed, map[string]any{"errors": result.Errors})
-	}
-
+	e.finalizeRunResult(runID, flow.ID, result, start, nil)
 	return result
 }
 
@@ -291,30 +298,56 @@ func (e *AgentEngine) runAutonomousFlow(runID string, flow sharedtypes.Flow, ctx
 
 	trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "autonomous_plan_created", "starting iterative step generation")
 
-	maxAutonomousSteps := 20
-	stepCount := 0
-
-	for stepCount < maxAutonomousSteps {
-		if e.lifecycle != nil {
-			select {
-			case <-e.lifecycle.CancelCh():
-				result.Outcome = OutcomeSkip
-				result.Errors = append(result.Errors, "cancelled during autonomous execution")
-				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "engine", "cancelled", "autonomous flow cancelled")
-				goto done
-			case <-e.lifecycle.PauseCh():
-				e.setCurrentAgent(runID, "idle (paused)")
-				e.lifecycle.AcknowledgePause()
-				<-e.lifecycle.ResumeCh()
-				e.lifecycle.AcknowledgeResume()
-			case evt := <-e.lifecycle.SteerCh():
-				e.handleSteeringEvent(evt, ctx, result)
-			default:
-			}
+	// Auto-navigate to start_url if configured (before LLM step generation)
+	if ctx.StartURL != "" {
+		navStep := &agentstypes.PlanStep{
+			StepIndex: -1,
+			StepID:    "auto-navigate",
+			Tool:      "navigate",
+			Params:    map[string]any{"url": ctx.StartURL},
+			Skip:      false,
+			Reason:    "auto-navigate to configured start_url before LLM generates any steps",
 		}
+		stepResult := e.executeAndValidate(ctx, navStep)
+		result.Steps = append(result.Steps, stepResult)
+		if stepResult.Success {
+			ctx.CurrentURL = ctx.StartURL
+			e.injectObserveStep(runID, flow.ID, ctx, plan, autonomousPlanner, result)
+		} else {
+			trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "engine", "auto_navigate_failed",
+				fmt.Sprintf("auto-navigate to %s failed: %v", ctx.StartURL, stepResult.Error))
+		}
+	}
+
+	maxSteps := flow.Config.MaxAutonomousSteps
+	if maxSteps == 0 {
+		maxSteps = 20
+	}
+	stepCount := 0
+	consecutiveFailures := 0
+	consecutiveRepeats := 0
+
+	for stepCount < maxSteps {
+		switch e.handlePauseResume(runID, ctx) {
+		case pauseFail:
+			result.Outcome = OutcomeFail
+			result.Errors = append(result.Errors, "session deleted during autonomous execution")
+			trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "engine", "error", "session deleted")
+			goto done
+		case pauseSkip:
+			result.Outcome = OutcomeSkip
+			result.Errors = append(result.Errors, "cancelled during autonomous execution")
+			trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "engine", "cancelled", "autonomous flow cancelled")
+			goto done
+		}
+
+		e.drainSteeringEvents(ctx, runID, flow.ID)
 
 		trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "generating_step", fmt.Sprintf("step %d", stepCount+1))
 		e.setCurrentAgent(runID, fmt.Sprintf("planner (step %d)", stepCount+1))
+
+		obsSummary := buildObservationSummary(ctx)
+		trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "observation_context", obsSummary)
 
 		llmCtx, llmCancel := e.autonomousLLMContext(context.Background())
 		planStep, err := autonomousPlanner.GenerateNextStep(llmCtx, ctx)
@@ -335,9 +368,99 @@ func (e *AgentEngine) runAutonomousFlow(runID string, flow sharedtypes.Flow, ctx
 		trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "step_generated",
 			fmt.Sprintf("tool=%s params=%v reason=%s", planStep.Tool, planStep.Params, planStep.Reason))
 
+		// Safety net 3: finish/fail — handle BEFORE repeat detection so that
+		// early-exit blocking does not create a permanent repeat-lock on the
+		// "finish" signature.
 		if planStep.Tool == "finish" {
-			trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "finish_signal", "LLM signaled completion")
+			status, _ := planStep.Params["status"].(string)
+			if status == "fail" {
+				// Safety-net: prevent LLM from giving up too early
+				if stepCount < 3 {
+					msg := fmt.Sprintf("⚠ EARLY EXIT: finish(fail) at step %d is too soon. The LLM should make at least 3 attempts before giving up. Observations so far: %d.", stepCount+1, len(ctx.Observations))
+					if len(ctx.SteeringInstructions) >= 5 {
+						ctx.SteeringInstructions = ctx.SteeringInstructions[1:]
+					}
+					ctx.SteeringInstructions = append(ctx.SteeringInstructions, msg)
+					trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "engine", "early_exit_prevented", msg)
+					stepCount++
+					continue
+				}
+				result.Outcome = OutcomeFail
+				errMsg := "LLM signaled that the goal is unachievable"
+				if planStep.Reason != "" {
+					errMsg += ": " + planStep.Reason
+				}
+				result.Errors = append(result.Errors, errMsg)
+				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "finish_signal_fail", planStep.Reason)
+			} else {
+				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "finish_signal", "LLM signaled completion")
+			}
 			break
+		}
+
+		// Safety net 1: repeat detection — same tool+params as last step
+		sig := stepSignature(planStep)
+		if sig != "" && sig == ctx.LastStepSignature {
+			consecutiveRepeats++
+			if consecutiveRepeats >= 3 {
+				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "engine", "loop_hard_break",
+					fmt.Sprintf("LLM repeated same step %d times; aborting", consecutiveRepeats))
+				result.Outcome = OutcomeFail
+				result.Errors = append(result.Errors, "LLM stuck in loop — repeated same step 3+ times despite steering")
+				goto done
+			}
+			msg := fmt.Sprintf("⚠ LOOP DETECTED: step %s %v repeated. Try a different approach or use finish.", planStep.Tool, planStep.Params)
+			if len(ctx.SteeringInstructions) >= 5 {
+				ctx.SteeringInstructions = ctx.SteeringInstructions[1:]
+			}
+			ctx.SteeringInstructions = append(ctx.SteeringInstructions, msg)
+			trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "engine", "loop_detected", msg)
+			stepCount++
+			continue
+		}
+		ctx.LastStepSignature = sig
+		consecutiveRepeats = 0
+
+		// Safety net 2: observe_ui loop — too many consecutive observe calls
+		if planStep.Tool == "observe_ui" {
+			ctx.ConsecutiveObserveCount++
+			if ctx.ConsecutiveObserveCount > 3 {
+				msg := "⚠ OBSERVE LOOP: observe_ui called 4+ times without progress. Try a different tool or use finish."
+				if len(ctx.SteeringInstructions) >= 5 {
+					ctx.SteeringInstructions = ctx.SteeringInstructions[1:]
+				}
+				ctx.SteeringInstructions = append(ctx.SteeringInstructions, msg)
+				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "engine", "observe_loop", msg)
+				stepCount++
+				ctx.ConsecutiveObserveCount = 0
+				continue
+			}
+		} else {
+			ctx.ConsecutiveObserveCount = 0
+		}
+
+		// Safety net 4: selector validation — block hallucinated selectors
+		// Skip validation for read-only DOM queries (get_html, get_text, etc.)
+		// since they cannot timeout and work on any valid selector.
+		skipValidation := false
+		switch planStep.Tool {
+		case "get_html", "get_text", "inner_html", "evaluate":
+			skipValidation = true
+		}
+		if !skipValidation {
+			if selector, ok := planStep.Params["selector"].(string); ok && selector != "" && !isSafeGenericSelector(selector) {
+				valid := observedSelectors(ctx.Observations)
+				if len(valid) > 0 && !containsSelector(valid, selector) {
+					msg := fmt.Sprintf("⚠ INVALID SELECTOR: '%s' was not found in the observed page elements. Use only selectors from the observation. Valid selectors: %s", selector, strings.Join(valid, ", "))
+					if len(ctx.SteeringInstructions) >= 5 {
+						ctx.SteeringInstructions = ctx.SteeringInstructions[1:]
+					}
+					ctx.SteeringInstructions = append(ctx.SteeringInstructions, msg)
+					trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "engine", "invalid_selector", msg)
+					stepCount++
+					continue
+				}
+			}
 		}
 
 		autonomousPlanner.AddStepToPlan(plan, planStep)
@@ -348,7 +471,15 @@ func (e *AgentEngine) runAutonomousFlow(runID string, flow sharedtypes.Flow, ctx
 		stepResult := e.executeAndValidate(ctx, planStep)
 		result.Steps = append(result.Steps, stepResult)
 
+		if stepResult.Success && planStep.Tool == "navigate" {
+			if url, ok := planStep.Params["url"].(string); ok && url != "" {
+				ctx.CurrentURL = url
+			}
+			e.injectObserveStep(runID, flow.ID, ctx, plan, autonomousPlanner, result)
+		}
+
 		if !stepResult.Success {
+			consecutiveFailures++
 			e.setCurrentAgent(runID, "recovery")
 			trace.EmitRecoveryAction(e.traceStore, runID, flow.ID, nil, stepResult)
 			decision := e.handleFailure(ctx, stepResult, result)
@@ -358,9 +489,27 @@ func (e *AgentEngine) runAutonomousFlow(runID string, flow sharedtypes.Flow, ctx
 			case agentstypes.RecoveryActionRetry:
 				result.Retries++
 				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "recovery", "retry", decision.Reason)
+				e.injectObserveStep(runID, flow.ID, ctx, plan, autonomousPlanner, result)
+
+				backoff := time.Duration(1<<consecutiveFailures) * time.Second
+				if backoff > 15*time.Second {
+					backoff = 15 * time.Second
+				}
+				time.Sleep(backoff)
 				continue
 			case agentstypes.RecoveryActionReplan:
+				// NOTE: RecoveryActionReplan does NOT actually replan — it's a retry
+				// with a fresh observation injected. The name is historical. The recovery
+				// agent returns this when selector timeouts suggest the LLM hallucinated
+				// selectors, so we inject observe_ui to ground the next LLM call.
 				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "recovery", "replan", decision.Reason)
+				e.injectObserveStep(runID, flow.ID, ctx, plan, autonomousPlanner, result)
+
+				backoff := time.Duration(1<<consecutiveFailures) * time.Second
+				if backoff > 15*time.Second {
+					backoff = 15 * time.Second
+				}
+				time.Sleep(backoff)
 				continue
 			case agentstypes.RecoveryActionSkip:
 				autonomousPlanner.UpdatePlan(plan, planStep.StepIndex, true, decision.Reason)
@@ -371,6 +520,8 @@ func (e *AgentEngine) runAutonomousFlow(runID string, flow sharedtypes.Flow, ctx
 				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "recovery", "fail", decision.Reason)
 				goto done
 			}
+		} else {
+			consecutiveFailures = 0
 		}
 
 		stepCount++
@@ -382,30 +533,14 @@ func (e *AgentEngine) runAutonomousFlow(runID string, flow sharedtypes.Flow, ctx
 		}
 	}
 
-	if stepCount >= maxAutonomousSteps {
-		trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "max_steps_reached", fmt.Sprintf("reached max %d steps", maxAutonomousSteps))
+	if stepCount >= maxSteps {
+		result.Outcome = OutcomeFail
+		result.Errors = append(result.Errors, "max autonomous steps reached without finishing")
+		trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "max_steps_reached", fmt.Sprintf("reached max %d steps", maxSteps))
 	}
 
 done:
-	result.DurationMs = time.Since(start).Milliseconds()
-	if result.Outcome == OutcomePass && len(result.Errors) > 0 {
-		result.Outcome = OutcomeFail
-	}
-
-	if e.sessionStore != nil {
-		e.finalizeFlowState(runID, flow.ID, result)
-		e.setCurrentAgent(runID, "")
-	}
-
-	if result.Outcome == OutcomePass {
-		trace.EmitLifecycleEvent(e.traceStore, runID, flow.ID, sharedtypes.RunStateCompleted, map[string]any{
-			"duration_ms":      result.DurationMs,
-			"autonomous_steps": stepCount,
-		})
-	} else {
-		trace.EmitLifecycleEvent(e.traceStore, runID, flow.ID, sharedtypes.RunStateFailed, map[string]any{"errors": result.Errors})
-	}
-
+	e.finalizeRunResult(runID, flow.ID, result, start, map[string]any{"autonomous_steps": stepCount})
 	return result
 }
 
@@ -413,21 +548,19 @@ func (e *AgentEngine) setCurrentAgent(runID, agent string) {
 	if e.sessionStore == nil {
 		return
 	}
-	sess, err := e.sessionStore.Get(runID)
-	if err == nil && sess != nil {
+	e.syncSessionStore(runID, "", "save_current_agent", func() error {
+		sess, err := e.sessionStore.Get(runID)
+		if err != nil || sess == nil {
+			return err
+		}
 		sess.CurrentAgent = agent
-		e.syncSessionStore(runID, sess.CurrentFlowID, "save_current_agent", func() error {
-			return e.sessionStore.Save(sess)
-		})
-		return
-	}
-	if err != nil {
-		trace.EmitAgentDecision(e.traceStore, runID, "", "session_sync", "get_failed", err.Error())
-	}
+		return e.sessionStore.Save(sess)
+	})
 }
 
 func (e *AgentEngine) executeAndValidate(ctx *agentstypes.ExecutionContext, planStep *agentstypes.PlanStep) *agentstypes.StepResult {
 	stepResult := e.executor.ExecuteStep(planStep)
+
 	obs := e.validator.CreateObservation(stepResult)
 	ctx.Observations = append(ctx.Observations, *obs)
 
@@ -442,7 +575,115 @@ func (e *AgentEngine) executeAndValidate(ctx *agentstypes.ExecutionContext, plan
 		}
 	}
 
+	e.autoObserve(ctx, stepResult)
+
+	const maxObservations = 10
+	if len(ctx.Observations) > maxObservations {
+		ctx.Observations = ctx.Observations[len(ctx.Observations)-maxObservations:]
+	}
+
 	return stepResult
+}
+
+func (e *AgentEngine) autoObserve(ctx *agentstypes.ExecutionContext, stepResult *agentstypes.StepResult) {
+	if ctx.Mode != sharedtypes.FlowModeAutonomous {
+		return
+	}
+	if e.toolRegistry == nil {
+		return
+	}
+	hasTool := false
+	if reg, ok := e.toolRegistry.(interface{ HasTool(string) bool }); ok {
+		hasTool = reg.HasTool("observe_ui")
+	} else {
+		_, err := e.toolRegistry.Execute("observe_ui", nil)
+		hasTool = err == nil || fmt.Sprintf("%v", err) != "unknown tool: observe_ui"
+	}
+	if !hasTool {
+		return
+	}
+	result, err := e.toolRegistry.Execute("observe_ui", nil)
+	if err != nil {
+		trace.EmitAgentDecision(e.traceStore, ctx.RunID, ctx.FlowID, "engine", "auto_observe_failed", fmt.Sprintf("observe_ui error: %v", err))
+		return
+	}
+	obs := agentstypes.Observation{
+		State: map[string]any{"source": "observe_ui", "data": result},
+		LastStep: &agentstypes.StepResult{
+			StepID:  "observe_ui",
+			Tool:    "observe_ui",
+			Output:  result,
+			Success: true,
+		},
+	}
+	ctx.Observations = append(ctx.Observations, obs)
+	trace.EmitAgentDecision(e.traceStore, ctx.RunID, ctx.FlowID, "engine", "auto_observe", fmt.Sprintf("triggered after %s (success=%v)", stepResult.Tool, stepResult.Success))
+}
+
+func (e *AgentEngine) injectObserveStep(runID, flowID string, ctx *agentstypes.ExecutionContext, plan *agentstypes.Plan, p *planner.Planner, result *ExecutionResult) *agentstypes.StepResult {
+	if e.toolRegistry == nil {
+		return nil
+	}
+	hasTool := false
+	if reg, ok := e.toolRegistry.(interface{ HasTool(string) bool }); ok {
+		hasTool = reg.HasTool("observe_ui")
+	}
+	if !hasTool {
+		return nil
+	}
+
+	obsStepID := fmt.Sprintf("auto-observe-%d", len(plan.Steps)+1)
+	obsStep := agentstypes.PlanStep{
+		StepIndex: plan.CurrentIdx,
+		StepID:    obsStepID,
+		Tool:      "observe_ui",
+		Params:    map[string]any{},
+		Skip:      false,
+		Reason:    "auto-injected observe step after navigate/failure to ground next action in current page state",
+	}
+
+	p.AddStepToPlan(plan, &obsStep)
+	ctx.Plan = plan
+
+	e.saveCheckpoint(runID, ctx, &obsStep)
+	e.setCurrentAgent(runID, "executor")
+	stepResult := e.executor.ExecuteStep(&obsStep)
+
+	obs := e.validator.CreateObservation(stepResult)
+	// Make sure the observation has "data" mapped to the output so planner can parse it
+	obs.State["data"] = stepResult.Output
+	ctx.Observations = append(ctx.Observations, *obs)
+
+	trace.EmitStepExecution(e.traceStore, runID, flowID, stepResult)
+	trace.EmitAgentDecision(e.traceStore, runID, flowID, "engine", "injected_observe", fmt.Sprintf("observe_ui step %s injected", obsStepID))
+
+	result.Steps = append(result.Steps, stepResult)
+	return stepResult
+}
+
+func buildObservationSummary(ctx *agentstypes.ExecutionContext) string {
+	if len(ctx.Observations) == 0 {
+		return "no observations yet"
+	}
+	lastObs := ctx.Observations[len(ctx.Observations)-1]
+	if lastObs.LastStep == nil {
+		return "observation with no last step"
+	}
+	summary := fmt.Sprintf("last_obs_tool=%s success=%v", lastObs.LastStep.Tool, lastObs.LastStep.Success)
+	if lastObs.LastStep.Tool == "observe_ui" {
+		if data, ok := lastObs.State["data"].(map[string]any); ok {
+			if pageState, ok := data["page_state"].(string); ok {
+				summary += fmt.Sprintf(" page_state=%s", pageState)
+			}
+			if interactive, ok := data["interactive"].([]any); ok {
+				summary += fmt.Sprintf(" elements=%d", len(interactive))
+			}
+		}
+	}
+	if lastObs.Error != nil {
+		summary += fmt.Sprintf(" error=%v", lastObs.Error)
+	}
+	return summary
 }
 
 func findStepByID(steps []sharedtypes.Step, stepID string) *sharedtypes.Step {
@@ -477,7 +718,7 @@ func (e *AgentEngine) RunFlowWithRetry(runID string, flow sharedtypes.Flow, maxR
 		}
 
 		if attempt < maxRetries {
-			time.Sleep(time.Duration(100*(attempt+1)) * time.Millisecond)
+			time.Sleep(time.Duration(retryBackoffBaseMs*(attempt+1)) * time.Millisecond)
 		}
 	}
 
@@ -500,13 +741,6 @@ func (e *AgentEngine) GetRecovery() *recovery.Recovery {
 	return e.recovery
 }
 
-func (e *AgentEngine) RegisterTool(name string, fn func(params map[string]any) (any, error)) {
-	registry := e.executor.GetRegistry()
-	if mockRegistry, ok := registry.(*executor.MockToolRegistry); ok {
-		mockRegistry.Register(name, fn)
-	}
-}
-
 func (e *AgentEngine) SetTraceStore(store *trace.TraceStore) {
 	e.traceStore = store
 }
@@ -520,8 +754,11 @@ func (e *AgentEngine) saveCheckpoint(runID string, ctx *agentstypes.ExecutionCon
 		return
 	}
 	payload := map[string]any{
-		"current_step": planStep.StepID,
-		"step_index":   planStep.StepIndex,
+		"current_step":              planStep.StepID,
+		"step_index":                planStep.StepIndex,
+		"current_url":               ctx.CurrentURL,
+		"last_step_signature":       ctx.LastStepSignature,
+		"consecutive_observe_count": ctx.ConsecutiveObserveCount,
 	}
 	for i, obs := range ctx.Observations {
 		payload[fmt.Sprintf("obs_%d", i)] = obs.State
@@ -549,6 +786,7 @@ func (e *AgentEngine) EmitArtifact(runID, flowID string, artifactType artifact.A
 	}
 	artifact, err := e.artifactStore.Save(runID, flowID, artifactType, filename, data, metadata)
 	if err != nil {
+		log.Printf("EmitArtifact: failed to save artifact: %v", err)
 		return ""
 	}
 	trace.EmitArtifactEvent(e.traceStore, runID, flowID, string(artifactType), artifact.Path, metadata)
@@ -559,29 +797,136 @@ func (e *AgentEngine) SetLifecycleController(lc *runtime.LifecycleController) {
 	e.lifecycle = lc
 }
 
-func (e *AgentEngine) handleSteeringEvent(evt *sharedtypes.SteeringEvent, ctx *agentstypes.ExecutionContext, result *ExecutionResult) {
-	trace.EmitAgentDecision(e.traceStore, ctx.RunID, ctx.FlowID, "steering", string(evt.Command), evt.Reason)
+func (e *AgentEngine) SetLifecycleRunID(runID string) {
+	if e.lifecycle != nil {
+		e.lifecycle.SetRunID(runID)
+	}
+}
 
-	switch evt.Command {
-	case sharedtypes.SteerSkip:
-		if evt.FlowID == "" || evt.FlowID == ctx.FlowID {
-			result.Outcome = OutcomeSkip
-			result.Errors = append(result.Errors, fmt.Sprintf("skipped by steering: %s", evt.Reason))
+func (e *AgentEngine) SetToolRegistry(registry executor.ToolRegistry) {
+	e.toolRegistry = registry
+	e.executor = executor.NewExecutor(registry)
+}
+
+func (e *AgentEngine) SetDependencyContext(ctx string) {
+	e.mu.Lock()
+	e.dependencyContext = ctx
+	e.mu.Unlock()
+}
+
+func (e *AgentEngine) checkPauseState(runID string) (sharedtypes.RunState, bool) {
+	if e.sessionStore == nil {
+		return sharedtypes.RunStateRunning, true
+	}
+	sess, err := e.sessionStore.Get(runID)
+	if err != nil || sess == nil {
+		return sharedtypes.RunStateRunning, false
+	}
+	return sess.Status, true
+}
+
+func (e *AgentEngine) waitForResume(runID string) {
+	if e.sessionStore == nil {
+		return
+	}
+	pollInterval := resumePollInitialDelay
+	maxPollInterval := resumePollMaxDelay
+	for {
+		time.Sleep(pollInterval)
+		pollInterval *= 2
+		if pollInterval > maxPollInterval {
+			pollInterval = maxPollInterval
+		}
+		status, exists := e.checkPauseState(runID)
+		if !exists {
 			return
 		}
-	case sharedtypes.SteerRetry:
-		if evt.FlowID == "" || evt.FlowID == ctx.FlowID {
-			result.Retries++
+		if status == sharedtypes.RunStateResuming || status == sharedtypes.RunStateRunning {
+			e.syncSessionStore(runID, "", "transition_to_running", func() error {
+				return e.sessionStore.UpdateStatus(runID, sharedtypes.RunStateRunning)
+			})
+			return
 		}
-	case sharedtypes.SteerHumanReview:
-		if e.lifecycle != nil {
-			e.lifecycle.SetWaitingForInput()
+		if status == sharedtypes.RunStateCancelling || status == sharedtypes.RunStateCancelled {
+			return
 		}
-		trace.EmitAgentDecision(e.traceStore, ctx.RunID, ctx.FlowID, "steering", "waiting_for_input", "human review requested")
-	case sharedtypes.SteerApprove, sharedtypes.SteerContinue:
-		if e.lifecycle != nil && e.lifecycle.IsWaitingForInput() {
-			e.lifecycle.AcknowledgeInput()
+	}
+}
+
+func (e *AgentEngine) handlePauseResume(runID string, ctx *agentstypes.ExecutionContext) pauseAction {
+	pauseStatus, exists := e.checkPauseState(runID)
+	if !exists {
+		return pauseFail
+	}
+	switch pauseStatus {
+	case sharedtypes.RunStatePausing:
+		e.syncSessionStore(runID, ctx.FlowID, "transition_to_paused", func() error {
+			return e.sessionStore.UpdateStatus(runID, sharedtypes.RunStatePaused)
+		})
+		e.setCurrentAgent(runID, "idle (paused)")
+		e.waitForResume(runID)
+		e.restoreCheckpoint(ctx)
+		cancelStatus, _ := e.checkPauseState(runID)
+		if cancelStatus == sharedtypes.RunStateCancelling || cancelStatus == sharedtypes.RunStateCancelled {
+			return pauseSkip
 		}
+		return pauseContinue
+	case sharedtypes.RunStatePaused:
+		e.waitForResume(runID)
+		e.restoreCheckpoint(ctx)
+		cancelStatus, _ := e.checkPauseState(runID)
+		if cancelStatus == sharedtypes.RunStateCancelling || cancelStatus == sharedtypes.RunStateCancelled {
+			return pauseSkip
+		}
+		return pauseContinue
+	case sharedtypes.RunStateCancelling, sharedtypes.RunStateCancelled:
+		return pauseSkip
+	default:
+		return pauseContinue
+	}
+}
+
+func (e *AgentEngine) drainSteeringEvents(ctx *agentstypes.ExecutionContext, runID, flowID string) {
+	if e.lifecycle == nil {
+		return
+	}
+	events := e.lifecycle.DrainSteeringEvents()
+	for _, evt := range events {
+		if evt.FlowID != "" && evt.FlowID != flowID {
+			continue
+		}
+		if evt.Command == sharedtypes.SteerInstruction && evt.Instruction != "" {
+			if len(ctx.SteeringInstructions) >= 20 {
+				ctx.SteeringInstructions = ctx.SteeringInstructions[1:]
+			}
+			ctx.SteeringInstructions = append(ctx.SteeringInstructions, evt.Instruction)
+			trace.EmitAgentDecision(e.traceStore, runID, flowID, "steering", "instruction_received", evt.Instruction)
+		} else {
+			log.Printf("drainSteeringEvents: unhandled event type=%q flow=%s instruction=%q", evt.Command, evt.FlowID, evt.Instruction)
+		}
+	}
+}
+
+func (e *AgentEngine) finalizeRunResult(runID, flowID string, result *ExecutionResult, start time.Time, extraDetails map[string]any) {
+	result.DurationMs = time.Since(start).Milliseconds()
+	if result.Outcome == OutcomePass && len(result.Errors) > 0 {
+		result.Outcome = OutcomeFail
+	}
+
+	if e.sessionStore != nil {
+		e.finalizeFlowState(runID, flowID, result)
+		e.setCurrentAgent(runID, "")
+	}
+
+	details := map[string]any{"duration_ms": result.DurationMs}
+	for k, v := range extraDetails {
+		details[k] = v
+	}
+
+	if result.Outcome == OutcomePass {
+		trace.EmitLifecycleEvent(e.traceStore, runID, flowID, sharedtypes.RunStateCompleted, details)
+	} else {
+		trace.EmitLifecycleEvent(e.traceStore, runID, flowID, sharedtypes.RunStateFailed, details)
 	}
 }
 
@@ -626,14 +971,21 @@ func (e *AgentEngine) autonomousLLMContext(parent context.Context) (context.Cont
 		return ctx, cancel
 	}
 
+	cancelCh := e.lifecycle.CancelCh()
+	done := make(chan struct{})
 	go func() {
 		select {
-		case <-e.lifecycle.CancelCh():
+		case <-cancelCh:
 			cancel()
 		case <-ctx.Done():
+		case <-done:
 		}
 	}()
-	return ctx, cancel
+	wrappedCancel := func() {
+		cancel()
+		close(done)
+	}
+	return ctx, wrappedCancel
 }
 
 func getDefaultLLMTools() []llm.ToolInfo {
@@ -692,10 +1044,89 @@ func getDefaultLLMTools() []llm.ToolInfo {
 		},
 		{
 			Name:        "finish",
-			Description: "Signal that the goal has been achieved and no more steps are needed. Use this when the task is complete.",
-			Parameters:  map[string]llm.ParameterInfo{},
+			Description: "Signal that the goal has been achieved (or is unachievable) and no more steps are needed. Use this when the task is complete.",
+			Parameters: map[string]llm.ParameterInfo{
+				"status": {Type: "string", Description: "Set to 'success' if goal is achieved, or 'fail' if the goal is unachievable (e.g. elements not found).", Required: false},
+			},
 		},
 	}
+}
+
+// observedSelectors extracts valid selectors from the most recent observe_ui
+// observation. Returns nil if no observe_ui data is available.
+func observedSelectors(observations []agentstypes.Observation) []string {
+	for i := len(observations) - 1; i >= 0; i-- {
+		obs := observations[i]
+		if obs.LastStep == nil || obs.LastStep.Tool != "observe_ui" {
+			continue
+		}
+		data, ok := obs.State["data"].(map[string]any)
+		if !ok {
+			continue
+		}
+		interactive, ok := data["interactive"].([]any)
+		if !ok {
+			continue
+		}
+		result := make([]string, 0, len(interactive))
+		for _, elem := range interactive {
+			elemMap, ok := elem.(map[string]any)
+			if !ok {
+				continue
+			}
+			sel, ok := elemMap["selector"].(string)
+			if !ok || sel == "" {
+				continue
+			}
+			result = append(result, sel)
+		}
+		return result
+	}
+	return nil
+}
+
+var safeGenericSelectors = map[string]bool{
+	"body":     true,
+	"html":     true,
+	"*":        true,
+	"document": true,
+	":root":    true,
+}
+
+func isSafeGenericSelector(selector string) bool {
+	return safeGenericSelectors[selector]
+}
+
+func containsSelector(list []string, target string) bool {
+	for _, s := range list {
+		if s == target {
+			return true
+		}
+	}
+	return false
+}
+
+// stepSignature produces a deterministic signature from a step's tool and
+// parameter values. Returns "" if the step has no params.
+func stepSignature(step *agentstypes.PlanStep) string {
+	if step == nil || len(step.Params) == 0 {
+		return ""
+	}
+	// Collect sorted param keys so signature is deterministic.
+	keys := make([]string, 0, len(step.Params))
+	for k := range step.Params {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	var b strings.Builder
+	b.WriteString(step.Tool)
+	for _, k := range keys {
+		b.WriteString("|")
+		b.WriteString(k)
+		b.WriteString("=")
+		b.WriteString(fmt.Sprint(step.Params[k]))
+	}
+	return b.String()
 }
 
 func (e *AgentEngine) syncSessionStore(runID, flowID, action string, fn func() error) bool {
@@ -709,13 +1140,39 @@ func (e *AgentEngine) syncSessionStore(runID, flowID, action string, fn func() e
 	return true
 }
 
+func (e *AgentEngine) restoreCheckpoint(ctx *agentstypes.ExecutionContext) {
+	if e.sessionStore == nil {
+		return
+	}
+	sess, err := e.sessionStore.Get(ctx.RunID)
+	if err != nil || sess == nil || sess.Checkpoint == nil || sess.Checkpoint.Payload == nil {
+		return
+	}
+	cp := sess.Checkpoint.Payload
+	if url, ok := cp["current_url"].(string); ok {
+		ctx.CurrentURL = url
+	}
+	if sig, ok := cp["last_step_signature"].(string); ok {
+		ctx.LastStepSignature = sig
+	}
+	if count, ok := cp["consecutive_observe_count"].(float64); ok {
+		ctx.ConsecutiveObserveCount = int(count)
+	}
+}
+
 func (e *AgentEngine) finalizeFlowState(runID, flowID string, result *ExecutionResult) {
 	status := sharedtypes.FlowStatePassed
 	switch result.Outcome {
 	case OutcomePass:
 		status = sharedtypes.FlowStatePassed
 	case OutcomeSkip:
-		status = sharedtypes.FlowStateSkippedUser
+		if len(result.Errors) > 0 && result.Errors[0] == "upstream_failed" {
+			status = sharedtypes.FlowStateSkippedUpstream
+		} else if len(result.Errors) > 0 && strings.HasPrefix(result.Errors[0], cancelledErrPrefix) {
+			status = sharedtypes.FlowStateSkippedUser
+		} else {
+			status = sharedtypes.FlowStateSkippedUser
+		}
 	case OutcomeFail:
 		status = sharedtypes.FlowStateFailed
 	default:

@@ -2,6 +2,7 @@ package planner
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -400,5 +401,287 @@ func TestPlannerAddStepToPlan(t *testing.T) {
 
 	if plan.Steps[0].StepID != "new-step" {
 		t.Errorf("Expected step ID 'new-step', got %s", plan.Steps[0].StepID)
+	}
+}
+
+func TestFormatObserveUIObservation_FormatsInteractiveElements(t *testing.T) {
+	obs := types.Observation{
+		LastStep: &types.StepResult{
+			StepID:  "observe_ui",
+			Tool:    "observe_ui",
+			Success: true,
+		},
+		State: map[string]any{
+			"source": "observe_ui",
+			"data": map[string]any{
+				"page_state": "loaded",
+				"interactive": []any{
+					map[string]any{"tag": "input", "selector": "#username", "text": ""},
+					map[string]any{"tag": "button", "selector": "#submit", "text": "Login"},
+				},
+			},
+		},
+	}
+
+	result := formatObserveUIObservation(obs)
+
+	if !strings.Contains(result, "Page observation after last step") {
+		t.Errorf("expected header, got: %s", result)
+	}
+	if !strings.Contains(result, "Page state: loaded") {
+		t.Errorf("expected page state, got: %s", result)
+	}
+	if !strings.Contains(result, "Interactive elements found (2)") {
+		t.Errorf("expected element count, got: %s", result)
+	}
+	if !strings.Contains(result, `selector="#username"`) {
+		t.Errorf("expected username selector, got: %s", result)
+	}
+	if !strings.Contains(result, `selector="#submit"`) {
+		t.Errorf("expected submit selector, got: %s", result)
+	}
+	if !strings.Contains(result, "Do not invent selectors") {
+		t.Errorf("expected warning about inventing selectors, got: %s", result)
+	}
+}
+
+func TestFormatObserveUIObservation_FromStringJSON(t *testing.T) {
+	obs := types.Observation{
+		LastStep: &types.StepResult{
+			StepID:  "observe_ui",
+			Tool:    "observe_ui",
+			Success: true,
+		},
+		State: map[string]any{
+			"source": "observe_ui",
+			"data":   `{"page_state":"loaded","interactive":[{"tag":"input","selector":"#email","text":""}]}`,
+		},
+	}
+
+	result := formatObserveUIObservation(obs)
+
+	if !strings.Contains(result, "Page state: loaded") {
+		t.Errorf("expected page state from string JSON, got: %s", result)
+	}
+	if !strings.Contains(result, `selector="#email"`) {
+		t.Errorf("expected email selector from string JSON, got: %s", result)
+	}
+}
+
+func TestFormatObserveUIObservation_EmptyPage(t *testing.T) {
+	obs := types.Observation{
+		LastStep: &types.StepResult{
+			StepID:  "observe_ui",
+			Tool:    "observe_ui",
+			Success: true,
+		},
+		State: map[string]any{
+			"source": "observe_ui",
+			"data": map[string]any{
+				"page_state":  "empty",
+				"interactive": []any{},
+			},
+		},
+	}
+
+	result := formatObserveUIObservation(obs)
+
+	if !strings.Contains(result, "Page state: empty") {
+		t.Errorf("expected empty page state, got: %s", result)
+	}
+	if !strings.Contains(result, "Interactive elements found (0)") {
+		t.Errorf("expected zero element count, got: %s", result)
+	}
+}
+
+func TestFormatObserveUIObservation_InvalidJSON(t *testing.T) {
+	obs := types.Observation{
+		LastStep: &types.StepResult{
+			StepID:  "observe_ui",
+			Tool:    "observe_ui",
+			Success: true,
+		},
+		State: map[string]any{
+			"source": "observe_ui",
+			"data":   `not valid json`,
+		},
+	}
+
+	result := formatObserveUIObservation(obs)
+
+	if !strings.Contains(result, "Raw data: not valid json") {
+		t.Errorf("expected raw data fallback, got: %s", result)
+	}
+}
+
+func TestScanForRecentFailure_NoFailure(t *testing.T) {
+	result := scanForRecentFailure(nil)
+	if result != "" {
+		t.Errorf("expected empty for nil, got %q", result)
+	}
+
+	obs := []types.Observation{
+		{LastStep: &types.StepResult{Tool: "navigate", Success: true}},
+	}
+	result = scanForRecentFailure(obs)
+	if result != "" {
+		t.Errorf("expected empty for success obs, got %q", result)
+	}
+}
+
+func TestScanForRecentFailure_ObservationError(t *testing.T) {
+	obs := []types.Observation{
+		{
+			Error:    fmt.Errorf("timeout: page did not load"),
+			LastStep: &types.StepResult{Tool: "navigate", Success: false},
+		},
+	}
+	result := scanForRecentFailure(obs)
+	if !strings.Contains(result, "RECENT FAILURE") {
+		t.Errorf("expected failure prefix, got %q", result)
+	}
+	if !strings.Contains(result, "timeout") {
+		t.Errorf("expected error message in result, got %q", result)
+	}
+	if !strings.Contains(result, "navigate") {
+		t.Errorf("expected tool name in result, got %q", result)
+	}
+}
+
+func TestScanForRecentFailure_ObservationErrorNoLastStep(t *testing.T) {
+	obs := []types.Observation{
+		{Error: fmt.Errorf("browser crashed")},
+	}
+	result := scanForRecentFailure(obs)
+	if !strings.Contains(result, "RECENT FAILURE") {
+		t.Errorf("expected failure prefix, got %q", result)
+	}
+	if !strings.Contains(result, "tool=?") {
+		t.Errorf("expected 'tool=?' when LastStep is nil, got %q", result)
+	}
+}
+
+func TestScanForRecentFailure_StepFailure(t *testing.T) {
+	obs := []types.Observation{
+		{
+			LastStep: &types.StepResult{
+				Tool:    "click",
+				Success: false,
+				Error:   fmt.Errorf("element #submit not found"),
+			},
+		},
+	}
+	result := scanForRecentFailure(obs)
+	if !strings.Contains(result, "RECENT FAILURE") {
+		t.Errorf("expected failure prefix, got %q", result)
+	}
+	if !strings.Contains(result, "element #submit not found") {
+		t.Errorf("expected error text, got %q", result)
+	}
+	if !strings.Contains(result, "click") {
+		t.Errorf("expected tool click, got %q", result)
+	}
+}
+
+func TestScanForRecentFailure_StepFailureNoError(t *testing.T) {
+	obs := []types.Observation{
+		{
+			LastStep: &types.StepResult{
+				Tool:    "type_text",
+				Success: false,
+			},
+		},
+	}
+	result := scanForRecentFailure(obs)
+	if !strings.Contains(result, "unknown error") {
+		t.Errorf("expected 'unknown error' fallback, got %q", result)
+	}
+}
+
+func TestScanForRecentFailure_FindsMostRecent(t *testing.T) {
+	obs := []types.Observation{
+		{LastStep: &types.StepResult{Tool: "navigate", Success: true}},
+		{Error: fmt.Errorf("old failure")},
+		{LastStep: &types.StepResult{Tool: "click", Success: true}},
+	}
+	// Most recent (index 2) is success, should find index 1's failure
+	result := scanForRecentFailure(obs)
+	if !strings.Contains(result, "old failure") {
+		t.Errorf("expected oldest failure, got %q", result)
+	}
+}
+
+func TestScanForRecentFailure_ReturnsMostRecentFailure(t *testing.T) {
+	obs := []types.Observation{
+		{LastStep: &types.StepResult{Tool: "navigate", Success: false, Error: fmt.Errorf("first error")}},
+		{LastStep: &types.StepResult{Tool: "click", Success: false, Error: fmt.Errorf("second error")}},
+	}
+	result := scanForRecentFailure(obs)
+	if !strings.Contains(result, "second error") {
+		t.Errorf("expected most recent error, got %q", result)
+	}
+}
+
+func TestPlannerGenerateNextStep_UsesObserveUIObservation(t *testing.T) {
+	mockClient := &mockLLMClient{
+		response: `[{"tool": "click", "params": {"selector": "#submit"}, "reason": "Click the login button"}]`,
+	}
+
+	tools := []llm.ToolInfo{
+		{
+			Name:        "click",
+			Description: "Click an element",
+			Parameters: map[string]llm.ParameterInfo{
+				"selector": {Type: "string", Description: "CSS selector", Required: true},
+			},
+		},
+	}
+
+	p := NewAutonomousPlanner(mockClient, tools)
+
+	plan := &types.Plan{
+		FlowID:     "test",
+		Goal:       "Test login",
+		CurrentIdx: 0,
+		Steps:      make([]types.PlanStep, 0),
+	}
+
+	ctx := &types.ExecutionContext{
+		RunID:  "run_test",
+		FlowID: "flow_test",
+		Goal:   "Test login",
+		Plan:   plan,
+		Observations: []types.Observation{
+			{
+				LastStep: &types.StepResult{
+					StepID:  "observe_ui",
+					Tool:    "observe_ui",
+					Success: true,
+				},
+				State: map[string]any{
+					"source": "observe_ui",
+					"data": map[string]any{
+						"page_state": "loaded",
+						"interactive": []any{
+							map[string]any{"tag": "button", "selector": "#submit", "text": "Login"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	step, err := p.GenerateNextStep(context.Background(), ctx)
+	if err != nil {
+		t.Fatalf("GenerateNextStep failed: %v", err)
+	}
+
+	if step.Tool != "click" {
+		t.Errorf("Expected tool 'click', got %s", step.Tool)
+	}
+
+	selector, ok := step.Params["selector"].(string)
+	if !ok || selector != "#submit" {
+		t.Errorf("Expected selector '#submit', got %v", step.Params["selector"])
 	}
 }

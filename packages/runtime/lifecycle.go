@@ -11,10 +11,7 @@ type LifecycleController struct {
 	runID      string
 	status     types.RunState
 	steeringCh chan *types.SteeringEvent
-	pauseCh    chan struct{}
-	resumeCh   chan struct{}
 	cancelCh   chan struct{}
-	inputCh    chan struct{}
 }
 
 func NewLifecycleController(runID string) *LifecycleController {
@@ -22,10 +19,7 @@ func NewLifecycleController(runID string) *LifecycleController {
 		runID:      runID,
 		status:     types.RunStatePending,
 		steeringCh: make(chan *types.SteeringEvent, 10),
-		pauseCh:    make(chan struct{}, 1),
-		resumeCh:   make(chan struct{}, 1),
 		cancelCh:   make(chan struct{}, 1),
-		inputCh:    make(chan struct{}, 1),
 	}
 }
 
@@ -33,6 +27,12 @@ func (c *LifecycleController) GetRunID() string {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.runID
+}
+
+func (c *LifecycleController) SetRunID(runID string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.runID = runID
 }
 
 func (c *LifecycleController) GetStatus() types.RunState {
@@ -58,18 +58,6 @@ func (c *LifecycleController) Transition(from, to types.RunState) bool {
 	return true
 }
 
-func (c *LifecycleController) CanPause() bool {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	return c.status == types.RunStateRunning || c.status == types.RunStatePending
-}
-
-func (c *LifecycleController) CanResume() bool {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	return c.status == types.RunStatePaused
-}
-
 func (c *LifecycleController) CanCancel() bool {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -79,46 +67,6 @@ func (c *LifecycleController) CanCancel() bool {
 	default:
 		return true
 	}
-}
-
-func (c *LifecycleController) RequestPause() bool {
-	if !c.CanPause() {
-		return false
-	}
-	c.mu.Lock()
-	c.status = types.RunStatePausing
-	c.mu.Unlock()
-	select {
-	case c.pauseCh <- struct{}{}:
-	default:
-	}
-	return true
-}
-
-func (c *LifecycleController) AcknowledgePause() {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.status = types.RunStatePaused
-}
-
-func (c *LifecycleController) RequestResume() bool {
-	if !c.CanResume() {
-		return false
-	}
-	c.mu.Lock()
-	c.status = types.RunStateResuming
-	c.mu.Unlock()
-	select {
-	case c.resumeCh <- struct{}{}:
-	default:
-	}
-	return true
-}
-
-func (c *LifecycleController) AcknowledgeResume() {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.status = types.RunStateRunning
 }
 
 func (c *LifecycleController) RequestCancel() bool {
@@ -141,39 +89,17 @@ func (c *LifecycleController) AcknowledgeCancel() {
 	c.status = types.RunStateCancelled
 }
 
-func (c *LifecycleController) WaitForPause() {
-	<-c.pauseCh
-}
-
-func (c *LifecycleController) WaitForResume() {
-	<-c.resumeCh
-}
-
-func (c *LifecycleController) WaitForCancel() {
-	<-c.cancelCh
-}
-
-func (c *LifecycleController) PauseCh() <-chan struct{} {
-	return c.pauseCh
-}
-
-func (c *LifecycleController) ResumeCh() <-chan struct{} {
-	return c.resumeCh
-}
-
 func (c *LifecycleController) CancelCh() <-chan struct{} {
 	return c.cancelCh
 }
 
-func (c *LifecycleController) SubmitSteering(event *types.SteeringEvent) {
+func (c *LifecycleController) SubmitSteering(event *types.SteeringEvent) bool {
 	select {
 	case c.steeringCh <- event:
+		return true
 	default:
+		return false
 	}
-}
-
-func (c *LifecycleController) SteerCh() <-chan *types.SteeringEvent {
-	return c.steeringCh
 }
 
 func (c *LifecycleController) DrainSteeringEvents() []*types.SteeringEvent {
@@ -204,28 +130,4 @@ func (c *LifecycleController) AcknowledgeInput() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.status = types.RunStateRunning
-}
-
-func (c *LifecycleController) RequestInput() {
-	c.SetWaitingForInput()
-	select {
-	case c.inputCh <- struct{}{}:
-	default:
-	}
-}
-
-func (c *LifecycleController) InputCh() <-chan struct{} {
-	return c.inputCh
-}
-
-func (c *LifecycleController) SetCompleted() {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.status = types.RunStateCompleted
-}
-
-func (c *LifecycleController) SetFailed() {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.status = types.RunStateFailed
 }

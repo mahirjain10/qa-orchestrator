@@ -6,8 +6,8 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
-	"github.com/charmbracelet/lipgloss"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"qa-orchestrator/apps/tui/internal/style"
 	"qa-orchestrator/apps/tui/internal/util"
 	"qa-orchestrator/packages/shared/types"
@@ -131,8 +131,9 @@ func (m *TracePanelModel) UpdateViewportContent() {
 		typeStr := util.Truncate(string(e.EventType), 18)
 		actionStr := util.Truncate(e.Action, 40)
 
+		displayIdx := len(events) - 1 - i
 		cursor := "  "
-		if i == m.Selected {
+		if displayIdx == m.Selected {
 			cursor = style.SelectedBold.Render(" ▶ ")
 		}
 
@@ -170,7 +171,7 @@ func (m *TracePanelModel) View() string {
 	lines = append(lines, style.Header.Render("Trace Events"))
 	lines = append(lines, "")
 	lines = append(lines, style.Section.Render("  Time      Agent      Action          Status    Step"))
-	lines = append(lines, style.Dim.Render("  " + strings.Repeat("─", 70)))
+	lines = append(lines, style.Dim.Render("  "+strings.Repeat("─", 70)))
 
 	for i := len(events) - 1; i >= 0; i-- {
 		e := events[i]
@@ -205,7 +206,8 @@ func (m *TracePanelModel) View() string {
 			stepID,
 		)
 
-		if i == m.Selected {
+		displayIdx := len(events) - 1 - i
+		if displayIdx == m.Selected {
 			lines = append(lines, style.Selected.Render(row))
 		} else {
 			lines = append(lines, style.Normal.Render(row))
@@ -301,7 +303,7 @@ func (m *ArtifactPanelModel) View() string {
 	lines = append(lines, style.Header.Render("Artifacts"))
 	lines = append(lines, "")
 	lines = append(lines, style.Section.Render("  ID              Type          Size      Path"))
-	lines = append(lines, style.Dim.Render("  " + strings.Repeat("─", 80)))
+	lines = append(lines, style.Dim.Render("  "+strings.Repeat("─", 80)))
 
 	for i, a := range m.artifacts {
 		sizeStr := formatBytes(a.Size)

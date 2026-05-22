@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"qa-orchestrator/packages/shared/types"
 )
@@ -13,6 +14,11 @@ func validCampaign() *types.Campaign {
 	return &types.Campaign{
 		Name:    "Test",
 		Version: "1.0",
+		Config: types.CampaignConfig{
+			Timeout:       300 * time.Second,
+			RetryLimit:    2,
+			ParallelLimit: 1,
+		},
 		Flows: []types.Flow{
 			{
 				ID:        "f1",
@@ -53,10 +59,11 @@ flows:
 	}
 
 	parser := NewCampaignParser()
-	camp, err := parser.ParseFile(campaignFile)
+	parsed, err := parser.ParseFile(campaignFile)
 	if err != nil {
 		t.Fatalf("parse failed: %v", err)
 	}
+	camp := parsed.Campaign
 
 	if camp.Name != "Test Campaign" {
 		t.Errorf("expected name 'Test Campaign', got %q", camp.Name)
@@ -75,6 +82,11 @@ func TestParseFile_JSON(t *testing.T) {
 	err := os.WriteFile(campaignFile, []byte(`{
 		"name": "JSON Campaign",
 		"version": "1.0",
+		"config": {
+			"timeout": 300000000000,
+			"retry_limit": 2,
+			"parallel_limit": 1
+		},
 		"flows": [{"id": "jflow-1", "name": "JSON Flow", "goal": "test", "mode": "guided", "priority": "high", "steps": [{"id": "s1", "tool": "click"}]}]
 	}`), 0644)
 	if err != nil {
@@ -82,10 +94,11 @@ func TestParseFile_JSON(t *testing.T) {
 	}
 
 	parser := NewCampaignParser()
-	camp, err := parser.ParseFile(campaignFile)
+	parsed, err := parser.ParseFile(campaignFile)
 	if err != nil {
 		t.Fatalf("parse failed: %v", err)
 	}
+	camp := parsed.Campaign
 
 	if camp.Name != "JSON Campaign" {
 		t.Errorf("expected name 'JSON Campaign', got %q", camp.Name)
@@ -108,7 +121,7 @@ func TestValidate_CampaignNameRequired(t *testing.T) {
 	parser := NewCampaignParser()
 	campaign := validCampaign()
 	campaign.Name = ""
-	err := parser.validate(campaign)
+	err := parser.validateSchema(campaign)
 	if err == nil {
 		t.Error("expected error for empty name")
 	}
@@ -118,7 +131,7 @@ func TestValidate_NoFlows(t *testing.T) {
 	parser := NewCampaignParser()
 	campaign := validCampaign()
 	campaign.Flows = []types.Flow{}
-	err := parser.validate(campaign)
+	err := parser.validateSchema(campaign)
 	if err == nil {
 		t.Error("expected error for no flows")
 	}
@@ -135,7 +148,7 @@ func TestValidate_DuplicateFlowID(t *testing.T) {
 		Priority: types.FlowPriorityMedium,
 		Steps:    []types.Step{{ID: "s2", Tool: "type"}},
 	})
-	err := parser.validate(campaign)
+	err := parser.validateSchema(campaign)
 	if err == nil {
 		t.Error("expected error for duplicate flow ID")
 	}
@@ -176,7 +189,7 @@ func TestValidate_InvalidMode(t *testing.T) {
 	parser := NewCampaignParser()
 	campaign := validCampaign()
 	campaign.Flows[0].Mode = "invalid"
-	err := parser.validate(campaign)
+	err := parser.validateSchema(campaign)
 	if err == nil {
 		t.Error("expected error for invalid mode")
 	}
@@ -186,7 +199,7 @@ func TestValidate_ModeRequired(t *testing.T) {
 	parser := NewCampaignParser()
 	campaign := validCampaign()
 	campaign.Flows[0].Mode = ""
-	err := parser.validate(campaign)
+	err := parser.validateSchema(campaign)
 	if err == nil {
 		t.Error("expected error for empty mode")
 	}
@@ -196,7 +209,7 @@ func TestValidate_GuidedModeRequiresSteps(t *testing.T) {
 	parser := NewCampaignParser()
 	campaign := validCampaign()
 	campaign.Flows[0].Steps = []types.Step{}
-	err := parser.validate(campaign)
+	err := parser.validateSchema(campaign)
 	if err == nil {
 		t.Error("expected error for guided mode with empty steps")
 	}
@@ -207,7 +220,7 @@ func TestValidate_AutonomousModeNoSteps(t *testing.T) {
 	campaign := validCampaign()
 	campaign.Flows[0].Mode = types.FlowModeAutonomous
 	campaign.Flows[0].Steps = nil
-	err := parser.validate(campaign)
+	err := parser.validateSchema(campaign)
 	if err != nil {
 		t.Errorf("expected no error for autonomous mode without steps: %v", err)
 	}
@@ -218,7 +231,7 @@ func TestValidate_AutonomousModeWithSteps(t *testing.T) {
 	campaign := validCampaign()
 	campaign.Flows[0].Mode = types.FlowModeAutonomous
 	campaign.Flows[0].Steps = []types.Step{{ID: "step1", Tool: "click"}}
-	err := parser.validate(campaign)
+	err := parser.validateSchema(campaign)
 	if err != nil {
 		t.Errorf("expected no error for autonomous mode with steps: %v", err)
 	}
@@ -228,7 +241,7 @@ func TestValidate_InvalidPriority(t *testing.T) {
 	parser := NewCampaignParser()
 	campaign := validCampaign()
 	campaign.Flows[0].Priority = "invalid"
-	err := parser.validate(campaign)
+	err := parser.validateSchema(campaign)
 	if err == nil {
 		t.Error("expected error for invalid priority")
 	}
@@ -238,7 +251,7 @@ func TestValidate_PriorityRequired(t *testing.T) {
 	parser := NewCampaignParser()
 	campaign := validCampaign()
 	campaign.Flows[0].Priority = ""
-	err := parser.validate(campaign)
+	err := parser.validateSchema(campaign)
 	if err == nil {
 		t.Error("expected error for empty priority")
 	}
@@ -248,52 +261,190 @@ func TestValidate_GoalRequired(t *testing.T) {
 	parser := NewCampaignParser()
 	campaign := validCampaign()
 	campaign.Flows[0].Goal = ""
-	err := parser.validate(campaign)
+	err := parser.validateSchema(campaign)
 	if err == nil {
 		t.Error("expected error for empty goal")
 	}
 }
 
 func TestValidate_InvalidDependency(t *testing.T) {
+	tmpDir := t.TempDir()
+	campaignFile := filepath.Join(tmpDir, "test.yaml")
+	err := os.WriteFile(campaignFile, []byte(`
+name: Test Campaign
+version: "1.0"
+config:
+  timeout: 300000000000
+  retry_limit: 2
+  parallel_limit: 1
+flows:
+  - id: f1
+    goal: test
+    mode: autonomous
+    priority: high
+    depends_on: [nonexistent]
+`), 0644)
+	if err != nil {
+		t.Fatalf("failed to write test file: %v", err)
+	}
+
 	parser := NewCampaignParser()
-	campaign := validCampaign()
-	campaign.Flows[0].DependsOn = []string{"nonexistent"}
-	err := parser.validate(campaign)
+	_, err = parser.ParseFile(campaignFile)
 	if err == nil {
 		t.Error("expected error for invalid dependency")
 	}
 }
 
 func TestValidate_CircularDependency(t *testing.T) {
-	parser := NewCampaignParser()
-	campaign := &types.Campaign{
-		Name:    "Cycle Campaign",
-		Version: "1.0",
-		Flows: []types.Flow{
-			{
-				ID:        "flow-a",
-				Name:      "Flow A",
-				Goal:      "A",
-				Mode:      types.FlowModeAutonomous,
-				Priority:  types.FlowPriorityMedium,
-				DependsOn: []string{"flow-b"},
-			},
-			{
-				ID:        "flow-b",
-				Name:      "Flow B",
-				Goal:      "B",
-				Mode:      types.FlowModeAutonomous,
-				Priority:  types.FlowPriorityMedium,
-				DependsOn: []string{"flow-a"},
-			},
-		},
+	tmpDir := t.TempDir()
+	campaignFile := filepath.Join(tmpDir, "test.yaml")
+	err := os.WriteFile(campaignFile, []byte(`
+name: Cycle Campaign
+version: "1.0"
+config:
+  timeout: 300000000000
+  retry_limit: 2
+  parallel_limit: 1
+flows:
+  - id: flow-a
+    goal: A
+    mode: autonomous
+    priority: high
+    depends_on: [flow-b]
+  - id: flow-b
+    goal: B
+    mode: autonomous
+    priority: high
+    depends_on: [flow-a]
+`), 0644)
+	if err != nil {
+		t.Fatalf("failed to write test file: %v", err)
 	}
 
-	err := parser.validate(campaign)
+	parser := NewCampaignParser()
+	_, err = parser.ParseFile(campaignFile)
 	if err == nil {
-		t.Fatal("expected error for circular dependency")
+		t.Error("expected error for circular dependency")
 	}
-	if !strings.Contains(err.Error(), "Circular dependency detected") {
-		t.Fatalf("expected circular dependency error, got: %v", err)
+}
+
+func TestValidate_ConfigZeroTimeout(t *testing.T) {
+	parser := NewCampaignParser()
+	campaign := validCampaign()
+	campaign.Config.Timeout = 0
+	err := parser.validateSchema(campaign)
+	if err == nil {
+		t.Fatal("expected error for zero timeout")
+	}
+	if !strings.Contains(err.Error(), "timeout") {
+		t.Fatalf("expected timeout error, got: %v", err)
+	}
+}
+
+func TestValidate_ConfigNegativeRetryLimit(t *testing.T) {
+	parser := NewCampaignParser()
+	campaign := validCampaign()
+	campaign.Config.RetryLimit = -1
+	err := parser.validateSchema(campaign)
+	if err == nil {
+		t.Fatal("expected error for negative retry_limit")
+	}
+	if !strings.Contains(err.Error(), "retry_limit") {
+		t.Fatalf("expected retry_limit error, got: %v", err)
+	}
+}
+
+func TestValidate_ConfigZeroParallelLimit(t *testing.T) {
+	parser := NewCampaignParser()
+	campaign := validCampaign()
+	campaign.Config.ParallelLimit = 0
+	err := parser.validateSchema(campaign)
+	if err == nil {
+		t.Fatal("expected error for zero parallel_limit")
+	}
+	if !strings.Contains(err.Error(), "parallel_limit") {
+		t.Fatalf("expected parallel_limit error, got: %v", err)
+	}
+}
+
+func TestValidate_FlowConfigNegativeTimeout(t *testing.T) {
+	parser := NewCampaignParser()
+	campaign := validCampaign()
+	campaign.Flows[0].Config.Timeout = -5 * time.Second
+	err := parser.validateSchema(campaign)
+	if err == nil {
+		t.Fatal("expected error for negative flow timeout")
+	}
+	if !strings.Contains(err.Error(), "timeout") {
+		t.Fatalf("expected flow timeout error, got: %v", err)
+	}
+}
+
+func TestValidate_FlowConfigNegativeRetryLimit(t *testing.T) {
+	parser := NewCampaignParser()
+	campaign := validCampaign()
+	campaign.Flows[0].Config.RetryLimit = -1
+	err := parser.validateSchema(campaign)
+	if err == nil {
+		t.Fatal("expected error for negative flow retry_limit")
+	}
+	if !strings.Contains(err.Error(), "retry_limit") {
+		t.Fatalf("expected flow retry_limit error, got: %v", err)
+	}
+}
+
+func TestValidate_FlowConfigValidValues(t *testing.T) {
+	parser := NewCampaignParser()
+	campaign := validCampaign()
+	campaign.Flows[0].Config.Timeout = 60 * time.Second
+	campaign.Flows[0].Config.RetryLimit = 3
+	err := parser.validateSchema(campaign)
+	if err != nil {
+		t.Fatalf("expected no error for valid flow config: %v", err)
+	}
+}
+
+func TestValidate_DuplicateStepID(t *testing.T) {
+	parser := NewCampaignParser()
+	campaign := validCampaign()
+	campaign.Flows[0].Steps = []types.Step{
+		{ID: "step1", Tool: "click"},
+		{ID: "step1", Tool: "type"},
+	}
+	err := parser.validateSchema(campaign)
+	if err == nil {
+		t.Fatal("expected error for duplicate step ID")
+	}
+	if !strings.Contains(err.Error(), `duplicate step ID "step1"`) {
+		t.Fatalf("expected duplicate step ID error, got: %v", err)
+	}
+}
+
+func TestValidate_EmptyStepTool(t *testing.T) {
+	parser := NewCampaignParser()
+	campaign := validCampaign()
+	campaign.Flows[0].Steps = []types.Step{
+		{ID: "step1", Tool: "click"},
+		{ID: "step2", Tool: ""},
+	}
+	err := parser.validateSchema(campaign)
+	if err == nil {
+		t.Fatal("expected error for empty step tool")
+	}
+	if !strings.Contains(err.Error(), `'tool' is required`) {
+		t.Fatalf("expected tool required error, got: %v", err)
+	}
+}
+
+func TestValidate_StepToolEmptyInAutonomousAllowed(t *testing.T) {
+	parser := NewCampaignParser()
+	campaign := validCampaign()
+	campaign.Flows[0].Mode = types.FlowModeAutonomous
+	campaign.Flows[0].Steps = []types.Step{
+		{ID: "step1", Tool: ""},
+	}
+	err := parser.validateSchema(campaign)
+	if err != nil {
+		t.Fatalf("expected no error for empty tool in autonomous mode: %v", err)
 	}
 }

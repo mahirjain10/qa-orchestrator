@@ -45,13 +45,14 @@ func (s *Session) UpdateFlowState(flowID string, status FlowState, errMsg string
 	for i, f := range s.Flows {
 		if f.FlowID == flowID {
 			now := time.Now().UTC()
-			s.Flows[i].Status = status
-			s.Flows[i].Error = errMsg
-			if status == FlowStateRunning && s.Flows[i].StartedAt == nil {
-				s.Flows[i].StartedAt = &now
+			flow := &s.Flows[i]
+			flow.Status = status
+			flow.Error = errMsg
+			if status == FlowStateRunning && flow.StartedAt == nil {
+				flow.StartedAt = &now
 			}
 			if status == FlowStatePassed || status == FlowStateFailed || status == FlowStateSkippedUpstream || status == FlowStateSkippedUser {
-				s.Flows[i].FinishedAt = &now
+				flow.FinishedAt = &now
 			}
 			break
 		}

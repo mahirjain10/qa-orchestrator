@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/rs/zerolog/log"
 )
 
 type ArtifactType string
@@ -190,34 +192,18 @@ func (s *ArtifactStore) Delete(runID string) error {
 	defer s.mu.Unlock()
 
 	artifacts := s.artifacts[runID]
+	var firstErr error
 	for _, a := range artifacts {
-		os.Remove(a.Path)
+		if err := os.Remove(a.Path); err != nil {
+			if firstErr == nil {
+				firstErr = fmt.Errorf("removing artifact %s: %w", a.Path, err)
+			}
+		}
 		delete(s.index, a.ArtifactID)
 	}
 	delete(s.artifacts, runID)
 	s.persistIndex()
-	return nil
-}
-
-func (s *ArtifactStore) GetRecentPaths(runID string, limit int) []string {
-	artifacts, err := s.GetByRunID(runID)
-	if err != nil {
-		return nil
-	}
-
-	if len(artifacts) <= limit {
-		paths := make([]string, len(artifacts))
-		for i, a := range artifacts {
-			paths[i] = a.Path
-		}
-		return paths
-	}
-
-	paths := make([]string, limit)
-	for i := len(artifacts) - limit; i < len(artifacts); i++ {
-		paths[i-(len(artifacts)-limit)] = artifacts[i].Path
-	}
-	return paths
+	return firstErr
 }
 
 func (s *ArtifactStore) artifactDir(runID, flowID, artifactType string) string {
@@ -231,6 +217,7 @@ func (s *ArtifactStore) indexPath() string {
 func (s *ArtifactStore) persistIndex() {
 	indexDir := filepath.Join(s.baseDir, "artifacts")
 	if err := os.MkdirAll(indexDir, 0755); err != nil {
+		log.Error().Err(err).Str("dir", indexDir).Msg("failed to create artifact index directory")
 		return
 	}
 
@@ -248,14 +235,18 @@ func (s *ArtifactStore) persistIndex() {
 
 	data, err := json.MarshalIndent(all, "", "  ")
 	if err != nil {
+		log.Error().Err(err).Msg("failed to marshal artifact index")
 		return
 	}
 
 	tmpPath := path + ".tmp"
 	if err := os.WriteFile(tmpPath, data, 0644); err != nil {
+		log.Error().Err(err).Str("path", tmpPath).Msg("failed to write artifact index tmp file")
 		return
 	}
-	os.Rename(tmpPath, path)
+	if err := os.Rename(tmpPath, path); err != nil {
+		log.Error().Err(err).Str("from", tmpPath).Str("to", path).Msg("failed to rename artifact index")
+	}
 }
 
 func (s *ArtifactStore) loadIndex() {
@@ -276,53 +267,11 @@ func (s *ArtifactStore) loadIndex() {
 	}
 }
 
-func hexEncode(b []byte) string {
-	return hex.EncodeToString(b)
-}
-
-func SaveArtifact[T []byte | string](store *ArtifactStore, runID, flowID string, artifactType ArtifactType, filename string, content T, metadata map[string]any) (string, error) {
-	if store == nil {
-		return "", nil
-	}
-	var data []byte
-	switch v := any(content).(type) {
-	case []byte:
-		data = v
-	case string:
-		data = []byte(v)
-	}
-	artifact, err := store.Save(runID, flowID, artifactType, filename, data, metadata)
-	if err != nil {
-		return "", err
-	}
-	return artifact.Path, nil
-}
-
-func GetArtifactPaths(store *ArtifactStore, runID string, artifactType ArtifactType, limit int) []string {
-	if store == nil {
-		return nil
-	}
-	artifacts, err := store.ListByType(runID, artifactType)
-	if err != nil {
-		return nil
-	}
-	if len(artifacts) <= limit {
-		paths := make([]string, len(artifacts))
-		for i, a := range artifacts {
-			paths[i] = a.Path
-		}
-		return paths
-	}
-	paths := make([]string, limit)
-	for i := len(artifacts) - limit; i < len(artifacts); i++ {
-		paths[i-(len(artifacts)-limit)] = artifacts[i].Path
-	}
-	return paths
-}
-
 func newArtifactID() string {
 	b := make([]byte, 8)
-	rand.Read(b)
+	if _, err := rand.Read(b); err != nil {
+		return fmt.Sprintf("art_%d", time.Now().UnixNano())
+	}
 	return "art_" + hex.EncodeToString(b)
 }
 

@@ -1,0 +1,42 @@
+name: E-Commerce End-to-End Test
+description: Multi-flow autonomous campaign testing product browsing, cart, and checkout
+version: "1.0"
+config:
+  timeout: 600s
+  retry_limit: 2
+  parallel_limit: 1
+flows:
+  - id: browse-flow
+    name: Product Browsing
+    description: Navigate to the store, browse categories, and select a product
+    goal: Navigate to https://practicetestautomation.com/practice-test-login/, verify the page loads, then navigate to the practice test login page and confirm the login form with username and password fields is visible on screen
+    mode: autonomous
+    priority: high
+    depends_on: []
+
+  - id: auth-flow
+    name: Login Flow
+    description: Attempt login with valid credentials and verify success
+    goal: Enter username 'student' and password 'Password123' into the login form, click the submit button, and verify the user is redirected to the logged-in success page with the message 'Logged In Successfully' visible
+    mode: autonomous
+    priority: high
+    depends_on:
+      - browse-flow
+
+  - id: validate-flow
+    name: Post-Login Validation
+    description: Verify the logged-in state, page elements, and content after login
+    goal: After logging in, verify that the success message 'Logged In Successfully' is displayed on the page, the logout button is visible and clickable, the page contains expected post-login content, and the URL has changed from the login page
+    mode: autonomous
+    priority: medium
+    depends_on:
+      - auth-flow
+
+  - id: logout-flow
+    name: Logout and Cleanup
+    description: Logout from the application and verify return to login page
+    goal: Click the logout button on the logged-in page, verify the user is redirected back to the login page, confirm the login form with username and password fields is visible again, and verify the URL is back to the original login page URL
+    mode: autonomous
+    priority: low
+    depends_on:
+      - validate-flow

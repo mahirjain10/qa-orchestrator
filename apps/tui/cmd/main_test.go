@@ -1,9 +1,9 @@
 package main
 
 import (
+	"context"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -14,7 +14,7 @@ import (
 	"qa-orchestrator/packages/storage/trace"
 )
 
-func TestStartCampaignFailsBeforeSessionCreateWhenAutonomousLLMConfigMissing(t *testing.T) {
+func TestStartCampaignCreatesSessionBeforeLLMCheck(t *testing.T) {
 	t.Setenv("LLM_API_KEY", "")
 	t.Setenv("LLM_MODEL", "")
 
@@ -24,20 +24,17 @@ func TestStartCampaignFailsBeforeSessionCreateWhenAutonomousLLMConfigMissing(t *
 
 	sessionStore, traceStore, artifactStore := createStores(t, dataDir)
 
-	err := startCampaign(campaignPath, sessionStore, traceStore, artifactStore)
-	if err == nil {
-		t.Fatal("expected missing LLM config error")
-	}
-	if !strings.Contains(err.Error(), "Campaign contains autonomous flows but LLM configuration failed") {
-		t.Fatalf("unexpected error: %v", err)
+	err := startCampaign(campaignPath, "", "mock", context.Background(), sessionStore, traceStore, artifactStore, make(chan string, 1), nil)
+	if err != nil {
+		t.Fatalf("startCampaign should not error when LLM is missing, got: %v", err)
 	}
 
 	sessions, err := sessionStore.List()
 	if err != nil {
 		t.Fatalf("listing sessions: %v", err)
 	}
-	if len(sessions) != 0 {
-		t.Fatalf("expected no persisted sessions, got %d", len(sessions))
+	if len(sessions) != 1 {
+		t.Fatalf("expected one persisted session, got %d", len(sessions))
 	}
 }
 
@@ -57,7 +54,7 @@ func TestStartCampaignAllowsGuidedWithoutLLMConfig(t *testing.T) {
 
 	sessionStore, traceStore, artifactStore := createStores(t, dataDir)
 
-	if err := startCampaign(campaignPath, sessionStore, traceStore, artifactStore); err != nil {
+	if err := startCampaign(campaignPath, "", "mock", context.Background(), sessionStore, traceStore, artifactStore, make(chan string, 1), nil); err != nil {
 		t.Fatalf("startCampaign failed: %v", err)
 	}
 
@@ -70,7 +67,7 @@ func TestStartCampaignAllowsGuidedWithoutLLMConfig(t *testing.T) {
 	}
 }
 
-func TestCreateLLMClientForCampaignRequiresModelForAutonomous(t *testing.T) {
+func TestCreateLLMClientForCampaignUsesDefaultModel(t *testing.T) {
 	t.Setenv("LLM_API_KEY", "test-key")
 	t.Setenv("LLM_MODEL", "")
 
@@ -83,18 +80,22 @@ func TestCreateLLMClientForCampaignRequiresModelForAutonomous(t *testing.T) {
 		t.Fatalf("parseCampaign failed: %v", err)
 	}
 
-	_, err = createLLMClientForCampaign(camp)
-	if err == nil {
-		t.Fatal("expected missing model error")
+	client, err := createLLMClientForCampaign(camp)
+	if err != nil {
+		t.Fatalf("expected default model to be used, got error: %v", err)
 	}
-	if !strings.Contains(err.Error(), "LLM_MODEL environment variable is required") {
-		t.Fatalf("unexpected error: %v", err)
+	if client == nil {
+		t.Fatal("expected non-nil client with default model")
 	}
 }
 
 func parseCampaign(path string) (*sharedtypes.Campaign, error) {
 	parser := campaignparser.NewCampaignParser()
-	return parser.ParseFile(path)
+	parsed, err := parser.ParseFile(path)
+	if err != nil {
+		return nil, err
+	}
+	return parsed.Campaign, nil
 }
 
 func makeTestDir(t *testing.T) string {
@@ -154,5 +155,149 @@ flows:
 
 	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 		t.Fatalf("writing campaign: %v", err)
+	}
+}
+
+func writeMultiFlowCampaign(t *testing.T, path string) {
+	t.Helper()
+
+	content := `name: Test Campaign
+version: "1.0"
+config:
+  timeout: 300s
+  retry_limit: 0
+  parallel_limit: 1
+flows:
+  - id: flow-pass
+    name: Pass Flow
+    goal: Pass
+    mode: guided
+    priority: high
+    depends_on: []
+    steps:
+      - id: step-1
+        tool: echo
+        params:
+          value: ok
+  - id: flow-fail
+    name: Fail Flow
+    goal: Fail
+    mode: guided
+    priority: high
+    depends_on: []
+    steps:
+      - id: step-1
+        tool: nonexistent_tool
+        params:
+          value: fail
+`
+
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatalf("writing campaign: %v", err)
+	}
+}
+
+func TestRunCampaignWithContext_SetsFailedStatusOnFlowFailure(t *testing.T) {
+	t.Setenv("LLM_API_KEY", "")
+	t.Setenv("LLM_MODEL", "")
+
+	dataDir := makeTestDir(t)
+	campaignPath := filepath.Join(dataDir, "campaign.yaml")
+	writeMultiFlowCampaign(t, campaignPath)
+
+	sessionStore, traceStore, artifactStore := createStores(t, dataDir)
+
+	if err := startCampaign(campaignPath, "", "mock", context.Background(), sessionStore, traceStore, artifactStore, make(chan string, 1), nil); err != nil {
+		t.Fatalf("startCampaign failed: %v", err)
+	}
+
+	var sess *sharedtypes.Session
+	for i := 0; i < 50; i++ {
+		time.Sleep(100 * time.Millisecond)
+		sessions, err := sessionStore.List()
+		if err != nil {
+			t.Fatalf("listing sessions: %v", err)
+		}
+		if len(sessions) == 0 {
+			continue
+		}
+		sess = sessions[0]
+		if sess.Status != sharedtypes.RunStatePending && sess.Status != sharedtypes.RunStateRunning {
+			break
+		}
+	}
+
+	if sess == nil {
+		t.Fatal("expected session to be created")
+	}
+	if sess.Status != sharedtypes.RunStateFailed {
+		t.Fatalf("expected run status FAILED, got %s", sess.Status)
+	}
+
+	hasFailed := false
+	hasPassed := false
+	for _, f := range sess.Flows {
+		if f.Status == sharedtypes.FlowStateFailed {
+			hasFailed = true
+		}
+		if f.Status == sharedtypes.FlowStatePassed {
+			hasPassed = true
+		}
+	}
+	if !hasFailed {
+		t.Fatal("expected at least one flow to be FAILED")
+	}
+	if !hasPassed {
+		t.Fatal("expected at least one flow to be PASSED")
+	}
+}
+
+func TestRunCampaignWithContext_SetsCompletedStatusOnAllPass(t *testing.T) {
+	t.Setenv("LLM_API_KEY", "")
+	t.Setenv("LLM_MODEL", "")
+
+	dataDir := makeTestDir(t)
+	campaignPath := filepath.Join(dataDir, "campaign.yaml")
+	writeCampaign(t, campaignPath, "guided", `
+    steps:
+      - id: step-1
+        tool: echo
+        params:
+          value: ok
+`)
+
+	sessionStore, traceStore, artifactStore := createStores(t, dataDir)
+
+	if err := startCampaign(campaignPath, "", "mock", context.Background(), sessionStore, traceStore, artifactStore, make(chan string, 1), nil); err != nil {
+		t.Fatalf("startCampaign failed: %v", err)
+	}
+
+	var sess *sharedtypes.Session
+	for i := 0; i < 50; i++ {
+		time.Sleep(100 * time.Millisecond)
+		sessions, err := sessionStore.List()
+		if err != nil {
+			t.Fatalf("listing sessions: %v", err)
+		}
+		if len(sessions) == 0 {
+			continue
+		}
+		sess = sessions[0]
+		if sess.Status != sharedtypes.RunStatePending && sess.Status != sharedtypes.RunStateRunning {
+			break
+		}
+	}
+
+	if sess == nil {
+		t.Fatal("expected session to be created")
+	}
+	if sess.Status != sharedtypes.RunStateCompleted {
+		t.Fatalf("expected run status COMPLETED, got %s", sess.Status)
+	}
+
+	for _, f := range sess.Flows {
+		if f.Status != sharedtypes.FlowStatePassed {
+			t.Fatalf("expected flow %s to be PASSED, got %s", f.FlowID, f.Status)
+		}
 	}
 }

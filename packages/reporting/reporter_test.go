@@ -203,18 +203,6 @@ func TestReportGenerator_SaveMarkdownReport(t *testing.T) {
 	}
 }
 
-func TestGetReportPath(t *testing.T) {
-	path := GetReportPath("run_123", "output")
-	if !contains(path, "output") || !contains(path, "report_run_123.md") {
-		t.Errorf("expected path containing output/report_run_123.md, got %s", path)
-	}
-
-	path = GetReportPath("run_456", "")
-	if !contains(path, "reports") || !contains(path, "report_run_456.md") {
-		t.Errorf("expected path containing reports/report_run_456.md, got %s", path)
-	}
-}
-
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr || len(s) > 0 && containsAt(s, substr))
 }

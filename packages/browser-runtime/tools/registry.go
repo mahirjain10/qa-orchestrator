@@ -1,20 +1,85 @@
 package tools
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"sync"
 
 	"qa-orchestrator/packages/browser-runtime"
 )
 
+const observeUIJS = `(() => {
+	const candidates = document.querySelectorAll('input, button, textarea, select, a, [role="button"], [role="textbox"]');
+	const elements = [];
+	const maxElements = 50;
+	const priorityOrder = { 'INPUT': 0, 'BUTTON': 1, 'TEXTAREA': 2, 'SELECT': 3, 'A': 4 };
+	const collected = [];
+	for (const el of candidates) {
+		const rect = el.getBoundingClientRect();
+		if (rect.width === 0 || rect.height === 0) continue;
+		const style = window.getComputedStyle(el);
+		if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') continue;
+		collected.push(el);
+	}
+	collected.sort((a, b) => (priorityOrder[a.tagName] || 99) - (priorityOrder[b.tagName] || 99));
+	for (let i = 0; i < Math.min(collected.length, maxElements); i++) {
+		const el = collected[i];
+		const tag = el.tagName.toLowerCase();
+		let selector = '';
+		if (el.id) {
+			selector = '#' + el.id;
+		} else if (el.getAttribute('name')) {
+			selector = tag + '[name="' + el.getAttribute('name') + '"]';
+		} else if (el.textContent && el.textContent.trim()) {
+			const text = el.textContent.trim().substring(0, 50).replace(/"/g, '\\"');
+			selector = tag + ':has-text("' + text + '")';
+		} else {
+			let idx = 1;
+			let sib = el.previousElementSibling;
+			while (sib) { if (sib.tagName === el.tagName) idx++; sib = sib.previousElementSibling; }
+			selector = tag + ':nth-of-type(' + idx + ')';
+		}
+		elements.push({
+			tag: tag,
+			text: (el.textContent || '').trim().substring(0, 100),
+			id: el.id || '',
+			name: el.getAttribute('name') || '',
+			placeholder: el.placeholder || '',
+			selector: selector
+		});
+	}
+	return JSON.stringify({
+		page_state: elements.length > 0 ? 'loaded' : 'empty',
+		interactive: elements
+	});
+})()`
+
+const selectorExistsJS = `((selector) => {
+	try {
+		const el = document.querySelector(selector);
+		if (!el) return JSON.stringify({exists: false});
+		const rect = el.getBoundingClientRect();
+		return JSON.stringify({exists: true, visible: rect.width > 0 && rect.height > 0});
+	} catch(e) {
+		return JSON.stringify({exists: false, error: e.message});
+	}
+})`
+
 type Tool func(params map[string]any) (any, error)
 
+// ParameterInfo describes a single parameter for a tool.
+// NOTE: Duplicated in packages/llm/prompts.go.
+// TODO: Consolidate into packages/shared/types/ in a future refactor.
 type ParameterInfo struct {
 	Type        string `json:"type"`
 	Description string `json:"description"`
 	Required    bool   `json:"required"`
 }
 
+// ToolInfo describes a tool for LLM consumption.
+// NOTE: Duplicated in packages/llm/prompts.go.
+// TODO: Consolidate into packages/shared/types/ in a future refactor.
 type ToolInfo struct {
 	Name        string                   `json:"name"`
 	Description string                   `json:"description"`
@@ -22,21 +87,74 @@ type ToolInfo struct {
 }
 
 type ToolRegistry struct {
-	mu    sync.RWMutex
-	tools map[string]Tool
-	meta  map[string]ToolInfo
+	mu       sync.RWMutex
+	tools    map[string]Tool
+	meta     map[string]ToolInfo
+	ctx      context.Context
+	cancelFn context.CancelFunc
 }
 
-func NewToolRegistry(runtime *browserruntime.BrowserRuntime) *ToolRegistry {
+func NewToolRegistry(runtime browserruntime.BrowserRuntimeInterface) *ToolRegistry {
+	return NewToolRegistryWithContext(runtime, context.Background())
+}
+
+func NewToolRegistryWithContext(runtime browserruntime.BrowserRuntimeInterface, ctx context.Context) *ToolRegistry {
+	ctx, cancel := context.WithCancel(ctx)
 	registry := &ToolRegistry{
-		tools: make(map[string]Tool),
-		meta:  make(map[string]ToolInfo),
+		tools:    make(map[string]Tool),
+		meta:     make(map[string]ToolInfo),
+		ctx:      ctx,
+		cancelFn: cancel,
 	}
 	registry.registerDefaultTools(runtime)
 	return registry
 }
 
-func (r *ToolRegistry) registerDefaultTools(runtime *browserruntime.BrowserRuntime) {
+func (r *ToolRegistry) Cancel() {
+	if r.cancelFn != nil {
+		r.cancelFn()
+	}
+}
+
+func (r *ToolRegistry) checkSelectorExists(runtime browserruntime.BrowserRuntimeInterface, selector string) error {
+	selectorJSON, _ := json.Marshal(selector)
+	js := selectorExistsJS + `(` + string(selectorJSON) + `)`
+	result, err := runtime.Evaluate(js)
+	if err != nil {
+		return nil
+	}
+	str, ok := result.(string)
+	if !ok {
+		return nil
+	}
+	var check struct {
+		Exists  bool   `json:"exists"`
+		Visible bool   `json:"visible"`
+		Error   string `json:"error"`
+	}
+	if err := json.Unmarshal([]byte(str), &check); err != nil {
+		return nil
+	}
+	if !check.Exists {
+		return fmt.Errorf("selector '%s' not found on page — selector does not exist in current DOM", selector)
+	}
+	return nil
+}
+
+func (r *ToolRegistry) registerDefaultTools(runtime browserruntime.BrowserRuntimeInterface) {
+	r.registerNavigate(runtime)
+	r.registerClick(runtime)
+	r.registerTypeText(runtime)
+	r.registerWaitFor(runtime)
+	r.registerGetText(runtime)
+	r.registerGetHTML(runtime)
+	r.registerEvaluate(runtime)
+	r.registerScreenshot(runtime)
+	r.registerFinish(runtime)
+	r.registerObserveUI(runtime)
+}
+
+func (r *ToolRegistry) registerNavigate(runtime browserruntime.BrowserRuntimeInterface) {
 	r.Register("navigate", map[string]ParameterInfo{
 		"url": {Type: "string", Description: "The URL to navigate to", Required: true},
 	}, func(params map[string]any) (any, error) {
@@ -44,12 +162,14 @@ func (r *ToolRegistry) registerDefaultTools(runtime *browserruntime.BrowserRunti
 		if !ok {
 			return nil, fmt.Errorf("url parameter required")
 		}
-		if err := runtime.Navigate(url); err != nil {
+		if err := runtime.Navigate(r.ctx, url); err != nil {
 			return nil, fmt.Errorf("navigate failed: %w", err)
 		}
 		return fmt.Sprintf("navigated to %s", url), nil
 	})
+}
 
+func (r *ToolRegistry) registerClick(runtime browserruntime.BrowserRuntimeInterface) {
 	r.Register("click", map[string]ParameterInfo{
 		"selector": {Type: "string", Description: "CSS selector for the element to click", Required: true},
 	}, func(params map[string]any) (any, error) {
@@ -57,12 +177,17 @@ func (r *ToolRegistry) registerDefaultTools(runtime *browserruntime.BrowserRunti
 		if !ok {
 			return nil, fmt.Errorf("selector parameter required")
 		}
+		if err := r.checkSelectorExists(runtime, selector); err != nil {
+			return nil, err
+		}
 		if err := runtime.Click(selector); err != nil {
 			return nil, fmt.Errorf("click failed: %w", err)
 		}
 		return fmt.Sprintf("clicked %s", selector), nil
 	})
+}
 
+func (r *ToolRegistry) registerTypeText(runtime browserruntime.BrowserRuntimeInterface) {
 	r.Register("type_text", map[string]ParameterInfo{
 		"selector": {Type: "string", Description: "CSS selector for the input field", Required: true},
 		"value":    {Type: "string", Description: "Text to type into the field", Required: true},
@@ -75,12 +200,17 @@ func (r *ToolRegistry) registerDefaultTools(runtime *browserruntime.BrowserRunti
 		if !ok {
 			return nil, fmt.Errorf("value parameter required")
 		}
+		if err := r.checkSelectorExists(runtime, selector); err != nil {
+			return nil, err
+		}
 		if err := runtime.Fill(selector, value); err != nil {
 			return nil, fmt.Errorf("type_text failed: %w", err)
 		}
 		return fmt.Sprintf("typed '%s' into %s", value, selector), nil
 	})
+}
 
+func (r *ToolRegistry) registerWaitFor(runtime browserruntime.BrowserRuntimeInterface) {
 	r.Register("wait_for", map[string]ParameterInfo{
 		"selector": {Type: "string", Description: "CSS selector for the element to wait for", Required: true},
 		"state":    {Type: "string", Description: "Wait state: visible, hidden, attached (default: visible)", Required: false},
@@ -93,13 +223,18 @@ func (r *ToolRegistry) registerDefaultTools(runtime *browserruntime.BrowserRunti
 		if s, ok := params["state"].(string); ok {
 			state = s
 		}
+		if err := r.checkSelectorExists(runtime, selector); err != nil {
+			return nil, err
+		}
 		err := runtime.WaitForSelector(selector, &browserruntime.WaitForOptions{State: state})
 		if err != nil {
 			return nil, fmt.Errorf("wait_for failed: %w", err)
 		}
 		return fmt.Sprintf("waited for %s (%s)", selector, state), nil
 	})
+}
 
+func (r *ToolRegistry) registerGetText(runtime browserruntime.BrowserRuntimeInterface) {
 	r.Register("get_text", map[string]ParameterInfo{
 		"selector": {Type: "string", Description: "CSS selector for the element", Required: true},
 	}, func(params map[string]any) (any, error) {
@@ -113,7 +248,9 @@ func (r *ToolRegistry) registerDefaultTools(runtime *browserruntime.BrowserRunti
 		}
 		return text, nil
 	})
+}
 
+func (r *ToolRegistry) registerGetHTML(runtime browserruntime.BrowserRuntimeInterface) {
 	r.Register("get_html", map[string]ParameterInfo{
 		"selector": {Type: "string", Description: "CSS selector for the element", Required: true},
 	}, func(params map[string]any) (any, error) {
@@ -127,7 +264,9 @@ func (r *ToolRegistry) registerDefaultTools(runtime *browserruntime.BrowserRunti
 		}
 		return html, nil
 	})
+}
 
+func (r *ToolRegistry) registerEvaluate(runtime browserruntime.BrowserRuntimeInterface) {
 	r.Register("evaluate", map[string]ParameterInfo{
 		"expression": {Type: "string", Description: "JavaScript expression to evaluate", Required: true},
 	}, func(params map[string]any) (any, error) {
@@ -141,7 +280,9 @@ func (r *ToolRegistry) registerDefaultTools(runtime *browserruntime.BrowserRunti
 		}
 		return result, nil
 	})
+}
 
+func (r *ToolRegistry) registerScreenshot(runtime browserruntime.BrowserRuntimeInterface) {
 	r.Register("screenshot", map[string]ParameterInfo{
 		"path":      {Type: "string", Description: "File path to save the screenshot", Required: false},
 		"full_page": {Type: "bool", Description: "Capture full page if true", Required: false},
@@ -163,9 +304,35 @@ func (r *ToolRegistry) registerDefaultTools(runtime *browserruntime.BrowserRunti
 		}
 		return fmt.Sprintf("screenshot captured (%d bytes)", len(screenshot)), nil
 	})
+}
 
-	r.Register("finish", map[string]ParameterInfo{}, func(params map[string]any) (any, error) {
+func (r *ToolRegistry) registerFinish(runtime browserruntime.BrowserRuntimeInterface) {
+	r.Register("finish", map[string]ParameterInfo{
+		"status": {Type: "string", Description: "Set to 'success' if goal is achieved, or 'fail' if the goal is unachievable (e.g. elements not found).", Required: false},
+	}, func(params map[string]any) (any, error) {
+		status, ok := params["status"].(string)
+		if ok && status == "fail" {
+			return nil, fmt.Errorf("goal unachievable: execution complete")
+		}
 		return "goal achieved, execution complete", nil
+	})
+}
+
+func (r *ToolRegistry) registerObserveUI(runtime browserruntime.BrowserRuntimeInterface) {
+	r.Register("observe_ui", map[string]ParameterInfo{}, func(params map[string]any) (any, error) {
+		result, err := runtime.Evaluate(observeUIJS)
+		if err != nil {
+			return nil, fmt.Errorf("observe_ui failed: %w", err)
+		}
+		str, ok := result.(string)
+		if !ok {
+			return nil, fmt.Errorf("observe_ui: expected string result, got %T", result)
+		}
+		var parsed map[string]any
+		if err := json.Unmarshal([]byte(str), &parsed); err != nil {
+			return nil, fmt.Errorf("observe_ui: failed to parse result: %w", err)
+		}
+		return parsed, nil
 	})
 }
 
@@ -191,7 +358,8 @@ func getToolDescription(name string) string {
 		"get_html":   "Get the inner HTML of an element",
 		"evaluate":   "Evaluate a JavaScript expression in the browser context",
 		"screenshot": "Take a screenshot of the page",
-		"finish":     "Signal that the goal has been achieved and no more steps are needed",
+		"finish":     "Signal that the goal has been achieved (or is unachievable) and no more steps are needed",
+		"observe_ui": "Inspect the current page and return a list of visible interactive elements with their selectors",
 	}
 	if desc, ok := descriptions[name]; ok {
 		return desc

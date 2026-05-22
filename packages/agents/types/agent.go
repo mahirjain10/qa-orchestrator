@@ -3,6 +3,7 @@ package types
 import (
 	"encoding/json"
 	"fmt"
+	"sync"
 
 	"qa-orchestrator/packages/shared/types"
 )
@@ -41,6 +42,7 @@ type StepResult struct {
 }
 
 type Plan struct {
+	mu           sync.RWMutex
 	FlowID       string
 	Steps        []PlanStep
 	CurrentIdx   int
@@ -52,6 +54,8 @@ type Plan struct {
 }
 
 func (p *Plan) AddStep(step PlanStep) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	step.StepIndex = len(p.Steps)
 	if len(step.Params) > 0 {
 		if b, err := json.Marshal(step.Params); err == nil {
@@ -63,10 +67,14 @@ func (p *Plan) AddStep(step PlanStep) {
 }
 
 func (p *Plan) InvalidateHistoryCache() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	p.historyDirty = true
 }
 
 func (p *Plan) GetHistory() string {
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	if p.CurrentIdx == 0 {
 		return "No steps executed yet."
 	}
@@ -122,7 +130,7 @@ type RecoveryAction string
 
 const (
 	RecoveryActionRetry    RecoveryAction = "retry"
-	RecoveryActionReplan   RecoveryAction = "replan"
+	RecoveryActionReplan   RecoveryAction = "replan" // semantically retry-with-observation, not a true replan
 	RecoveryActionSkip     RecoveryAction = "skip"
 	RecoveryActionEscalate RecoveryAction = "escalate"
 	RecoveryActionSucceed  RecoveryAction = "succeed"
@@ -136,11 +144,17 @@ type RecoveryDecision struct {
 }
 
 type ExecutionContext struct {
-	RunID        string
-	FlowID       string
-	Goal         string
-	Mode         types.FlowMode
-	Steps        []types.Step
-	Plan         *Plan
-	Observations []Observation
+	RunID                   string
+	FlowID                  string
+	Goal                    string
+	StartURL                string
+	CurrentURL              string
+	Mode                    types.FlowMode
+	Steps                   []types.Step
+	Plan                    *Plan
+	Observations            []Observation
+	SteeringInstructions    []string
+	DependencyContext       string
+	LastStepSignature       string
+	ConsecutiveObserveCount int
 }

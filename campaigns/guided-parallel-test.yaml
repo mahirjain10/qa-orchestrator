@@ -1,0 +1,78 @@
+name: Guided Parallel Test
+description: Tests parallel execution with 6 guided flows - 4 independent + 2 dependent
+version: "1.0"
+config:
+  timeout: 300s
+  retry_limit: 0
+  parallel_limit: 3
+
+flows:
+  - id: flow-a
+    goal: Echo step A
+    mode: guided
+    priority: high
+    depends_on: []
+    steps:
+      - id: step-1
+        tool: echo
+        params:
+          value: "flow-a executing"
+
+  - id: flow-b
+    goal: Echo step B
+    mode: guided
+    priority: high
+    depends_on: []
+    steps:
+      - id: step-1
+        tool: echo
+        params:
+          value: "flow-b executing"
+
+  - id: flow-c
+    goal: Echo step C
+    mode: guided
+    priority: high
+    depends_on: []
+    steps:
+      - id: step-1
+        tool: echo
+        params:
+          value: "flow-c executing"
+
+  - id: flow-d
+    goal: Echo step D
+    mode: guided
+    priority: medium
+    depends_on: []
+    steps:
+      - id: step-1
+        tool: echo
+        params:
+          value: "flow-d executing"
+
+  - id: flow-e
+    goal: Depends on A and B
+    mode: guided
+    priority: high
+    depends_on:
+      - flow-a
+      - flow-b
+    steps:
+      - id: step-1
+        tool: echo
+        params:
+          value: "flow-e executing (after A+B)"
+
+  - id: flow-f
+    goal: Depends on C and D
+    mode: guided
+    priority: medium
+    depends_on:
+      - flow-c
+      - flow-d
+    steps:
+      - id: step-1
+        tool: echo
+        params:
+          value: "flow-f executing (after C+D)"

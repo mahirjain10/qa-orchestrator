@@ -27,6 +27,25 @@
 | V3 TUI | Runs 031-039 | New additions (slot layout, pane management) | ✅ Complete |
 | V4 TUI | Runs 040+ | TUI revamp (sidebar+main, async, viewport) | 🔄 In Progress |
 
+## Audit Fix Phases (End-to-End Consistency)
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| 1 | Runtime Bugs + YAML + Parser + Dead Code + Cleanup (27 issues) | ✅ COMPLETE |
+| 2 | Architecture/Docs + State Machine + Hardcoded Values (16 issues) | ✅ COMPLETE |
+
+**Audit Fix Phase 2 Completed (Run 064):**
+- Group E: Aligned architecture.md with actual tools (renamed, added, removed). Added missing flow states. Added TODO comments for duplicated structs. Documented SimpleClient adapter pattern.
+- Group F: Fixed CanResume() to allow PAUSING. Added double-pause test. Fixed silently swallowed errors in artifact store, trace store, reporter. Added context checks to BrowserRuntime.Start() and Navigate().
+- Group H: Extracted 5 hardcoded values into constants/config: MaxAutonomousSteps, retryBackoffBaseMs, resumePollInitialDelay/MaxDelay, defaultRefreshInterval, messageDisplayTimeout.
+
+**Audit Fix Phase 1 Completed (Run 063):**
+- Group A: Fixed data corruption in `UpdateFlowState`, added mutex to `Plan`, distinguished skip types, exponential backoff for resume, captured cancelCh reference.
+- Group B: Renamed sample-guided.yaml, added mode/priority fields, fixed malformed YAML, deleted empty file.
+- Group C: Added config validation, flow config validation, step ID uniqueness, step tool validation. 10 new tests.
+- Group D: Removed 10 groups of dead code (30+ functions/methods) across 8 packages.
+- Group G: Created 21 placeholder logs, deleted cmd.exe artifacts, removed empty page/ directory.
+
 ## V4 Phases (TUI Revamp — Current)
 
 | Phase | Description | Status |
@@ -41,10 +60,10 @@
 | 8 | Flows View with Detail Panel | ✅ COMPLETE |
 | 9 | Trace Filtering | ✅ COMPLETE |
 | 10 | Status Bar + Contextual Help | ✅ COMPLETE |
-| 11 | Campaign Selection Modal | ⏳ Pending |
-| 12 | Responsive Behavior | ⏳ Pending |
-| 13 | Goroutine Shutdown + Clean Exit | ⏳ Pending |
-| 14 | Visual Polish + Final Cleanup | ⏳ Pending |
+| 11 | Campaign Selection Modal | ✅ COMPLETE |
+| 12 | Responsive Behavior | ✅ COMPLETE |
+| 13 | Goroutine Shutdown + Clean Exit | ✅ COMPLETE |
+| 14 | Visual Polish + Final Cleanup | ✅ COMPLETE |
 
 **V4 Phase 1 Completed:**
 - Run 040: Created unified design system in `style/theme.go`. Eliminated 136 lines of duplicate style definitions across 5 component files. All colors and Lip Gloss styles now come from single source of truth. Tests pass, binary builds successfully.
@@ -74,14 +93,146 @@
 **V4 Phase 10 Completed:**
 - Run 051: Replaced static footer with contextual status bar. Enhanced `renderStatusBar()` with run status badge + truncated ID on left, contextual keys on right, message line above bar. Added `contextualKeys()` returning view-specific key hints. Hides on terminals < 20 rows. Uses `style.BgDark`, `style.Dim`, `style.Msg`. Added 12 new tests. All packages pass, build clean, vet clean.
 
+**V4 Phase 11 Completed:**
+- Run 053: Implemented Campaign Selection Modal. Refactored `renderCampaignSelector()` to use `util.SafeWidth()` for modal width, removed centering logic from selector. Moved centering to `renderDashboardView()` using `m.contentWidth()` for proper content-area centering. Added 10 new tests covering title, empty state, campaign list, selected indicator, width constraints, centering, navigation hints, and modal border. All packages pass, build clean, vet clean.
+
+**V4 Phase 12 Completed:**
+- Run 054: Implemented Responsive Behavior. Added hard minimum terminal size checks with styled error messages (`style.StatusFailed`). Added `sidebarWidth()` helper (24/20/16 based on terminal width). Refactored `contentWidth()` to use adaptive sidebar width. Added `contentHeight()` helper (reduced by 2 rows on short terminals). Updated `View()` and `renderTracesView()` to use adaptive helpers. Added 19 new tests covering narrow/short terminals, zero size, adaptive widths, boundary conditions, and error messages. Updated 2 existing tests. All packages pass, build clean, vet clean.
+
+**V4 Phase 13 Completed:**
+- Run 055: Implemented Goroutine Shutdown + Clean Exit. Added `cancelFunc context.CancelFunc` field to MainScreen. Added `SetCancelFunc()` method. Updated 'x' key handler to call cancelFunc after CancelRun. Updated `cmd/main.go` to use `context.WithCancel`, pass cancelFunc to mainScreen, and cleanup on TUI exit. Renamed `runCampaign` to `runCampaignWithContext` with `select` on `ctx.Done()`. Updates session status to `Cancelled` on cancellation. Added 5 new tests. All packages pass, build clean, vet clean.
+
+**V4 Phase 14 Completed:**
+- Run 056: Visual Polish + Final Cleanup audit. Verified no inline color values outside `style/theme.go`. Confirmed all dead code removed (state package, quadrant fields, old footer). Verified consistent padding/borders across all panels. Vet clean, no unused imports, no formatting issues. All 22 packages pass, 170 tests in screens package. V4 TUI Revamp COMPLETE.
+
 ### Test Coverage
-- `go test ./...` — passing (152 tests in screens package, 47 in util, 12 in style)
+- `go test ./...` — passing (170 tests in screens package, 47 in util, 12 in style)
 
 ## Bug Fixes
-- Run 038: Fixed tool registry mismatch — `getDefaultLLMTools()` listed `get_html` and `evaluate` which `MockToolRegistry` didn't have, causing "unknown tool" → "configuration error" failures in autonomous mode.
-- Run 039: Fixed autonomous planner infinite loop — LLM generated 20 redundant verification steps because `finish` tool was never exposed in its prompt. Engine already handled `finish` at line 338 but LLM didn't know it existed.
+- Run 072: Fixed autonomous planner selector hallucination — 4-layer defense implemented: (1) Code-level enforce_observe_ui after every navigate() and before every retry, injected as real steps in plan history. (2) Recovery agent now distinguishes Playwright selector timeouts (→ Replan) from generic/network timeouts (→ Retry). (3) Pre-execution selector existence check via fast JS querySelector() — turns 30s timeouts into sub-second failures for nonexistent selectors. (4) User prompt reformatted with observation data at bottom under aggressive "USE ONLY THESE SELECTORS" header. Added observation_context trace event before each planner call to verify observation reaches LLM. 5 files modified, 2 new tests. 22 packages pass, build clean.
+- Run 071: Fixed 5 bugs from code review: critical type mismatch in formatObserveUIObservation (map[string]any vs string), test-production gap in mock return type, autoObserve called for guided flows (unnecessary overhead), observe_ui error silently swallowed, unbounded observation growth (capped at 10).
+
+## V3 Phases (Steering + TUI State Sync)
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| 1 | TUI State Sync Fixes (4 bugs) | ✅ COMPLETE |
+| 2 | Steering Instructions for Autonomous Flows | ✅ COMPLETE |
+
+**V3 Phase 1 Completed:**
+- **1.1** — New sessions auto-select via `runCreatedMsg` + channel bridge from `startCampaign` goroutine to TUI. Fixed bug where TUI showed old session state after starting new campaign.
+- **1.2** — Steering commands (`retry`, `skip`, `pause`, `resume`, `approve`, `continue`) now return `fetchRunCmd` for instant display refresh instead of waiting for 2s ticker.
+- **1.3** — Spacebar pause/resume returns refresh Cmd.
+- **1.4** — Cancel key (`x`) returns refresh Cmd.
+
+**V3 Phase 2 Completed:**
+- **2.1-2.2** — Added `SteerInstruction` type + `Instruction` field to `SteeringEvent` (`packages/shared/types/steering.go`).
+- **2.3** — Added `SteeringInstructions []string` to `ExecutionContext` (`packages/agents/types/agent.go`).
+- **2.4** — TUI `steer <text>` command submits to lifecycle controller (`apps/tui/internal/screens/main.go`).
+- **2.5** — Lifecycle controller wired through `cmd/main.go` → engine → TUI.
+- **2.6** — Autonomous loop drains steering events between steps, caps at 5 most recent (`packages/agents/engine/engine.go`).
+- **2.7** — Steering instructions appended to LLM user prompt with `IMPORTANT` label (`packages/agents/planner/planner.go`).
+- **2.8** — `steer` added to command bar auto-discovery + help overlay.
+
+## Autonomous URL Context Fixes (Run 073)
+
+**Goal:** Fix 5 systematic failures in autonomous flow execution caused by missing URL context and failure invisibility to the LLM.
+
+**Approach:** ChatGPT-recommended `start_url` architecture — deterministic config field separate from natural-language goal.
+
+### Changes (6 phases, build+test after each)
+
+| Phase | What | Files |
+|-------|------|-------|
+| 1 | Schema + Types — `StartURL` on Flow + ExecutionContext, `CurrentURL` tracked after navigate | `campaign.go`, `agent.go`, `engine.go` |
+| 2 | Prompt Injection — URL context + failure context (`⚠ RECENT FAILURE`) in LLM user prompt | `prompts.go`, `planner.go` |
+| 3 | YAML Updates — `start_url` added to 3 campaigns (6 autonomous flows) | `large-parallel.yaml`, `mixed-mode-campaign.yaml`, `sample-autonomous.yaml` |
+| 4 | Safety-Nets — repeat detection + observe_ui loop detection with steering instruction injection | `engine.go`, `agent.go` |
+| 5 | Campaign Test Runner — parse+validate all 10 campaigns, validate start_url format | `campaign_integration_test.go` |
+| 6 | Documentation — run log, summary, CURRENT.md | `run-073.jsonl`, `run-073.md` |
+
+**Test Results:** `go test ./...` — all test suites PASS. All 10 campaign YAMLs parse and validate.
+
+### Code Review (Run 073)
+
+Adversarial code review of all changed files found and fixed 4 bugs:
+
+| Severity | Bug | Fix |
+|----------|-----|-----|
+| 🟡 Logic | Redundant failure context in LLM prompt (duplicate error text) | Removed `lastObs.Error` append from observation — only `scanForRecentFailure` prepend remains |
+| 🟡 Logic | Double `Advance(plan)` + `stepCount++` for injected observe steps | Removed Advance from `injectObserveStep` caller — main loop handles it |
+| 🟡 Logic | Empty tool name (`tool=`) in failure message when `LastStep` is nil | Changed to `tool=?` |
+| 🤦 Stupid | Missing `fmt` import in planner test file | Added `"fmt"` to imports |
+
+**12 new tests added:**
+- 7 `TestScanForRecentFailure_*` — nil observations, success-only, error with tool, error with nil LastStep, step failure, step failure no error, finds most recent, multiple failures
+- 5 `TestStepSignature_*` — deterministic, order-independent, empty params, nil step, different tools
+
+## Autonomous Engine Hardening (Run 074)
+
+**Goal:** Fix two bugs from real browser run — `max_steps_reached` not setting `OutcomeFail`, and repeat detection lacking hard-break.
+
+### Bugs Fixed
+
+| Bug | Root Cause | Fix |
+|-----|-----------|-----|
+| max_steps_reached → PASSED | Line 561 only emitted trace, never set `result.Outcome` or `result.Errors`. Default `OutcomePass` was never overridden. | Set `OutcomeFail` + error string in the `stepCount >= maxSteps` block |
+| Repeat detection ∞ | Always `continue`d with steering — no counter, no threshold, no hard-break. LLM regenerated same step 18+ times. | Added `consecutiveRepeats` counter. Hard-break (`OutcomeFail` + `goto done`) at 3 repeats |
+
+### Changes (8 lines in `engine.go`, 2 new tests in `engine_test.go`)
+- `consecutiveRepeats` counter declared and reset on non-repeat steps
+- Hard-break block: `if consecutiveRepeats >= 3 { OutcomeFail; goto done }`
+- `max_steps_reached` block: now sets `OutcomeFail` + `"max autonomous steps reached without finishing"`
+- 2 new tests verify both failure modes produce `OutcomeFail` with distinct errors
+- `go test ./...` — all test suites PASS, build clean
 
 ## Last Run
+- Run 076: 2026-05-22 (Agent: opencode)
+  - Status: DRY Refactoring COMPLETE — Extracted duplicated pause/cancel/steering/done blocks in engine.go into 3 shared methods (~120 lines removed). Added ensurePage()/getTimeout() helpers in runtime.go (10× duplicate inline checks removed). Decomposed registerDefaultTools (168 lines) into 10 focused tool registration methods. All 22 packages pass, build clean, vet clean.
+- Run 075: 2026-05-22 (Agent: opencode)
+  - Status: Deep Code Review Fixes COMPLETE — Fixed 7 issues across 3 phases: (A) JS injection via unescaped selector in checkSelectorExists — now uses json.Marshal; fragile "cancelled" string check — now uses sentinel prefix constant. (B) Checkpoint now saves/restores CurrentURL, LastStepSignature, ConsecutiveObserveCount on resume. (C) Guided flow steering drain added; finish(fail) includes planStep.Reason; RecoveryActionReplan documented. 10 new tests (7 injection, 3 checkpoint). All 22 packages pass, build clean.
+- Run 074: 2026-05-22 (Agent: opencode)
+  - Status: Autonomous Engine Hardening COMPLETE — Fixed two bugs from real browser trace: max_steps_reached now sets OutcomeFail, repeat detection hard-breaks after 3 consecutive repeats. 8 lines changed in engine.go, 2 new tests added. All packages pass, build clean.
+- Run 073: 2026-05-22 (Agent: opencode)
+  - Status: start_url Architecture Implementation + Code Review COMPLETE — 6 phases executed: Schema/Types, Prompt Injection, YAML Updates, Safety-Nets, Campaign Test Runner, Documentation. Code review found and fixed 4 bugs. 12 new tests added. All 22 packages pass, build clean.
+- Run 072: 2026-05-21 (Agent: qwen3.6-plus-free)
+  - Status: Autonomous Planner Selector Hallucination Fix — 4-layer defense implemented: (1) Code-level enforce_observe_ui after navigate() and before retry, injected as real plan steps. (2) Recovery agent distinguishes Playwright selector timeouts (→ Replan) from generic timeouts (→ Retry). (3) Pre-execution selector existence check via fast JS querySelector() — 30s timeouts → sub-second failures. (4) User prompt reformatted with observation at bottom under "USE ONLY THESE SELECTORS" header. Added observation_context trace logging. 5 files modified, 2 new tests. 22 packages pass, build clean.
+- Run 071: 2026-05-21 (Agent: qwen3.6-plus-free)
+  - Status: Code Reviewer Skill — 5 Bug Fixes COMPLETE — Fixed critical type mismatch in formatObserveUIObservation (map[string]any vs string), fixed test-production gap in mock return type, gated autoObserve to autonomous mode only, added trace emission on observe_ui failure, capped observations at 10. 4 files modified, 4 new tests. 22 packages pass, race detector clean, build clean, vet clean.
+- Run 070: 2026-05-21 (Agent: qwen3.6-plus-free)
+  - Status: Observation Ordering Fix + observe_ui Data Formatting COMPLETE — Fixed root cause of selector hallucination: moved autoObserve() to after CreateObservation append so observe_ui is always last observation. Added formatObserveUIObservation() to format interactive element data prominently for LLM. Added trace emission for auto-observation visibility. 2 files modified, 7 new tests. 22 packages pass, race detector clean, build clean, vet clean.
+- Run 068: 2026-05-21 (Agent: qwen3.6-plus-free)
+  - Status: Parallel Flow Execution + LLM Hallucination Fix COMPLETE — Worker pool with semaphore replaced sequential loop, per-flow BrowserContext isolation, dependency context injection into LLM prompts, session store race fix. 8 files modified. 22 packages pass, race detector clean, build clean.
+- Run 067: 2026-05-21 (Agent: qwen3.6-plus-free)
+  - Status: Steering Instructions + TUI State Sync COMPLETE — 4 state sync bugs fixed, full steering instruction pipeline implemented (TUI → lifecycle → engine → LLM prompt). 11 files modified. 24 packages pass, build clean, vet clean.
+- Run 066: 2026-05-21 (Agent: qwen3.6-plus-free)
+  - Status: Code Review + Bug Fixes COMPLETE — 18 bugs fixed across 14 files (5 critical, 5 logic, 8 cleanup/security). Build clean, vet clean, 24 packages pass.
+- Run 065: 2026-05-21 (Agent: qwen3.6-plus-free)
+  - Status: Bug Fixes COMPLETE — 4 bugs fixed (TUI session sync, engine session mutation, goroutine TUI violation), 5 already fixed. Build clean, vet clean, 24 packages pass.
+- Run 064: 2026-05-21 (Agent: qwen3.6-plus-free)
+  - Status: Audit Fix Phase 2 COMPLETE — 16 of 43 issues fixed. 3 agents: architecture/docs (E), state machine (F), hardcoded values (H). Full audit COMPLETE (43/43). Build clean, vet clean, 24 packages pass.
+- Run 063: 2026-05-21 (Agent: qwen3.6-plus-free)
+  - Status: Audit Fix Phase 1 COMPLETE — 27 of 43 issues fixed. 5 parallel agents: runtime bugs (A), campaign YAML (B), parser validation (C), dead code removal (D), cleanup (G). Build clean, vet clean, 24 packages pass.
+- Run 062: 2026-05-20 (Agent: Gemini CLI)
+  - Status: TUI Bug Fixes COMPLETE. Wired `pause`, `resume`, `approve` to steering handlers. Fixed spacebar handling for `WAITING_FOR_INPUT`. Removed dead code (`renderHelpModal`). All tests passing.
+- Run 061: 2026-05-20 (Agent: Gemini CLI)
+  - Status: TUI Incremental Fixes COMPLETE. Replaced legacy input with `CommandBarModel` for command auto-discovery, overhauled polling loop with `time.Ticker` in `cmd/main.go`, updated tests. All packages pass, build clean.
+- Run 060: 2026-05-20 (Agent: qwen3.6-plus-free)
+  - Status: Phase 1 — CLI and Logging Infrastructure COMPLETE. Log redirection to logs/app.log, --resume/-r flag, session resumption logic, permanent command bar replacing steering modal. All 22 packages pass, build clean, vet clean.
+- Run 059: 2026-05-20 (Agent: qwen3.6-plus-free)
+  - Status: V4 Debug Fix Phase 3 COMPLETE — Real-Time Ticker Updates. Fixed startRefreshTicker() to always return tea.Cmd (never nil), self-perpetuating ticker. Added fetch-on-select trigger. 8 new tests. All 22 packages pass, build clean, vet clean. ALL THREE DEBUG FIX PHASES COMPLETE.
+- Run 058: 2026-05-20 (Agent: qwen3.6-plus-free)
+  - Status: V4 Debug Fix Phase 2 COMPLETE — Session Age Distinction. Added formatSessionAge(), current run highlighted with green dot and appears first, previous sessions sorted newest-to-oldest with separator line. 13 new tests. All 22 packages pass, build clean, vet clean.
+- Run 057: 2026-05-20 (Agent: qwen3.6-plus-free)
+  - Status: V4 Debug Fix Phase 1 COMPLETE — Keyboard Interactivity. Added global key pass-through (q/ctrl+c/?), implemented ? help modal overlay with contextual keys per view. 13 new tests. All 22 packages pass, build clean, vet clean.
+- Run 056: 2026-05-20 (Agent: qwen3.6-plus-free)
+  - Status: V4 Phase 14 COMPLETE — Visual Polish + Final Cleanup. Audit passed, no changes needed. All 22 packages pass, 170 tests. V4 TUI Revamp COMPLETE.
+- Run 055: 2026-05-20 (Agent: qwen3.6-plus-free)
+  - Status: V4 Phase 13 COMPLETE — Goroutine Shutdown + Clean Exit. Added context cancellation, updated cmd/main.go. 5 new tests added. All 22 packages pass.
+- Run 054: 2026-05-20 (Agent: qwen3.6-plus-free)
+  - Status: V4 Phase 12 COMPLETE — Responsive Behavior. Added adaptive sidebar width, content height, hard minimum size checks. 19 new tests added. All 22 packages pass.
+- Run 053: 2026-05-20 (Agent: qwen3.6-plus-free)
+  - Status: V4 Phase 11 COMPLETE — Campaign Selection Modal. Refactored selector to use util.SafeWidth, moved centering to dashboard view. 10 new tests added. All 22 packages pass.
 - Run 052: 2026-05-20 (Agent: qwen3.6-plus-free)
   - Status: Code review of Phases 5-10 — 3 bugs found and fixed (nil pointer panic in renderFlowDetail, double-width paused character, content width inconsistency). 3 new tests added. All 22 packages pass.
 - Run 051: 2026-05-20 (Agent: qwen3.6-plus-free)

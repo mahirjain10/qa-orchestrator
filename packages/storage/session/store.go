@@ -60,7 +60,7 @@ func (s *SessionStore) Get(runID string) (*types.Session, error) {
 	s.mu.RUnlock()
 
 	if exists {
-		return session, nil
+		return cloneSession(session)
 	}
 
 	s.mu.Lock()
@@ -68,7 +68,7 @@ func (s *SessionStore) Get(runID string) (*types.Session, error) {
 
 	// Double-check after acquiring write lock
 	if session, exists := s.sessions[runID]; exists {
-		return session, nil
+		return cloneSession(session)
 	}
 
 	session, err := s.loadFromFile(runID)
@@ -77,22 +77,39 @@ func (s *SessionStore) Get(runID string) (*types.Session, error) {
 	}
 
 	s.sessions[runID] = session
-	return session, nil
+	return cloneSession(session)
 }
 
 func (s *SessionStore) Save(session *types.Session) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	session.UpdatedAt = time.Now().UTC()
-	s.sessions[session.RunID] = session
-	return s.persist(session)
+	cloned, err := cloneSession(session)
+	if err != nil {
+		return err
+	}
+	cloned.UpdatedAt = time.Now().UTC()
+	s.sessions[cloned.RunID] = cloned
+	return s.persist(cloned)
 }
 
 func (s *SessionStore) List() ([]*types.Session, error) {
 	s.mu.RLock()
 	baseDir := s.baseDir
+	cached := make([]*types.Session, 0, len(s.sessions))
+	for _, sess := range s.sessions {
+		cloned, err := cloneSession(sess)
+		if err != nil {
+			s.mu.RUnlock()
+			return nil, err
+		}
+		cached = append(cached, cloned)
+	}
 	s.mu.RUnlock()
+
+	if len(cached) > 0 {
+		return cached, nil
+	}
 
 	sessionsDir := filepath.Join(baseDir, "sessions")
 	if _, err := os.Stat(sessionsDir); os.IsNotExist(err) {
@@ -104,17 +121,33 @@ func (s *SessionStore) List() ([]*types.Session, error) {
 		return nil, fmt.Errorf("reading sessions directory: %w", err)
 	}
 
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	var sessions []*types.Session
 	for _, entry := range entries {
 		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".json") {
 			continue
 		}
 		runID := strings.TrimSuffix(entry.Name(), ".json")
+		if sess, exists := s.sessions[runID]; exists {
+			cloned, err := cloneSession(sess)
+			if err != nil {
+				return nil, err
+			}
+			sessions = append(sessions, cloned)
+			continue
+		}
 		session, err := s.loadFromFile(runID)
 		if err != nil {
 			return nil, fmt.Errorf("loading session %s: %w", runID, err)
 		}
-		sessions = append(sessions, session)
+		s.sessions[runID] = session
+		cloned, err := cloneSession(session)
+		if err != nil {
+			return nil, err
+		}
+		sessions = append(sessions, cloned)
 	}
 
 	return sessions, nil
@@ -129,9 +162,14 @@ func (s *SessionStore) UpdateStatus(runID string, status types.RunState) error {
 		return err
 	}
 
-	session.Status = status
-	session.UpdatedAt = time.Now().UTC()
-	return s.persist(session)
+	cloned, err := cloneSession(session)
+	if err != nil {
+		return err
+	}
+	cloned.Status = status
+	cloned.UpdatedAt = time.Now().UTC()
+	s.sessions[runID] = cloned
+	return s.persist(cloned)
 }
 
 func (s *SessionStore) UpdateFlowState(runID, flowID string, status types.FlowState, errMsg string) error {
@@ -143,8 +181,13 @@ func (s *SessionStore) UpdateFlowState(runID, flowID string, status types.FlowSt
 		return err
 	}
 
-	session.UpdateFlowState(flowID, status, errMsg)
-	return s.persist(session)
+	cloned, err := cloneSession(session)
+	if err != nil {
+		return err
+	}
+	cloned.UpdateFlowState(flowID, status, errMsg)
+	s.sessions[runID] = cloned
+	return s.persist(cloned)
 }
 
 func (s *SessionStore) SaveCheckpoint(runID string, cp *types.Checkpoint) error {
@@ -156,8 +199,13 @@ func (s *SessionStore) SaveCheckpoint(runID string, cp *types.Checkpoint) error 
 		return err
 	}
 
-	session.SetCheckpoint(cp.FlowID, cp.StepID, cp.StepIndex, cp.Payload)
-	return s.persist(session)
+	cloned, err := cloneSession(session)
+	if err != nil {
+		return err
+	}
+	cloned.SetCheckpoint(cp.FlowID, cp.StepID, cp.StepIndex, cp.Payload)
+	s.sessions[runID] = cloned
+	return s.persist(cloned)
 }
 
 func (s *SessionStore) Delete(runID string) error {
@@ -173,6 +221,18 @@ func (s *SessionStore) Delete(runID string) error {
 }
 
 // Private helpers
+
+func cloneSession(sess *types.Session) (*types.Session, error) {
+	data, err := json.Marshal(sess)
+	if err != nil {
+		return nil, fmt.Errorf("cloning session %s: %w", sess.RunID, err)
+	}
+	var clone types.Session
+	if err := json.Unmarshal(data, &clone); err != nil {
+		return nil, fmt.Errorf("cloning session %s: %w", sess.RunID, err)
+	}
+	return &clone, nil
+}
 
 func (s *SessionStore) getOrLoadLocked(runID string) (*types.Session, error) {
 	if session, exists := s.sessions[runID]; exists {

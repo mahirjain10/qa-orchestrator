@@ -68,10 +68,8 @@ func (e *TraceEvent) WithDetails(details map[string]any) *TraceEvent {
 
 func newEventID() string {
 	b := make([]byte, 6)
-	rand.Read(b)
+	if _, err := rand.Read(b); err != nil {
+		return "evt_fallback"
+	}
 	return "evt_" + hex.EncodeToString(b)
-}
-
-func hexEncode(b []byte) string {
-	return hex.EncodeToString(b)
 }

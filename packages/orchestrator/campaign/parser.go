@@ -19,21 +19,41 @@ func NewCampaignParser() *CampaignParser {
 	return &CampaignParser{}
 }
 
-func (p *CampaignParser) ParseFile(path string) (*types.Campaign, error) {
+type ParsedCampaign struct {
+	Campaign         *types.Campaign
+	TopologicalOrder []string
+}
+
+func (p *CampaignParser) ParseFile(path string) (*ParsedCampaign, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("reading campaign file %s: %w", path, err)
 	}
 
 	ext := strings.ToLower(filepath.Ext(path))
+	var campaign *types.Campaign
 	switch ext {
 	case ".yaml", ".yml":
-		return p.parseYAML(data)
+		campaign, err = p.parseYAML(data)
 	case ".json":
-		return p.parseJSON(data)
+		campaign, err = p.parseJSON(data)
 	default:
 		return nil, fmt.Errorf("unsupported file format %q (supported: .yaml, .yml, .json)", ext)
 	}
+	if err != nil {
+		return nil, err
+	}
+
+	dependencyValidator := validator.NewDependencyValidator()
+	dependencyResult := dependencyValidator.Validate(campaign.Flows)
+	if !dependencyResult.Valid {
+		return nil, fmt.Errorf("%s", dependencyValidator.FormatError(dependencyResult.Error))
+	}
+
+	return &ParsedCampaign{
+		Campaign:         campaign,
+		TopologicalOrder: dependencyResult.TopologicalOrder,
+	}, nil
 }
 
 func (p *CampaignParser) parseYAML(data []byte) (*types.Campaign, error) {
@@ -41,7 +61,7 @@ func (p *CampaignParser) parseYAML(data []byte) (*types.Campaign, error) {
 	if err := yaml.Unmarshal(data, &campaign); err != nil {
 		return nil, fmt.Errorf("parsing YAML campaign: %w", err)
 	}
-	return &campaign, p.validate(&campaign)
+	return &campaign, p.validateSchema(&campaign)
 }
 
 func (p *CampaignParser) parseJSON(data []byte) (*types.Campaign, error) {
@@ -49,10 +69,10 @@ func (p *CampaignParser) parseJSON(data []byte) (*types.Campaign, error) {
 	if err := json.Unmarshal(data, &campaign); err != nil {
 		return nil, fmt.Errorf("parsing JSON campaign: %w", err)
 	}
-	return &campaign, p.validate(&campaign)
+	return &campaign, p.validateSchema(&campaign)
 }
 
-func (p *CampaignParser) validate(campaign *types.Campaign) error {
+func (p *CampaignParser) validateSchema(campaign *types.Campaign) error {
 	if campaign.Name == "" {
 		return fmt.Errorf("campaign 'name' is required")
 	}
@@ -61,6 +81,16 @@ func (p *CampaignParser) validate(campaign *types.Campaign) error {
 	}
 	if len(campaign.Flows) == 0 {
 		return fmt.Errorf("campaign must have at least one flow")
+	}
+
+	if campaign.Config.Timeout <= 0 {
+		return fmt.Errorf("campaign config: 'timeout' must be greater than 0")
+	}
+	if campaign.Config.RetryLimit < 0 {
+		return fmt.Errorf("campaign config: 'retry_limit' must be >= 0")
+	}
+	if campaign.Config.ParallelLimit < 1 {
+		return fmt.Errorf("campaign config: 'parallel_limit' must be >= 1")
 	}
 
 	seenIDs := make(map[string]bool)
@@ -75,6 +105,13 @@ func (p *CampaignParser) validate(campaign *types.Campaign) error {
 
 		if flow.Goal == "" {
 			return fmt.Errorf("flow %q: 'goal' is required", flow.ID)
+		}
+
+		if flow.Config.Timeout != 0 && flow.Config.Timeout < 0 {
+			return fmt.Errorf("flow %q config: 'timeout' must be greater than 0", flow.ID)
+		}
+		if flow.Config.RetryLimit < 0 {
+			return fmt.Errorf("flow %q config: 'retry_limit' must be >= 0", flow.ID)
 		}
 
 		switch flow.Mode {
@@ -98,12 +135,21 @@ func (p *CampaignParser) validate(campaign *types.Campaign) error {
 		default:
 			return fmt.Errorf("flow %q: invalid priority %q (must be 'high', 'medium', or 'low')", flow.ID, flow.Priority)
 		}
-	}
 
-	dependencyValidator := validator.NewDependencyValidator()
-	dependencyResult := dependencyValidator.Validate(campaign.Flows)
-	if !dependencyResult.Valid {
-		return fmt.Errorf("%s", dependencyValidator.FormatError(dependencyResult.Error))
+		seenStepIDs := make(map[string]bool)
+		for _, step := range flow.Steps {
+			if step.ID == "" {
+				return fmt.Errorf("flow %q: step missing required 'id' field", flow.ID)
+			}
+			if seenStepIDs[step.ID] {
+				return fmt.Errorf("flow %q: duplicate step ID %q", flow.ID, step.ID)
+			}
+			seenStepIDs[step.ID] = true
+
+			if flow.Mode == types.FlowModeGuided && step.Tool == "" {
+				return fmt.Errorf("flow %q: step %q: 'tool' is required", flow.ID, step.ID)
+			}
+		}
 	}
 
 	return nil
@@ -131,8 +177,13 @@ func (p *CampaignParser) ParseNaturalLanguage(text string) (*types.Campaign, err
 	campaign := &types.Campaign{
 		Name:    "Natural Campaign",
 		Version: "1.0",
-		Flows:   []types.Flow{flow},
+		Config: types.CampaignConfig{
+			Timeout:       300 * time.Second,
+			RetryLimit:    2,
+			ParallelLimit: 1,
+		},
+		Flows: []types.Flow{flow},
 	}
 
-	return campaign, p.validate(campaign)
+	return campaign, p.validateSchema(campaign)
 }
