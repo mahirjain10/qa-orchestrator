@@ -49,17 +49,20 @@ func main() {
 
 	sessionStore, err := session.NewSessionStore(dataDir)
 	if err != nil {
-		panic(fmt.Sprintf("creating session store: %v", err))
+		fmt.Fprintf(os.Stderr, "Error creating session store: %v\n", err)
+		os.Exit(1)
 	}
 
 	traceStore, err := trace.NewTraceStore(dataDir)
 	if err != nil {
-		panic(fmt.Sprintf("creating trace store: %v", err))
+		fmt.Fprintf(os.Stderr, "Error creating trace store: %v\n", err)
+		os.Exit(1)
 	}
 
 	artifactStore, err := artifact.NewArtifactStore(dataDir)
 	if err != nil {
-		panic(fmt.Sprintf("creating artifact store: %v", err))
+		fmt.Fprintf(os.Stderr, "Error creating artifact store: %v\n", err)
+		os.Exit(1)
 	}
 
 	campaignPath := ""

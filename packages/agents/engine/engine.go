@@ -639,7 +639,13 @@ func (e *AgentEngine) runAutonomousFlow(runID string, flow sharedtypes.Flow, ctx
 				if backoff > 15*time.Second {
 					backoff = 15 * time.Second
 				}
-				time.Sleep(backoff)
+				select {
+				case <-llmCtx.Done():
+					result.Outcome = OutcomeSkip
+					result.Errors = append(result.Errors, "cancelled during backoff")
+					goto done
+				case <-time.After(backoff):
+				}
 				continue
 			case agentstypes.RecoveryActionReplan:
 				// NOTE: RecoveryActionReplan does NOT actually replan — it's a retry
@@ -656,7 +662,13 @@ func (e *AgentEngine) runAutonomousFlow(runID string, flow sharedtypes.Flow, ctx
 				if backoff > 15*time.Second {
 					backoff = 15 * time.Second
 				}
-				time.Sleep(backoff)
+				select {
+				case <-llmCtx.Done():
+					result.Outcome = OutcomeSkip
+					result.Errors = append(result.Errors, "cancelled during backoff")
+					goto done
+				case <-time.After(backoff):
+				}
 				continue
 			case agentstypes.RecoveryActionSkip:
 				autonomousPlanner.UpdatePlan(plan, planStep.StepIndex, true, decision.Reason)
