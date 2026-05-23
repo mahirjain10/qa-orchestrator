@@ -34,6 +34,7 @@ func (s *SessionStore) Create(campaign *types.Campaign) (*types.Session, error) 
 	defer s.mu.Unlock()
 
 	session := types.NewSession(campaign.Name)
+
 	for _, flow := range campaign.Flows {
 		session.AddFlowState(types.FlowRunState{
 			FlowID:   flow.ID,
@@ -248,7 +249,23 @@ func (s *SessionStore) getOrLoadLocked(runID string) (*types.Session, error) {
 
 func (s *SessionStore) filePath(runID string) string {
 	sessionsDir := filepath.Join(s.baseDir, "sessions")
-	return filepath.Join(sessionsDir, runID+".json")
+	safeID := sanitizeID(runID)
+	path := filepath.Join(sessionsDir, safeID+".json")
+	cleanBase := filepath.Clean(sessionsDir) + string(filepath.Separator)
+	if !strings.HasPrefix(filepath.Clean(path), cleanBase) {
+		path = filepath.Join(sessionsDir, "blocked_"+sanitizeID(runID)+".json")
+	}
+	return path
+}
+
+func sanitizeID(id string) string {
+	replacer := strings.NewReplacer(
+		"/", "_",
+		"\\", "_",
+		"..", "_",
+		":", "_",
+	)
+	return replacer.Replace(id)
 }
 
 func (s *SessionStore) persist(session *types.Session) error {

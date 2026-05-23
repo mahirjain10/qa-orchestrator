@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -105,5 +106,84 @@ func TestLifecycleController_SteeringEvents(t *testing.T) {
 	events = ctrl.DrainSteeringEvents()
 	if len(events) != 0 {
 		t.Errorf("expected 0 events after drain, got %d", len(events))
+	}
+}
+
+func TestSubmitSteering_AcceptsUpToCapacity(t *testing.T) {
+	ctrl := NewLifecycleController("run_cap")
+
+	// Submit up to maxSteeringQueue — all should be retained
+	for i := 0; i < maxSteeringQueue; i++ {
+		evt := types.NewSteeringEvent("run_cap", "flow-x", types.SteerInstruction, "", fmt.Sprintf("instruction-%d", i))
+		if !ctrl.SubmitSteering(evt) {
+			t.Fatalf("SubmitSteering returned false at index %d — should never return false", i)
+		}
+	}
+
+	events := ctrl.DrainSteeringEvents()
+	if len(events) != maxSteeringQueue {
+		t.Fatalf("expected %d events within capacity, got %d", maxSteeringQueue, len(events))
+	}
+	for i, evt := range events {
+		if evt.Instruction != fmt.Sprintf("instruction-%d", i) {
+			t.Errorf("event %d: expected instruction %q, got %q", i, fmt.Sprintf("instruction-%d", i), evt.Instruction)
+		}
+	}
+
+	remaining := ctrl.DrainSteeringEvents()
+	if len(remaining) != 0 {
+		t.Errorf("expected 0 events after full drain, got %d", len(remaining))
+	}
+}
+
+func TestSubmitSteering_OverflowTrimsOldest(t *testing.T) {
+	ctrl := NewLifecycleController("run_overflow")
+
+	// Fill to capacity
+	for i := 0; i < maxSteeringQueue; i++ {
+		ctrl.SubmitSteering(types.NewSteeringEvent("run_overflow", "flow-x", types.SteerInstruction, "", fmt.Sprintf("old-%d", i)))
+	}
+
+	// Submit one more — should trim the oldest
+	ctrl.SubmitSteering(types.NewSteeringEvent("run_overflow", "flow-x", types.SteerInstruction, "", "new-last"))
+
+	events := ctrl.DrainSteeringEvents()
+	if len(events) != maxSteeringQueue {
+		t.Fatalf("expected %d events after overflow trim, got %d", maxSteeringQueue, len(events))
+	}
+
+	// The second-oldest event (index 1) should now be first (oldest at index 0 was trimmed)
+	if events[0].Instruction != "old-1" {
+		t.Errorf("expected first event 'old-1' (oldest 'old-0' trimmed), got %q", events[0].Instruction)
+	}
+
+	// The last event should be the one we just submitted
+	if events[len(events)-1].Instruction != "new-last" {
+		t.Errorf("expected last event 'new-last', got %q", events[len(events)-1].Instruction)
+	}
+}
+
+func TestSubmitSteering_MultipleOverflowsStayBounded(t *testing.T) {
+	ctrl := NewLifecycleController("run_multi")
+
+	// Fill well past capacity without draining
+	total := maxSteeringQueue + 50
+	for i := 0; i < total; i++ {
+		ctrl.SubmitSteering(types.NewSteeringEvent("run_multi", "flow-x", types.SteerInstruction, "", fmt.Sprintf("evt-%d", i)))
+	}
+
+	events := ctrl.DrainSteeringEvents()
+	if len(events) != maxSteeringQueue {
+		t.Fatalf("expected %d events after overflow of %d, got %d", maxSteeringQueue, total, len(events))
+	}
+
+	// First event should be the oldest surviving one (trimmed 50 oldest)
+	if events[0].Instruction != "evt-50" {
+		t.Errorf("expected first event 'evt-50' (50 oldest trimmed), got %q", events[0].Instruction)
+	}
+
+	// Last event should be the most recently submitted
+	if events[len(events)-1].Instruction != "evt-249" {
+		t.Errorf("expected last event 'evt-249', got %q", events[len(events)-1].Instruction)
 	}
 }

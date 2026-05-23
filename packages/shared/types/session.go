@@ -23,6 +23,9 @@ func NewSessionID() string {
 	return fmt.Sprintf("sess_%d", time.Now().UnixNano())
 }
 
+// NewSession creates a Session with a unique RunID and SessionID.
+// It does NOT register the session with any SessionStore. Callers
+// must call sessionStore.Create() to persist and register it.
 func NewSession(campaignName string) *Session {
 	now := time.Now().UTC()
 	return &Session{

@@ -1,5 +1,5 @@
-name: Large Parallel Campaign
-description: Tests orchestration throughput with 8 flows - 5 independent + 3 dependent
+name: Real URLs Parallel Campaign
+description: Tests orchestration throughput with 8 flows - 5 independent + 3 dependent - using only verified real URLs
 version: "1.0"
 config:
   timeout: 900s
@@ -17,10 +17,10 @@ flows:
     depends_on: []
 
   - id: flow-beta
-    name: Beta - Students Page
-    description: Navigate to students page
-    goal: Navigate to https://practicetestautomation.com/practice-test-students/ and verify the students page loads with a table of student data visible
-    start_url: https://practicetestautomation.com/practice-test-students/
+    name: Beta - Root Page
+    description: Navigate to root page
+    goal: Navigate to https://practicetestautomation.com/ and verify the main page loads with navigation links and course information visible
+    start_url: https://practicetestautomation.com/
     mode: autonomous
     priority: high
     depends_on: []
@@ -35,19 +35,19 @@ flows:
     depends_on: []
 
   - id: flow-delta
-    name: Delta - Timeout Page
-    description: Navigate to timeout page
-    goal: Navigate to https://practicetestautomation.com/practice-test-timeouts/ and verify the timeout page loads with the expected content and buttons visible
-    start_url: https://practicetestautomation.com/practice-test-timeouts/
+    name: Delta - Success Page
+    description: Navigate to logged-in success page
+    goal: Navigate to https://practicetestautomation.com/logged-in-successfully/ and verify the success message 'Logged In Successfully' is displayed and the logout button is visible
+    start_url: https://practicetestautomation.com/logged-in-successfully/
     mode: autonomous
     priority: medium
     depends_on: []
 
   - id: flow-epsilon
-    name: Epsilon - File Upload Page
-    description: Navigate to file upload page
-    goal: Navigate to https://practicetestautomation.com/practice-test-file-upload/ and verify the file upload page loads with a file input field and upload button visible
-    start_url: https://practicetestautomation.com/practice-test-file-upload/
+    name: Epsilon - Login Title Check
+    description: Navigate to login page and verify its title
+    goal: Navigate to https://practicetestautomation.com/practice-test-login/ and verify the page heading and description text explain this is a practice test login page
+    start_url: https://practicetestautomation.com/practice-test-login/
     mode: autonomous
     priority: medium
     depends_on: []
@@ -65,13 +65,13 @@ flows:
   - id: flow-eta
     name: Eta - Cross-Page Navigation
     description: Tests navigation between multiple pages
-    goal: After flow-beta and flow-gamma confirm their pages load, navigate between the students page and exceptions page and verify both pages load correctly each time
+    goal: After flow-gamma and flow-delta confirm their pages load, visit the exceptions page, then visit the success page, and verify both pages load correctly
     start_url: https://practicetestautomation.com/
     mode: autonomous
     priority: medium
     depends_on:
-      - flow-beta
       - flow-gamma
+      - flow-delta
 
   - id: flow-theta
     name: Theta - Final Summary

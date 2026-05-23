@@ -13,6 +13,8 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+var ErrEmptyResponse = fmt.Errorf("empty response from LLM")
+
 type Client interface {
 	Generate(ctx context.Context, req *GenerateRequest) (*GenerateResponse, error)
 	GenerateWithMessages(ctx context.Context, messages []Message) (*GenerateResponse, error)
@@ -63,32 +65,53 @@ func (c *HTTPClient) Generate(ctx context.Context, req *GenerateRequest) (*Gener
 		req.MaxTokens = 1024
 	}
 
+	models := []string{req.Model}
+	models = append(models, c.config.FallbackModels...)
+
 	var lastErr error
-	for attempt := 0; attempt <= c.config.MaxRetries; attempt++ {
-		resp, err := c.doRequest(ctx, req)
-		if err == nil {
-			return resp, nil
+	for modelIdx, model := range models {
+		req.Model = model
+
+		if modelIdx > 0 {
+			log.Warn().
+				Str("provider", c.provider.Name()).
+				Str("fallback_model", model).
+				Msg("falling back to alternative model")
 		}
 
-		lastErr = err
+		for attempt := 0; attempt <= c.config.MaxRetries; attempt++ {
+			resp, err := c.doRequest(ctx, req)
+			if err == nil {
+				return resp, nil
+			}
 
-		if !IsRetryable(err) {
-			return nil, err
+			lastErr = err
+
+			if !IsRetryable(err) {
+				return nil, err
+			}
+
+			retry, delay := ShouldRetry(err, attempt, c.config.MaxRetries)
+			if !retry {
+				break
+			}
+
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(delay):
+			}
 		}
 
-		retry, delay := ShouldRetry(err, attempt, c.config.MaxRetries)
-		if !retry {
-			return nil, err
-		}
-
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		case <-time.After(delay):
+		// After exhausting retries for this model, try a fallback model.
+		// Non-retryable errors (auth, validation) are already returned early,
+		// so any error here (empty response, 502, 429, network) merits a fallback attempt.
+		if modelIdx < len(models)-1 {
+			continue
 		}
 	}
 
-	return nil, fmt.Errorf("max retries exceeded: %w", lastErr)
+	return nil, NewRetryableError(fmt.Errorf("max retries exceeded across all models: %w", lastErr), true)
 }
 
 func (c *HTTPClient) doRequest(ctx context.Context, req *GenerateRequest) (*GenerateResponse, error) {
@@ -129,6 +152,7 @@ func (c *HTTPClient) doRequest(ctx context.Context, req *GenerateRequest) (*Gene
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusTooManyRequests {
+		io.Copy(io.Discard, resp.Body)
 		retryAfter := parseRetryAfter(resp.Header.Get("Retry-After"))
 		log.Warn().
 			Str("provider", c.provider.Name()).
@@ -146,7 +170,7 @@ func (c *HTTPClient) doRequest(ctx context.Context, req *GenerateRequest) (*Gene
 		bodyBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return nil, NewRetryableError(
-				fmt.Errorf("request failed with status %d (provider: %s, model: %s)", resp.StatusCode, c.provider.Name(), req.Model),
+				fmt.Errorf("reading error response body: %w (status %d, provider: %s, model: %s)", err, resp.StatusCode, c.provider.Name(), req.Model),
 				IsRetryableStatusCode(resp.StatusCode),
 			)
 		}
@@ -165,7 +189,7 @@ func (c *HTTPClient) doRequest(ctx context.Context, req *GenerateRequest) (*Gene
 
 	generateResp, err := c.provider.ParseResponse(bodyBytes)
 	if err != nil {
-		return nil, err
+		return nil, NewRetryableError(fmt.Errorf("parsing response: %w", err), true)
 	}
 
 	log.Info().
@@ -175,7 +199,7 @@ func (c *HTTPClient) doRequest(ctx context.Context, req *GenerateRequest) (*Gene
 		Msg("LLM response received")
 
 	if len(generateResp.Content) == 0 {
-		return nil, NewNonRetryableError(fmt.Errorf("empty response from %s (model: %s)", c.provider.Name(), req.Model))
+		return nil, NewRetryableError(fmt.Errorf("%w: provider=%s model=%s", ErrEmptyResponse, c.provider.Name(), req.Model), true)
 	}
 
 	if len(generateResp.Choices) > 0 {

@@ -41,6 +41,16 @@ func (r *Recovery) Decide(err error, stepResult *types.StepResult, ctx *types.Ex
 	if err != nil {
 		errStr := err.Error()
 
+		// Check for 404 observation FIRST — if the page is a 404, all subsequent
+		// interaction failures are caused by the missing page, not by real element issues.
+		// Delegate root-navigation to the engine (RecoveryActionRootNav) instead of
+		// burdening the LLM with steering instructions.
+		if ctx != nil && has404Warning(ctx) {
+			decision.Action = types.RecoveryActionRootNav
+			decision.Reason = "invalid URL or 404 detected, engine will navigate to root domain"
+			return decision
+		}
+
 		if isSelectorTimeout(errStr) {
 			decision.Action = types.RecoveryActionReplan
 			decision.Reason = "selector timeout, replanning with fresh observation"
@@ -94,13 +104,22 @@ func (r *Recovery) Decide(err error, stepResult *types.StepResult, ctx *types.Ex
 }
 
 func isSelectorTimeout(err string) bool {
-	err = strings.ToLower(err)
-	return strings.Contains(err, "playwright") && strings.Contains(err, "timeout") && strings.Contains(err, "selector")
+	lower := strings.ToLower(err)
+	if !strings.Contains(lower, "timeout") && !strings.Contains(lower, "timed out") {
+		return false
+	}
+	// Playwright timeout error patterns:
+	//   "locator.click: Timeout 30000ms exceeded"    — has "locator" + "timeout"
+	//   "locator.wait_for: Timeout 30000ms exceeded"  — has "locator" + "timeout"
+	//   "page.wait_for_selector: Timeout 30000ms"     — has "selector" + "timeout"
+	//   "expect(locator).to_have_text: Timeout ..."   — has "locator" + "timeout"
+	//   playwright: ... Timeout ... selector           — rare but possible
+	return strings.Contains(lower, "locator") || strings.Contains(lower, "selector")
 }
 
 func isNetworkError(err string) bool {
 	err = strings.ToLower(err)
-	networkErrors := []string{"connection refused", "network", "dns", "econnreset", "enotfound"}
+	networkErrors := []string{"connection refused", "dns", "econnreset", "enotfound"}
 	for _, ne := range networkErrors {
 		if strings.Contains(err, ne) {
 			return true
@@ -138,7 +157,7 @@ func isAssertionError(err string) bool {
 
 func isConfigError(err string) bool {
 	err = strings.ToLower(err)
-	configErrors := []string{"config", "unknown tool", "invalid configuration", "missing required"}
+	configErrors := []string{"unknown tool", "invalid configuration", "missing required"}
 	for _, c := range configErrors {
 		if strings.Contains(err, c) {
 			return true
@@ -148,15 +167,45 @@ func isConfigError(err string) bool {
 }
 
 func (r *Recovery) ShouldRetry(decision *types.RecoveryDecision, retryCount int) bool {
-	if decision.Action == types.RecoveryActionRetry && retryCount < r.policy.MaxRetries {
+	if (decision.Action == types.RecoveryActionRetry || decision.Action == types.RecoveryActionReplan) && retryCount < r.policy.MaxRetries {
 		return true
 	}
 	return false
 }
 
 func (r *Recovery) ShouldEscalate(decision *types.RecoveryDecision, retryCount int) bool {
-	if decision.Action == types.RecoveryActionRetry && retryCount >= r.policy.MaxRetries && r.policy.EscalateOnMax {
+	if (decision.Action == types.RecoveryActionRetry || decision.Action == types.RecoveryActionReplan) && retryCount >= r.policy.MaxRetries && r.policy.EscalateOnMax {
 		return true
+	}
+	return false
+}
+
+func (r *Recovery) Has404Warning(ctx *types.ExecutionContext) bool {
+	return has404Warning(ctx)
+}
+
+func has404Warning(ctx *types.ExecutionContext) bool {
+	for i := len(ctx.Observations) - 1; i >= 0; i-- {
+		obs := ctx.Observations[i]
+		if obs.State == nil {
+			continue
+		}
+		// Check nested under "data" key (set by injectObserveStep / autoObserve)
+		if data, ok := obs.State["data"].(map[string]any); ok {
+			if warning, ok := data["warning"].(string); ok && warning != "" {
+				return true
+			}
+		}
+		// Also check direct state map for warning
+		if warning, ok := obs.State["warning"].(string); ok && warning != "" {
+			return true
+		}
+		// Check "last_output" which may contain serialized observe_ui result
+		if output, ok := obs.State["last_output"].(map[string]any); ok {
+			if warning, ok := output["warning"].(string); ok && warning != "" {
+				return true
+			}
+		}
 	}
 	return false
 }

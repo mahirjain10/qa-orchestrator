@@ -55,14 +55,14 @@ func (s *TraceStore) GetByRunID(runID string) ([]*sharedtypes.TraceEvent, error)
 	s.mu.RUnlock()
 
 	if exists {
-		return events, nil
+		return cloneTraceEvents(events)
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if events, exists = s.traces[runID]; exists {
-		return events, nil
+		return cloneTraceEvents(events)
 	}
 
 	events, err := s.loadFromFile(runID)
@@ -71,7 +71,7 @@ func (s *TraceStore) GetByRunID(runID string) ([]*sharedtypes.TraceEvent, error)
 	}
 
 	s.traces[runID] = events
-	return events, nil
+	return cloneTraceEvents(events)
 }
 
 func (s *TraceStore) GetByFlowID(runID, flowID string) ([]*sharedtypes.TraceEvent, error) {
@@ -86,7 +86,7 @@ func (s *TraceStore) GetByFlowID(runID, flowID string) ([]*sharedtypes.TraceEven
 			filtered = append(filtered, e)
 		}
 	}
-	return filtered, nil
+	return cloneTraceEvents(filtered)
 }
 
 func (s *TraceStore) GetRecent(runID string, limit int) ([]*sharedtypes.TraceEvent, error) {
@@ -96,9 +96,9 @@ func (s *TraceStore) GetRecent(runID string, limit int) ([]*sharedtypes.TraceEve
 	}
 
 	if len(events) <= limit {
-		return events, nil
+		return cloneTraceEvents(events)
 	}
-	return events[len(events)-limit:], nil
+	return cloneTraceEvents(events[len(events)-limit:])
 }
 
 func (s *TraceStore) ListRunIDs() ([]string, error) {
@@ -137,7 +137,14 @@ func (s *TraceStore) Delete(runID string) error {
 
 func (s *TraceStore) filePath(runID string) string {
 	tracesDir := filepath.Join(s.baseDir, "traces")
-	return filepath.Join(tracesDir, runID+".jsonl")
+	return filepath.Join(tracesDir, sanitizeID(runID)+".jsonl")
+}
+
+func sanitizeID(id string) string {
+	clean := strings.ReplaceAll(id, "..", "_")
+	clean = strings.ReplaceAll(clean, "/", "_")
+	clean = strings.ReplaceAll(clean, "\\", "_")
+	return clean
 }
 
 func (s *TraceStore) persist(runID string) error {
@@ -215,7 +222,9 @@ func EmitStepExecution(store *TraceStore, runID, flowID string, stepResult *agen
 	if stepResult.Error != nil {
 		event.WithDetail("error", stepResult.Error.Error())
 	}
-	store.Append(event)
+	if err := store.Append(event); err != nil {
+		log.Error().Err(err).Str("run_id", runID).Str("flow_id", flowID).Msg("EmitStepExecution: failed to append trace event")
+	}
 }
 
 func EmitAgentDecision(store *TraceStore, runID, flowID, agent string, action, reason string) {
@@ -224,7 +233,9 @@ func EmitAgentDecision(store *TraceStore, runID, flowID, agent string, action, r
 	}
 	event := sharedtypes.NewTraceEvent(runID, flowID, agent, sharedtypes.TraceEventAgentDecision, action, sharedtypes.TraceStatusSuccess)
 	event.WithDetail("reason", reason)
-	store.Append(event)
+	if err := store.Append(event); err != nil {
+		log.Error().Err(err).Str("run_id", runID).Str("flow_id", flowID).Msg("EmitAgentDecision: failed to append trace event")
+	}
 }
 
 func EmitRecoveryAction(store *TraceStore, runID, flowID string, decision *agentstypes.RecoveryDecision, stepResult *agentstypes.StepResult) {
@@ -249,7 +260,9 @@ func EmitRecoveryAction(store *TraceStore, runID, flowID string, decision *agent
 		event.WithDetail("failed_step", stepResult.StepID)
 		event.WithDetail("tool", stepResult.Tool)
 	}
-	store.Append(event)
+	if err := store.Append(event); err != nil {
+		log.Error().Err(err).Str("run_id", runID).Str("flow_id", flowID).Msg("EmitRecoveryAction: failed to append trace event")
+	}
 }
 
 func EmitLifecycleEvent(store *TraceStore, runID, flowID string, status sharedtypes.RunState, details map[string]any) {
@@ -258,7 +271,9 @@ func EmitLifecycleEvent(store *TraceStore, runID, flowID string, status sharedty
 	}
 	event := sharedtypes.NewTraceEvent(runID, flowID, "system", sharedtypes.TraceEventLifecycleState, string(status), sharedtypes.TraceStatusSuccess)
 	event.WithDetails(details)
-	store.Append(event)
+	if err := store.Append(event); err != nil {
+		log.Error().Err(err).Str("run_id", runID).Str("flow_id", flowID).Msg("EmitLifecycleEvent: failed to append trace event")
+	}
 }
 
 func EmitCheckpoint(store *TraceStore, runID string, cp *sharedtypes.Checkpoint) {
@@ -270,7 +285,9 @@ func EmitCheckpoint(store *TraceStore, runID string, cp *sharedtypes.Checkpoint)
 		"step_index": cp.StepIndex,
 		"step_id":    cp.StepID,
 	})
-	store.Append(event)
+	if err := store.Append(event); err != nil {
+		log.Error().Err(err).Str("run_id", runID).Str("flow_id", cp.FlowID).Msg("EmitCheckpoint: failed to append trace event")
+	}
 }
 
 func EmitArtifactEvent(store *TraceStore, runID, flowID, artifactType, path string, metadata map[string]any) {
@@ -280,5 +297,22 @@ func EmitArtifactEvent(store *TraceStore, runID, flowID, artifactType, path stri
 	event := sharedtypes.NewTraceEvent(runID, flowID, "system", sharedtypes.TraceEventArtifact, artifactType, sharedtypes.TraceStatusSuccess)
 	event.WithDetail("path", path)
 	event.WithDetails(metadata)
-	store.Append(event)
+	if err := store.Append(event); err != nil {
+		log.Error().Err(err).Str("run_id", runID).Str("flow_id", flowID).Msg("EmitArtifactEvent: failed to append trace event")
+	}
+}
+
+func cloneTraceEvents(events []*sharedtypes.TraceEvent) ([]*sharedtypes.TraceEvent, error) {
+	if len(events) == 0 {
+		return []*sharedtypes.TraceEvent{}, nil
+	}
+	data, err := json.Marshal(events)
+	if err != nil {
+		return nil, fmt.Errorf("cloning trace events: %w", err)
+	}
+	var cloned []*sharedtypes.TraceEvent
+	if err := json.Unmarshal(data, &cloned); err != nil {
+		return nil, fmt.Errorf("cloning trace events: %w", err)
+	}
+	return cloned, nil
 }

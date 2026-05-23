@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"qa-orchestrator/packages/agents/types"
 	"qa-orchestrator/packages/llm"
@@ -109,6 +110,14 @@ func (p *Planner) CreateAutonomousPlan(ctx *types.ExecutionContext) (*types.Plan
 	return plan, nil
 }
 
+func sanitizeDOM(s string) string {
+	s = strings.ReplaceAll(s, "\x00", "")
+	s = strings.ReplaceAll(s, "```", "")
+	s = strings.ReplaceAll(s, "<", "&lt;")
+	s = strings.ReplaceAll(s, ">", "&gt;")
+	return s
+}
+
 func formatObserveUIObservation(obs types.Observation) string {
 	result := "Page observation after last step:\n"
 	if obs.LastStep != nil {
@@ -121,21 +130,28 @@ func formatObserveUIObservation(obs types.Observation) string {
 			parsed = data
 		} else if dataStr, ok := obs.State["data"].(string); ok {
 			if err := json.Unmarshal([]byte(dataStr), &parsed); err != nil {
-				result += fmt.Sprintf("  Raw data: %s\n", dataStr)
+				result += fmt.Sprintf("  Raw data: %s\n", sanitizeDOM(dataStr))
 			}
 		}
 		if parsed != nil {
+			if warning, ok := parsed["warning"].(string); ok && warning != "" {
+				result += fmt.Sprintf("  ⚠ %s\n", sanitizeDOM(warning))
+			}
 			if pageState, ok := parsed["page_state"].(string); ok {
-				result += fmt.Sprintf("  Page state: %s\n", pageState)
+				result += fmt.Sprintf("  Page state: %s\n", sanitizeDOM(pageState))
 			}
 			if interactive, ok := parsed["interactive"].([]any); ok {
 				result += fmt.Sprintf("  Interactive elements found (%d):\n", len(interactive))
 				for i, elem := range interactive {
 					if elemMap, ok := elem.(map[string]any); ok {
-						tag := elemMap["tag"]
-						selector := elemMap["selector"]
-						text := elemMap["text"]
-						result += fmt.Sprintf("    %d. <%v> selector=\"%v\" text=\"%v\"\n", i+1, tag, selector, text)
+						tag := fmt.Sprintf("%v", elemMap["tag"])
+						selector := fmt.Sprintf("%v", elemMap["selector"])
+						text := fmt.Sprintf("%v", elemMap["text"])
+						var classStr string
+					if c, ok := elemMap["class"].(string); ok {
+						classStr = c
+					}
+					result += fmt.Sprintf("    %d. <%s> selector=\"%s\" text=\"%s\" class=\"%s\"\n", i+1, sanitizeDOM(tag), sanitizeDOM(selector), sanitizeDOM(text), sanitizeDOM(classStr))
 					}
 				}
 			}

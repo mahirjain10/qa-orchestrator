@@ -6,20 +6,26 @@ import (
 	"qa-orchestrator/packages/shared/types"
 )
 
+const (
+	maxSteeringQueue = 200
+)
+
 type LifecycleController struct {
-	mu         sync.RWMutex
-	runID      string
-	status     types.RunState
-	steeringCh chan *types.SteeringEvent
-	cancelCh   chan struct{}
+	mu              sync.RWMutex
+	runID           string
+	status          types.RunState
+	steeringMu      sync.Mutex
+	steering        []*types.SteeringEvent
+	cancelCh        chan struct{}
+	overflowDropped int
 }
 
 func NewLifecycleController(runID string) *LifecycleController {
 	return &LifecycleController{
-		runID:      runID,
-		status:     types.RunStatePending,
-		steeringCh: make(chan *types.SteeringEvent, 10),
-		cancelCh:   make(chan struct{}, 1),
+		runID:    runID,
+		status:   types.RunStatePending,
+		steering: make([]*types.SteeringEvent, 0, 64),
+		cancelCh: make(chan struct{}, 1),
 	}
 }
 
@@ -70,12 +76,13 @@ func (c *LifecycleController) CanCancel() bool {
 }
 
 func (c *LifecycleController) RequestCancel() bool {
-	if !c.CanCancel() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	switch c.status {
+	case types.RunStateCompleted, types.RunStateCancelled:
 		return false
 	}
-	c.mu.Lock()
 	c.status = types.RunStateCancelling
-	c.mu.Unlock()
 	select {
 	case c.cancelCh <- struct{}{}:
 	default:
@@ -94,24 +101,25 @@ func (c *LifecycleController) CancelCh() <-chan struct{} {
 }
 
 func (c *LifecycleController) SubmitSteering(event *types.SteeringEvent) bool {
-	select {
-	case c.steeringCh <- event:
-		return true
-	default:
-		return false
+	c.steeringMu.Lock()
+	if len(c.steering) >= maxSteeringQueue {
+		trim := len(c.steering) - maxSteeringQueue + 1
+		if trim <= 0 {
+			trim = 1
+		}
+		c.steering = c.steering[trim:]
 	}
+	c.steering = append(c.steering, event)
+	c.steeringMu.Unlock()
+	return true
 }
 
 func (c *LifecycleController) DrainSteeringEvents() []*types.SteeringEvent {
-	var events []*types.SteeringEvent
-	for {
-		select {
-		case evt := <-c.steeringCh:
-			events = append(events, evt)
-		default:
-			return events
-		}
-	}
+	c.steeringMu.Lock()
+	events := c.steering
+	c.steering = make([]*types.SteeringEvent, 0, 64)
+	c.steeringMu.Unlock()
+	return events
 }
 
 func (c *LifecycleController) SetWaitingForInput() {

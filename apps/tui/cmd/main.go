@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"regexp"
 	"strings"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/bubbletea"
+	"github.com/playwright-community/playwright-go"
 	"qa-orchestrator/apps/tui/internal/logging"
 	"qa-orchestrator/apps/tui/internal/screens"
 	"qa-orchestrator/packages/agents/engine"
@@ -95,7 +97,7 @@ func main() {
 	if campaignPath != "" {
 		go func() {
 			if err := startCampaign(campaignPath, *resumeID, *browserMode, campaignCtx, sessionStore, traceStore, artifactStore, runCreatedCh, lifecycleCtrl); err != nil {
-				os.Stderr.WriteString("Error starting campaign: " + err.Error() + "\n")
+				log.Printf("Error starting campaign: %v", err)
 			}
 		}()
 	}
@@ -128,8 +130,7 @@ func startCampaign(campaignPath string, resumeID string, browserMode string, ctx
 
 		runID = existingSession.RunID
 
-		startIndex := 0
-		for i, flow := range camp.Flows {
+		for _, flow := range camp.Flows {
 			existingFlow := findFlowState(existingSession, flow.ID)
 			if existingFlow == nil {
 				existingSession.AddFlowState(sharedtypes.FlowRunState{
@@ -139,14 +140,8 @@ func startCampaign(campaignPath string, resumeID string, browserMode string, ctx
 					Priority: flow.Priority,
 					Status:   sharedtypes.FlowStatePending,
 				})
-			} else if isFlowComplete(existingFlow.Status) {
-				continue
-			} else {
-				startIndex = i
-				break
 			}
 		}
-		camp.Flows = camp.Flows[startIndex:]
 
 		existingSession.Status = sharedtypes.RunStateRunning
 		if err := sessionStore.Save(existingSession); err != nil {
@@ -171,8 +166,8 @@ func startCampaign(campaignPath string, resumeID string, browserMode string, ctx
 
 	llmClient, err := createLLMClientForCampaign(camp)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Warning: %v\n", err)
-		fmt.Fprintf(os.Stderr, "Autonomous flows will fail without LLM client.\n")
+		log.Printf("Warning: %v", err)
+		log.Printf("Autonomous flows will fail without LLM client.")
 	}
 
 	agentEngine, browserRuntime := createAgentEngine(sessionStore, traceStore, artifactStore, llmClient, browserMode, lifecycleCtrl)
@@ -213,11 +208,11 @@ func createLLMClientForCampaign(camp *sharedtypes.Campaign) (*llm.HTTPClient, er
 	}
 
 	provider, _ := cfg.GetProvider()
-	fmt.Fprintf(os.Stderr, "=== LLM Configuration ===\n")
-	fmt.Fprintf(os.Stderr, "  Provider:  %s\n", provider.Name())
-	fmt.Fprintf(os.Stderr, "  Model:     %s\n", cfg.Model)
-	fmt.Fprintf(os.Stderr, "  Endpoint:  %s\n", provider.Endpoint(cfg.Model))
-	fmt.Fprintf(os.Stderr, "========================\n")
+	log.Printf("=== LLM Configuration ===")
+	log.Printf("  Provider:  %s", provider.Name())
+	log.Printf("  Model:     %s", cfg.Model)
+	log.Printf("  Endpoint:  %s", provider.Endpoint(cfg.Model))
+	log.Printf("========================")
 
 	client, err := llm.NewClient(cfg)
 	if err != nil {
@@ -308,7 +303,25 @@ func runCampaignWithContext(ctx context.Context, eng *engine.AgentEngine, camp *
 	}
 
 	flowResults := make(map[string]*engine.ExecutionResult)
+	flowStorageStates := make(map[string]*playwright.StorageState)
 	var resultsMu sync.Mutex
+
+	if existingSess, err := sessionStore.Get(runID); err == nil {
+		for _, fs := range existingSess.Flows {
+			if isFlowComplete(fs.Status) {
+				var outcome engine.FlowOutcome
+				switch fs.Status {
+				case sharedtypes.FlowStatePassed:
+					outcome = engine.OutcomePass
+				case sharedtypes.FlowStateFailed:
+					outcome = engine.OutcomeFail
+				default:
+					outcome = engine.OutcomeSkip
+				}
+				flowResults[fs.FlowID] = &engine.ExecutionResult{FlowID: fs.FlowID, Outcome: outcome}
+			}
+		}
+	}
 
 	var wg sync.WaitGroup
 	semaphore := make(chan struct{}, parallelLimit)
@@ -317,6 +330,8 @@ func runCampaignWithContext(ctx context.Context, eng *engine.AgentEngine, camp *
 	var cancelled bool
 
 	waitForPause := func() bool {
+		backoff := 200 * time.Millisecond
+		const maxBackoff = 2 * time.Second
 		for {
 			status, _ := sessionStore.Get(runID)
 			if status == nil {
@@ -332,14 +347,22 @@ func runCampaignWithContext(ctx context.Context, eng *engine.AgentEngine, camp *
 				if status.Status == sharedtypes.RunStatePausing {
 					_ = sessionStore.UpdateStatus(runID, sharedtypes.RunStatePaused)
 				}
-				time.Sleep(200 * time.Millisecond)
+				time.Sleep(backoff)
+				backoff *= 2
+				if backoff > maxBackoff {
+					backoff = maxBackoff
+				}
 				continue
 			}
 			if status.Status == sharedtypes.RunStateResuming || status.Status == sharedtypes.RunStateRunning {
 				_ = sessionStore.UpdateStatus(runID, sharedtypes.RunStateRunning)
 				return false
 			}
-			time.Sleep(200 * time.Millisecond)
+			time.Sleep(backoff)
+			backoff *= 2
+			if backoff > maxBackoff {
+				backoff = maxBackoff
+			}
 		}
 	}
 
@@ -384,6 +407,11 @@ func runCampaignWithContext(ctx context.Context, eng *engine.AgentEngine, camp *
 			continue
 		}
 
+		if _, alreadyDone := flowResults[flowID]; alreadyDone {
+			close(flowDone[flowID])
+			continue
+		}
+
 		wg.Add(1)
 		go func(fid string, f sharedtypes.Flow) {
 			defer wg.Done()
@@ -410,13 +438,13 @@ func runCampaignWithContext(ctx context.Context, eng *engine.AgentEngine, camp *
 				resultsMu.Lock()
 				depResult, hasResult := flowResults[depID]
 				resultsMu.Unlock()
-				if hasResult && depResult.Outcome == engine.OutcomeFail {
+				if hasResult && (depResult.Outcome == engine.OutcomeSkip || depResult.Outcome == engine.OutcomeFail) {
 					upstreamFailed = true
 					break
 				}
 			}
 			if upstreamFailed {
-				_ = sessionStore.UpdateFlowState(runID, fid, sharedtypes.FlowStateSkippedUpstream, "upstream_failed")
+				_ = sessionStore.UpdateFlowState(runID, fid, sharedtypes.FlowStateSkippedUpstream, sharedtypes.ErrUpstreamFailed)
 				resultsMu.Lock()
 				flowResults[fid] = &engine.ExecutionResult{FlowID: fid, Outcome: engine.OutcomeSkip}
 				resultsMu.Unlock()
@@ -439,7 +467,16 @@ func runCampaignWithContext(ctx context.Context, eng *engine.AgentEngine, camp *
 				return
 			}
 
-			semaphore <- struct{}{}
+			select {
+			case semaphore <- struct{}{}:
+			case <-ctx.Done():
+				pauseMu.Lock()
+				cancelled = true
+				pauseMu.Unlock()
+				_ = sessionStore.UpdateStatus(runID, sharedtypes.RunStateCancelling)
+				_ = sessionStore.UpdateFlowState(runID, fid, sharedtypes.FlowStateSkippedUpstream, "cancelled")
+				return
+			}
 			defer func() { <-semaphore }()
 
 			depCtx := buildDependencyContext(fid)
@@ -448,7 +485,19 @@ func runCampaignWithContext(ctx context.Context, eng *engine.AgentEngine, camp *
 			var flowBrowser *browserruntime.FlowBrowserRuntime
 
 			if browserRuntime != nil {
-				fb, err := browserRuntime.NewFlowRuntime()
+				// Inherit storage state from upstream completed flows
+				var upstreamState *playwright.StorageState
+				for _, depID := range f.DependsOn {
+					resultsMu.Lock()
+					state, hasState := flowStorageStates[depID]
+					resultsMu.Unlock()
+					if hasState {
+						upstreamState = state
+						break
+					}
+				}
+
+				fb, err := browserRuntime.NewFlowRuntime(upstreamState)
 				if err != nil {
 					resultsMu.Lock()
 					flowResults[fid] = &engine.ExecutionResult{FlowID: fid, Outcome: engine.OutcomeFail, Errors: []string{fmt.Sprintf("failed to create flow browser: %v", err)}}
@@ -479,6 +528,15 @@ func runCampaignWithContext(ctx context.Context, eng *engine.AgentEngine, camp *
 			flowEngine.SetDependencyContext(depCtx)
 			result := flowEngine.RunFlow(runID, f)
 
+			// Save storage state from this flow for downstream dependents
+			if flowBrowser != nil {
+				if state, err := flowBrowser.StorageState(); err == nil && state != nil {
+					resultsMu.Lock()
+					flowStorageStates[fid] = state
+					resultsMu.Unlock()
+				}
+			}
+
 			resultsMu.Lock()
 			flowResults[fid] = result
 			resultsMu.Unlock()
@@ -487,7 +545,7 @@ func runCampaignWithContext(ctx context.Context, eng *engine.AgentEngine, camp *
 				for _, otherFlow := range camp.Flows {
 					for _, dep := range otherFlow.DependsOn {
 						if dep == fid {
-							_ = sessionStore.UpdateFlowState(runID, otherFlow.ID, sharedtypes.FlowStateSkippedUpstream, "upstream_failed")
+							_ = sessionStore.UpdateFlowState(runID, otherFlow.ID, sharedtypes.FlowStateSkippedUpstream, sharedtypes.ErrUpstreamFailed)
 							break
 						}
 					}

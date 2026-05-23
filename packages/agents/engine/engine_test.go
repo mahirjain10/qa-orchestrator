@@ -748,6 +748,71 @@ func TestAutonomousFlow_RepeatHardBreak_ReturnsFail(t *testing.T) {
 	}
 }
 
+func TestAutonomousFlow_FinishSuccessAfterLoop_Blocked(t *testing.T) {
+	// After a loop detection, finish(success) should be blocked and the flow
+	// should eventually reach hard-break (fail) instead of passing.
+	registry := executor.NewMockToolRegistry()
+	// Sequence: same tool repeats → loop → finish(success) blocked → repeat → hard break
+	llmClient := &sequenceLLMClient{
+		responses: []string{
+			`[{"tool":"echo","params":{"value":"same"},"reason":"first"}]`,
+			`[{"tool":"echo","params":{"value":"same"},"reason":"repeat 1"}]`,
+			`[{"tool":"finish","params":{"status":"success"},"reason":"I saw what I needed, finish"}]`,
+			`[{"tool":"echo","params":{"value":"same"},"reason":"repeat 2"}]`,
+			`[{"tool":"echo","params":{"value":"same"},"reason":"repeat 3"}]`,
+		},
+	}
+	engine := NewAgentEngineWithLLM(registry, nil, nil, nil, llmClient, &mockBrowserTools{docs: []browsertools.ToolInfo{}})
+
+	flow := types.Flow{
+		ID:   "auto-flow",
+		Mode: sharedtypes.FlowModeAutonomous,
+		Goal: "Test finish(success) blocked after loop",
+		Config: sharedtypes.FlowConfig{
+			MaxAutonomousSteps: 10,
+		},
+	}
+
+	result := engine.RunFlow("run_test", flow)
+	if result.Outcome != OutcomeFail {
+		t.Fatalf("expected OutcomeFail (finish(success) blocked → hard break), got %s with errors %v", result.Outcome, result.Errors)
+	}
+	if len(result.Errors) == 0 {
+		t.Fatal("expected at least one error")
+	}
+	if !strings.Contains(result.Errors[0], "stuck in loop") {
+		t.Fatalf("error should mention stuck in loop, got: %v", result.Errors)
+	}
+}
+
+func TestAutonomousFlow_AlternationDetection_BlocksRevisit(t *testing.T) {
+	// Navigating to a URL already visited should be blocked.
+	registry := executor.NewMockToolRegistry()
+	llmClient := &sequenceLLMClient{
+		responses: []string{
+			`[{"tool":"echo","params":{"value":"first"},"reason":"first step"}]`,
+			`[{"tool":"navigate","params":{"url":"https://example.com/page2"},"reason":"go to page 2"}]`,
+			`[{"tool":"navigate","params":{"url":"https://example.com/page1"},"reason":"go back to page 1 - already visited"}]`,
+			`[{"tool":"finish","params":{"status":"success"},"reason":"goal done"}]`,
+		},
+	}
+	engine := NewAgentEngineWithLLM(registry, nil, nil, nil, llmClient, &mockBrowserTools{docs: []browsertools.ToolInfo{}})
+
+	flow := types.Flow{
+		ID:   "auto-flow",
+		Mode: sharedtypes.FlowModeAutonomous,
+		Goal: "Verify alternation detection blocks URL revisit",
+		Config: sharedtypes.FlowConfig{
+			MaxAutonomousSteps: 10,
+		},
+	}
+
+	result := engine.RunFlow("run_test", flow)
+	if result.Outcome != OutcomePass {
+		t.Fatalf("expected OutcomePass (navigate blocked, finish succeeds), got %s with errors %v", result.Outcome, result.Errors)
+	}
+}
+
 // selectiveObserveRegistry returns observe_ui data with only specific selectors,
 // simulating a page where only #username and #submit are interactive elements.
 type selectiveObserveRegistry struct {
@@ -1020,4 +1085,309 @@ func TestDrainSteeringEvents_NoLifecycle(t *testing.T) {
 
 	// Should not panic with nil lifecycle
 	eng.drainSteeringEvents(ctx, "test", "flow")
+}
+
+func TestDrainSteeringEvents_AllCommandTypes(t *testing.T) {
+	eng := NewAgentEngine()
+	lc := runtime.NewLifecycleController("run_cmd")
+	eng.SetLifecycleController(lc)
+
+	ctx := &types.ExecutionContext{
+		RunID: "run_cmd", FlowID: "flow-x",
+		SteeringInstructions: []string{},
+	}
+
+	lc.SetWaitingForInput()
+
+	lc.SubmitSteering(&sharedtypes.SteeringEvent{
+		RunID: "run_cmd", FlowID: "flow-x",
+		Command: sharedtypes.SteerInstruction, Instruction: "do something",
+	})
+	lc.SubmitSteering(&sharedtypes.SteeringEvent{
+		RunID: "run_cmd", FlowID: "flow-x",
+		Command: sharedtypes.SteerApprove, Reason: "looks good",
+	})
+	lc.SubmitSteering(&sharedtypes.SteeringEvent{
+		RunID: "run_cmd", FlowID: "flow-x",
+		Command: sharedtypes.SteerContinue, Reason: "proceed",
+	})
+	lc.SubmitSteering(&sharedtypes.SteeringEvent{
+		RunID: "run_cmd", FlowID: "flow-x",
+		Command: sharedtypes.SteerHumanReview, Reason: "check this",
+	})
+	lc.SubmitSteering(&sharedtypes.SteeringEvent{
+		RunID: "run_cmd", FlowID: "flow-x",
+		Command: sharedtypes.SteerRetry, Instruction: "",
+	})
+	lc.SubmitSteering(&sharedtypes.SteeringEvent{
+		RunID: "run_cmd", FlowID: "flow-x",
+		Command: sharedtypes.SteerSkip, Instruction: "",
+	})
+
+	eng.drainSteeringEvents(ctx, "run_cmd", "flow-x")
+
+	// human_review sets WAITING_FOR_INPUT (last state-affecting event after approve/continue)
+	if lc.GetStatus() != sharedtypes.RunStateWaitingInput {
+		t.Fatalf("expected WAITING_FOR_INPUT after SteerHumanReview, got %s", lc.GetStatus())
+	}
+
+	if !ctx.SteeringRetryRequested {
+		t.Error("expected SteeringRetryRequested after SteerRetry command")
+	}
+	if !ctx.SteeringSkipRequested {
+		t.Error("expected SteeringSkipRequested after SteerSkip command")
+	}
+	if len(ctx.SteeringInstructions) != 1 {
+		t.Fatalf("expected 1 steering instruction, got %d", len(ctx.SteeringInstructions))
+	}
+	if ctx.SteeringInstructions[0] != "do something" {
+		t.Errorf("expected instruction 'do something', got %q", ctx.SteeringInstructions[0])
+	}
+}
+
+func TestDrainSteeringEvents_ApproveContinueRouteOrdering(t *testing.T) {
+	eng := NewAgentEngine()
+	lc := runtime.NewLifecycleController("run_order")
+	eng.SetLifecycleController(lc)
+
+	ctx := &types.ExecutionContext{
+		RunID: "run_order", FlowID: "flow-x",
+	}
+
+	// approve and continue both AcknowledgeInput (from WAITING → RUNNING)
+	lc.SetWaitingForInput()
+
+	lc.SubmitSteering(&sharedtypes.SteeringEvent{
+		RunID: "run_order", FlowID: "flow-x",
+		Command: sharedtypes.SteerApprove, Reason: "ok",
+	})
+	eng.drainSteeringEvents(ctx, "run_order", "flow-x")
+	if lc.GetStatus() != sharedtypes.RunStateRunning {
+		t.Fatalf("expected RUNNING after approve, got %s", lc.GetStatus())
+	}
+
+	// continue from RUNNING should still work (AcknowledgeInput is unconditional set)
+	lc.SubmitSteering(&sharedtypes.SteeringEvent{
+		RunID: "run_order", FlowID: "flow-x",
+		Command: sharedtypes.SteerContinue,
+	})
+	eng.drainSteeringEvents(ctx, "run_order", "flow-x")
+	if lc.GetStatus() != sharedtypes.RunStateRunning {
+		t.Fatalf("expected RUNNING after continue, got %s", lc.GetStatus())
+	}
+}
+
+func TestDrainSteeringEvents_HumanReviewSetsWaiting(t *testing.T) {
+	eng := NewAgentEngine()
+	lc := runtime.NewLifecycleController("run_human")
+	eng.SetLifecycleController(lc)
+
+	ctx := &types.ExecutionContext{
+		RunID: "run_human", FlowID: "flow-x",
+	}
+
+	lc.SetStatus(sharedtypes.RunStateRunning)
+
+	lc.SubmitSteering(&sharedtypes.SteeringEvent{
+		RunID: "run_human", FlowID: "flow-x",
+		Command: sharedtypes.SteerHumanReview, Reason: "please review",
+	})
+	eng.drainSteeringEvents(ctx, "run_human", "flow-x")
+
+	if lc.GetStatus() != sharedtypes.RunStateWaitingInput {
+		t.Fatalf("expected WAITING_FOR_INPUT after human_review, got %s", lc.GetStatus())
+	}
+}
+
+func TestFindStepByID_ReturnsSliceElement(t *testing.T) {
+	steps := []sharedtypes.Step{
+		{ID: "step-1"},
+		{ID: "step-2"},
+		{ID: "step-3"},
+	}
+
+	p := findStepByID(steps, "step-2")
+	if p == nil {
+		t.Fatal("expected non-nil pointer")
+	}
+	if p.ID != "step-2" {
+		t.Errorf("expected id step-2, got %s", p.ID)
+	}
+
+	// Verify the pointer points to the actual slice element (not a copy)
+	got := &steps[1]
+	if p != got {
+		t.Error("findStepByID returned pointer to a copy, not the slice element")
+	}
+}
+
+func TestFindStepByID_NotFound(t *testing.T) {
+	steps := []sharedtypes.Step{
+		{ID: "step-1"},
+		{ID: "step-2"},
+	}
+	p := findStepByID(steps, "nonexistent")
+	if p != nil {
+		t.Errorf("expected nil for nonexistent step, got %+v", p)
+	}
+}
+
+func TestFindStepByID_EmptySlice(t *testing.T) {
+	p := findStepByID(nil, "anything")
+	if p != nil {
+		t.Errorf("expected nil for empty slice, got %+v", p)
+	}
+}
+
+func TestExtractTextFromSelector(t *testing.T) {
+	tests := []struct {
+		selector string
+		want     string
+	}{
+		{`a:has-text("Practice")`, "Practice"},
+		{`button:has-text("Click Me")`, "Click Me"},
+		{`input:has-text("Submit Form")`, "Submit Form"},
+		{`#some-id`, ""},
+		{`a[href="/test"]`, ""},
+		{`input[name="email"]`, ""},
+		{`button:nth-of-type(2)`, ""},
+		{`a:has-text("")`, ""},
+		{``, ""},
+	}
+	for _, tt := range tests {
+		got := extractTextFromSelector(tt.selector)
+		if got != tt.want {
+			t.Errorf("extractTextFromSelector(%q) = %q, want %q", tt.selector, got, tt.want)
+		}
+	}
+}
+
+func TestFindBestMatchSelector(t *testing.T) {
+	elements := []map[string]any{
+		{"tag": "a", "text": "Practice Test Automation", "selector": `a.practice-link`},
+		{"tag": "a", "text": "Courses", "selector": `#menu-item-courses`},
+		{"tag": "a", "text": "Blog", "selector": `a:nth-of-type(3)`},
+		{"tag": "button", "text": "Sign In", "selector": `button#sign-in-btn`},
+		{"tag": "a", "text": "Practice Exams", "selector": `a.exams-link`},
+	}
+
+	tests := []struct {
+		name       string
+		intent     string
+		wantPrefix string
+		wantOK     bool
+	}{
+		{"exact match", "Practice Test Automation", `a.practice-link`, true},
+		{"substring match best ratio", "Practice", `a.exams-link`, true}, // closest ratio: 8/14
+		{"substring match exact wins", "Practice Exams", `a.exams-link`, true},
+		{"case insensitive", "practice", `a.exams-link`, true},
+		{"no match", "Nonexistent", "", false},
+		{"button match", "Sign In", `button#sign-in-btn`, true},
+		{"empty intent", "", "", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, ok := findBestMatchSelector(tt.intent, elements)
+			if ok != tt.wantOK {
+				t.Errorf("findBestMatchSelector(%q) ok=%v, want %v", tt.intent, ok, tt.wantOK)
+			}
+			if ok && got != tt.wantPrefix {
+				t.Errorf("findBestMatchSelector(%q) = %q, want %q", tt.intent, got, tt.wantPrefix)
+			}
+		})
+	}
+}
+
+func TestFindBestMatchSelector_PrefersCloserRatio(t *testing.T) {
+	// When multiple elements match, prefer the one where intent text is a larger
+	// fraction of the element text (closer ratio to 1.0 = more precise match).
+	elements := []map[string]any{
+		{"tag": "a", "text": "Practice Test Automation", "selector": `a.practice-link`},
+		{"tag": "a", "text": "Practice", "selector": `#practice-btn`},
+	}
+
+	got, ok := findBestMatchSelector("Practice", elements)
+	if !ok {
+		t.Fatal("expected match, got none")
+	}
+	if got != `#practice-btn` {
+		t.Errorf("expected exact match 'Practice' via #practice-btn, got %q", got)
+	}
+}
+
+func TestFindBestMatchSelector_PrefersAnchorTag(t *testing.T) {
+	// When ratio is tied, prefer anchor tags over other elements.
+	elements := []map[string]any{
+		{"tag": "div", "text": "Submit", "selector": `div.submit-box`},
+		{"tag": "a", "text": "Submit", "selector": `a.submit-link`},
+	}
+
+	got, ok := findBestMatchSelector("Submit", elements)
+	if !ok {
+		t.Fatal("expected match, got none")
+	}
+	if got != `a.submit-link` {
+		t.Errorf("expected anchor tag selector, got %q", got)
+	}
+}
+
+func TestObservedElements(t *testing.T) {
+	obs := []types.Observation{
+		{
+			State: map[string]any{"irrelevant": "data"},
+			LastStep: &types.StepResult{
+				Tool: "navigate",
+			},
+		},
+		{
+			State: map[string]any{
+				"data": map[string]any{
+					"interactive": []any{
+						map[string]any{"tag": "a", "text": "Link1", "selector": "#link1"},
+						map[string]any{"tag": "button", "text": "Btn1", "selector": "#btn1"},
+					},
+				},
+				"source": "observe_ui",
+			},
+			LastStep: &types.StepResult{
+				Tool: "observe_ui",
+			},
+		},
+		{
+			State: map[string]any{
+				"data": map[string]any{
+					"interactive": []any{
+						map[string]any{"tag": "a", "text": "NewLink", "selector": "#new-link"},
+					},
+				},
+			},
+			LastStep: &types.StepResult{
+				Tool: "observe_ui",
+			},
+		},
+	}
+
+	// Should return elements from most recent observe_ui
+	elems := observedElements(obs)
+	if len(elems) != 1 {
+		t.Fatalf("expected 1 element, got %d", len(elems))
+	}
+	if elems[0]["selector"] != "#new-link" {
+		t.Errorf("expected '#new-link', got %v", elems[0]["selector"])
+	}
+}
+
+func TestObservedElements_NoObserve(t *testing.T) {
+	obs := []types.Observation{
+		{
+			State: map[string]any{"irrelevant": "data"},
+			LastStep: &types.StepResult{
+				Tool: "navigate",
+			},
+		},
+	}
+	elems := observedElements(obs)
+	if elems != nil {
+		t.Errorf("expected nil, got %v", elems)
+	}
 }

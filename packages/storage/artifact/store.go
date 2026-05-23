@@ -7,10 +7,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
-
-	"github.com/rs/zerolog/log"
 )
 
 type ArtifactType string
@@ -91,7 +90,9 @@ func (s *ArtifactStore) Save(runID, flowID string, artifactType ArtifactType, fi
 
 	s.artifacts[runID] = append(s.artifacts[runID], artifact)
 	s.index[artifactID] = artifact
-	s.persistIndex()
+	if err := s.persistIndex(); err != nil {
+		return nil, fmt.Errorf("persisting artifact index: %w", err)
+	}
 
 	return artifact, nil
 }
@@ -136,14 +137,14 @@ func (s *ArtifactStore) GetByRunID(runID string) ([]*Artifact, error) {
 	s.mu.RUnlock()
 
 	if exists {
-		return artifacts, nil
+		return cloneArtifacts(artifacts)
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if artifacts, exists = s.artifacts[runID]; exists {
-		return artifacts, nil
+		return cloneArtifacts(artifacts)
 	}
 
 	s.loadIndex()
@@ -154,7 +155,7 @@ func (s *ArtifactStore) GetByRunID(runID string) ([]*Artifact, error) {
 		}
 	}
 	s.artifacts[runID] = filtered
-	return filtered, nil
+	return cloneArtifacts(filtered)
 }
 
 func (s *ArtifactStore) GetByFlowID(runID, flowID string) ([]*Artifact, error) {
@@ -169,7 +170,22 @@ func (s *ArtifactStore) GetByFlowID(runID, flowID string) ([]*Artifact, error) {
 			filtered = append(filtered, a)
 		}
 	}
-	return filtered, nil
+	return cloneArtifacts(filtered)
+}
+
+func cloneArtifacts(artifacts []*Artifact) ([]*Artifact, error) {
+	if len(artifacts) == 0 {
+		return []*Artifact{}, nil
+	}
+	data, err := json.Marshal(artifacts)
+	if err != nil {
+		return nil, fmt.Errorf("cloning artifacts: %w", err)
+	}
+	var cloned []*Artifact
+	if err := json.Unmarshal(data, &cloned); err != nil {
+		return nil, fmt.Errorf("cloning artifacts: %w", err)
+	}
+	return cloned, nil
 }
 
 func (s *ArtifactStore) ListByType(runID string, artifactType ArtifactType) ([]*Artifact, error) {
@@ -198,27 +214,47 @@ func (s *ArtifactStore) Delete(runID string) error {
 			if firstErr == nil {
 				firstErr = fmt.Errorf("removing artifact %s: %w", a.Path, err)
 			}
+			continue
 		}
 		delete(s.index, a.ArtifactID)
 	}
 	delete(s.artifacts, runID)
-	s.persistIndex()
+	if err := s.persistIndex(); err != nil && firstErr == nil {
+		firstErr = fmt.Errorf("persisting artifact index after delete: %w", err)
+	}
 	return firstErr
 }
 
 func (s *ArtifactStore) artifactDir(runID, flowID, artifactType string) string {
-	return filepath.Join(s.baseDir, "artifacts", runID, flowID, artifactType)
+	artifactsDir := filepath.Join(s.baseDir, "artifacts")
+	safeRunID := sanitizeID(runID)
+	safeFlowID := sanitizeID(flowID)
+	dir := filepath.Join(artifactsDir, safeRunID, safeFlowID, artifactType)
+	cleanBase := filepath.Clean(artifactsDir) + string(filepath.Separator)
+	if !strings.HasPrefix(filepath.Clean(dir), cleanBase) {
+		dir = filepath.Join(artifactsDir, "blocked", artifactType)
+	}
+	return dir
+}
+
+func sanitizeID(id string) string {
+	replacer := strings.NewReplacer(
+		"/", "_",
+		"\\", "_",
+		"..", "_",
+		":", "_",
+	)
+	return replacer.Replace(id)
 }
 
 func (s *ArtifactStore) indexPath() string {
 	return filepath.Join(s.baseDir, "artifacts", "index.json")
 }
 
-func (s *ArtifactStore) persistIndex() {
+func (s *ArtifactStore) persistIndex() error {
 	indexDir := filepath.Join(s.baseDir, "artifacts")
 	if err := os.MkdirAll(indexDir, 0755); err != nil {
-		log.Error().Err(err).Str("dir", indexDir).Msg("failed to create artifact index directory")
-		return
+		return fmt.Errorf("creating artifact index directory: %w", err)
 	}
 
 	var all []*Artifact
@@ -229,24 +265,25 @@ func (s *ArtifactStore) persistIndex() {
 	path := s.indexPath()
 
 	if len(all) == 0 {
-		os.Remove(path)
-		return
+		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("removing artifact index: %w", err)
+		}
+		return nil
 	}
 
 	data, err := json.MarshalIndent(all, "", "  ")
 	if err != nil {
-		log.Error().Err(err).Msg("failed to marshal artifact index")
-		return
+		return fmt.Errorf("marshaling artifact index: %w", err)
 	}
 
 	tmpPath := path + ".tmp"
 	if err := os.WriteFile(tmpPath, data, 0644); err != nil {
-		log.Error().Err(err).Str("path", tmpPath).Msg("failed to write artifact index tmp file")
-		return
+		return fmt.Errorf("writing artifact index tmp file: %w", err)
 	}
 	if err := os.Rename(tmpPath, path); err != nil {
-		log.Error().Err(err).Str("from", tmpPath).Str("to", path).Msg("failed to rename artifact index")
+		return fmt.Errorf("renaming artifact index: %w", err)
 	}
+	return nil
 }
 
 func (s *ArtifactStore) loadIndex() {

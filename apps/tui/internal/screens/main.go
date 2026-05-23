@@ -349,7 +349,6 @@ func (m *MainScreen) handleMainKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				m.setMsg(fmt.Sprintf("Selected run: %s", runID))
 				return m, tea.Batch(
 					refreshAllCmd(runID, m.sessionStore, m.traceStore, m.artifactStore, m.reportGenerator),
-					startRefreshTicker(),
 				)
 			}
 		}
@@ -1228,18 +1227,14 @@ func (m *MainScreen) processSteeringCommand(input string) tea.Cmd {
 			if m.currentRun != nil {
 				flowID = m.currentRun.CurrentFlowID
 			}
-			ok := m.lifecycle.SubmitSteering(&types.SteeringEvent{
+			m.lifecycle.SubmitSteering(&types.SteeringEvent{
 				RunID:       runID,
 				FlowID:      flowID,
 				Command:     types.SteerInstruction,
 				Instruction: instruction,
 				Timestamp:   time.Now().UTC(),
 			})
-			if ok {
-				m.setMsg(fmt.Sprintf("Steering instruction sent: %q", instruction))
-			} else {
-				m.setMsg("Steering channel full — instruction dropped. Try again later.")
-			}
+			m.setMsg(fmt.Sprintf("Steering instruction sent: %q", instruction))
 			return fetchRunCmd(m.sessionStore, runID)
 		}
 

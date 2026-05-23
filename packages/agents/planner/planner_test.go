@@ -494,6 +494,30 @@ func TestFormatObserveUIObservation_EmptyPage(t *testing.T) {
 	}
 }
 
+func TestFormatObserveUIObservation_With404Warning(t *testing.T) {
+	obs := types.Observation{
+		LastStep: &types.StepResult{
+			StepID:  "observe_ui",
+			Tool:    "observe_ui",
+			Success: true,
+		},
+		State: map[string]any{
+			"source": "observe_ui",
+			"data": map[string]any{
+				"page_state":  "loaded",
+				"interactive": []any{},
+				"warning":     "⚠️ WARNING: Page appears to be a 404 or error page.",
+			},
+		},
+	}
+
+	result := formatObserveUIObservation(obs)
+
+	if !strings.Contains(result, "WARNING: Page appears to be a 404 or error page") {
+		t.Errorf("expected 404 warning in output, got: %s", result)
+	}
+}
+
 func TestFormatObserveUIObservation_InvalidJSON(t *testing.T) {
 	obs := types.Observation{
 		LastStep: &types.StepResult{

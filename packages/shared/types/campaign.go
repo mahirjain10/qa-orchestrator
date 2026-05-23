@@ -132,6 +132,8 @@ type Checkpoint struct {
 	Timestamp time.Time      `json:"timestamp" yaml:"timestamp"`
 }
 
+const ErrUpstreamFailed = "upstream_failed"
+
 type DependencyError struct {
 	FlowID      string
 	MissingDeps []string
@@ -139,8 +141,11 @@ type DependencyError struct {
 }
 
 func (e *DependencyError) Error() string {
+	if len(e.MissingDeps) > 0 {
+		return "missing dependencies"
+	}
 	if len(e.CycleDeps) > 0 {
 		return "circular dependency detected"
 	}
-	return "missing dependencies"
+	return "unknown dependency error"
 }

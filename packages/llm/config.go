@@ -21,19 +21,22 @@ const (
 	envProvider         = "LLM_PROVIDER"
 	envGeminiAPIKey     = "GEMINI_API_KEY"
 	envGeminiModel      = "GEMINI_MODEL"
+	envFallbackModels   = "LLM_FALLBACK_MODELS"
 
-	defaultBaseURL     = "https://openrouter.ai/api/v1"
-	defaultModel       = "openai/gpt-4o-mini"
-	defaultTimeout     = 30
-	defaultMaxRetries  = 3
-	defaultProvider    = "auto"
-	defaultGeminiModel = "gemini-2.0-flash"
+	defaultBaseURL        = "https://openrouter.ai/api/v1"
+	defaultModel          = "openai/gpt-4o-mini"
+	defaultTimeout        = 30
+	defaultMaxRetries     = 3
+	defaultProvider       = "auto"
+	defaultGeminiModel    = "gemini-2.0-flash"
+	defaultFallbackModels = "openai/gpt-4o-mini,gemini/gemini-2.0-flash-001"
 )
 
 type Config struct {
 	APIKey           string
 	BaseURL          string
 	Model            string
+	FallbackModels   []string
 	Timeout          time.Duration
 	MaxRetries       int
 	HTTPReferer      string
@@ -122,10 +125,23 @@ func LoadConfig() (*Config, error) {
 		}
 	}
 
+	fallbackModels := []string{}
+	fbStr := os.Getenv(envFallbackModels)
+	if fbStr == "" {
+		fbStr = defaultFallbackModels
+	}
+	for _, p := range strings.Split(fbStr, ",") {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			fallbackModels = append(fallbackModels, p)
+		}
+	}
+
 	return &Config{
 		APIKey:           apiKey,
 		BaseURL:          baseURL,
 		Model:            model,
+		FallbackModels:   fallbackModels,
 		Timeout:          time.Duration(timeout) * time.Second,
 		MaxRetries:       maxRetries,
 		HTTPReferer:      os.Getenv(envHTTPReferer),

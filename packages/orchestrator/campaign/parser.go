@@ -161,10 +161,14 @@ func (p *CampaignParser) ParseNaturalLanguage(text string) (*types.Campaign, err
 		return nil, fmt.Errorf("empty description")
 	}
 
+	// Strip null bytes and markdown fences that could be used for prompt injection
+	sanitized := strings.ReplaceAll(text, "\x00", "")
+	sanitized = strings.ReplaceAll(sanitized, "```", "")
+
 	flow := types.Flow{
 		ID:       fmt.Sprintf("auto-flow-%d", time.Now().UnixNano()),
 		Name:     strings.TrimSpace(lines[0]),
-		Goal:     text,
+		Goal:     strings.TrimSpace(sanitized),
 		Mode:     types.FlowModeAutonomous,
 		Priority: types.FlowPriorityMedium,
 		Steps:    []types.Step{},

@@ -2,6 +2,15 @@
 bin/
 *.exe
 *.exe~
+
+# Images
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.ico
+*.bmp
 *.dll
 *.so
 *.dylib

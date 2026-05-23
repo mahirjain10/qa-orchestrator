@@ -11,6 +11,7 @@ flows:
     name: Intentional Failure
     description: This flow is designed to fail by navigating to a non-existent page
     goal: Navigate to https://this-domain-does-not-exist-12345.com/ and verify the page loads successfully within 5 seconds
+    start_url: https://this-domain-does-not-exist-12345.com/
     mode: autonomous
     priority: high
     depends_on: []
@@ -19,6 +20,7 @@ flows:
     name: Dependent Flow A
     description: Depends on the failing flow - should be SKIPPED_UPSTREAM_FAILED
     goal: Navigate to https://practicetestautomation.com/practice-test-login/ and verify the login page loads with username and password fields visible
+    start_url: https://practicetestautomation.com/practice-test-login/
     mode: autonomous
     priority: high
     depends_on:
@@ -28,6 +30,7 @@ flows:
     name: Dependent Flow B
     description: Also depends on the failing flow - should be SKIPPED_UPSTREAM_FAILED
     goal: Navigate to https://practicetestautomation.com/practice-test-login/ and verify the page title contains 'Test'
+    start_url: https://practicetestautomation.com/practice-test-login/
     mode: autonomous
     priority: medium
     depends_on:
@@ -37,6 +40,7 @@ flows:
     name: Independent Flow
     description: Does NOT depend on the failing flow - should still execute normally
     goal: Navigate to https://practicetestautomation.com/practice-test-login/ and verify the login form is displayed with username field, password field, and submit button all visible
+    start_url: https://practicetestautomation.com/practice-test-login/
     mode: autonomous
     priority: high
     depends_on: []
@@ -45,6 +49,7 @@ flows:
     name: Chain Dependency Test
     description: Depends on a skipped flow - should also be SKIPPED_UPSTREAM_FAILED
     goal: Navigate to any page and verify it loads
+    start_url: https://practicetestautomation.com/
     mode: autonomous
     priority: low
     depends_on:

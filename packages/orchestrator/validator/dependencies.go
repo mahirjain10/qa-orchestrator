@@ -109,12 +109,15 @@ func (v *DependencyValidator) Validate(flows []types.Flow) ValidationResult {
 
 func (v *DependencyValidator) topologicalSort(flows []types.Flow) []string {
 	inDegree := make(map[string]int)
+	dependents := make(map[string][]string)
+
 	for _, flow := range flows {
 		if _, exists := inDegree[flow.ID]; !exists {
 			inDegree[flow.ID] = 0
 		}
-		for range flow.DependsOn {
+		for _, dep := range flow.DependsOn {
 			inDegree[flow.ID]++
+			dependents[dep] = append(dependents[dep], flow.ID)
 		}
 	}
 
@@ -132,14 +135,10 @@ func (v *DependencyValidator) topologicalSort(flows []types.Flow) []string {
 		queue = queue[1:]
 		order = append(order, current)
 
-		for _, flow := range flows {
-			for _, dep := range flow.DependsOn {
-				if dep == current {
-					inDegree[flow.ID]--
-					if inDegree[flow.ID] == 0 {
-						queue = append(queue, flow.ID)
-					}
-				}
+		for _, dependent := range dependents[current] {
+			inDegree[dependent]--
+			if inDegree[dependent] == 0 {
+				queue = append(queue, dependent)
 			}
 		}
 	}

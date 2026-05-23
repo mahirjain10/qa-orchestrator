@@ -95,3 +95,32 @@ func TestExecutorExecutePlan(t *testing.T) {
 		t.Errorf("plan.CurrentIdx = %d, want 2", plan.CurrentIdx)
 	}
 }
+
+func TestExecutorExecutePlan_SkippedSteps(t *testing.T) {
+	registry := NewMockToolRegistry()
+	executor := NewExecutor(registry)
+
+	plan := &types.Plan{
+		FlowID:     "test",
+		CurrentIdx: 0,
+		Steps: []types.PlanStep{
+			{StepIndex: 0, StepID: "step1", Tool: "log", Params: map[string]any{"message": "first"}},
+			{StepIndex: 1, StepID: "skipped", Tool: "log", Params: map[string]any{}, Skip: true},
+			{StepIndex: 2, StepID: "step3", Tool: "log", Params: map[string]any{"message": "third"}},
+		},
+	}
+
+	results := executor.ExecutePlan(plan)
+
+	if len(results) != 3 {
+		t.Fatalf("len(results) = %d, want 3", len(results))
+	}
+
+	if plan.CurrentIdx != 3 {
+		t.Errorf("plan.CurrentIdx = %d, want 3 (all steps including skipped)", plan.CurrentIdx)
+	}
+
+	if !results[1].Success || results[1].Output != "skipped" {
+		t.Errorf("expected skipped result at index 1, got success=%v output=%q", results[1].Success, results[1].Output)
+	}
+}

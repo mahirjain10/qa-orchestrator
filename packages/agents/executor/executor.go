@@ -117,8 +117,14 @@ func (r *MockToolRegistry) registerDefaultTools() {
 
 	r.Register("observe_ui", func(params map[string]any) (any, error) {
 		return map[string]any{
-			"page_state":  "loaded",
-			"interactive": []any{},
+			"page_state": "loaded",
+			"interactive": []any{
+				map[string]any{"tag": "input", "selector": "#username", "text": "Username"},
+				map[string]any{"tag": "input", "selector": "#password", "text": ""},
+				map[string]any{"tag": "button", "selector": "#login-btn", "text": "Login"},
+				map[string]any{"tag": "a", "selector": "a[href='/register']", "text": "Register"},
+				map[string]any{"tag": "h1", "selector": "h1", "text": "Welcome"},
+			},
 		}, nil
 	})
 }
@@ -187,6 +193,7 @@ func (e *Executor) ExecutePlan(plan *types.Plan) []*types.StepResult {
 				Output:  "skipped",
 				Success: true,
 			})
+			plan.CurrentIdx = i + 1
 			continue
 		}
 

@@ -10,6 +10,7 @@ flows:
     name: User Authentication
     description: Navigate to SauceDemo, login with valid credentials, and verify successful entry to the product inventory page
     goal: Navigate to https://www.saucedemo.com/, verify the login page loads with the Swag Labs branding, enter username 'standard_user' and password 'secret_sauce' into the respective fields, click the Login button, and verify you are redirected to the inventory page that displays multiple products with the title 'Products' visible at the top. Also verify the shopping cart icon is visible in the top right corner
+    start_url: https://www.saucedemo.com/
     mode: autonomous
     priority: high
     depends_on: []
@@ -18,6 +19,7 @@ flows:
     name: Product Browsing and Selection
     description: Browse the product inventory, sort products by price, select specific items, and add them to the cart
     goal: On the SauceDemo inventory page, first verify that at least 6 products are displayed. Then use the sort dropdown to sort products by 'Price (low to high)'. Add the first product (lowest price) to the cart by clicking its 'Add to cart' button, then add the third product to the cart as well. Verify the shopping cart badge shows '2' indicating two items. Take a screenshot of the inventory page showing the added items
+    start_url: https://www.saucedemo.com/inventory.html
     mode: autonomous
     priority: high
     depends_on:
@@ -27,6 +29,7 @@ flows:
     name: Cart Management
     description: Navigate to the cart, verify items, and proceed to checkout
     goal: Click on the shopping cart icon to navigate to the cart page. Verify that exactly 2 items are in the cart with their correct names and prices matching what was added. Verify the total price is displayed. Remove one of the items from the cart by clicking its 'Remove' button. Verify only 1 item remains in the cart and the cart badge count updated. Click the 'Checkout' button to proceed to the checkout information page
+    start_url: https://www.saucedemo.com/cart.html
     mode: autonomous
     priority: high
     depends_on:
@@ -36,6 +39,7 @@ flows:
     name: Checkout Process
     description: Fill out the checkout form with customer information and complete the order
     goal: On the checkout information page, fill in the First Name field with 'John', the Last Name field with 'Doe', and the Postal Code field with '12345'. Click the 'Continue' button to proceed to the checkout overview page. On the overview page, verify the item name and price match the remaining product in the cart. Verify the tax amount is calculated and displayed. Verify the total price includes item price plus tax. Click the 'Finish' button to complete the order
+    start_url: https://www.saucedemo.com/checkout-step-one.html
     mode: autonomous
     priority: high
     depends_on:
@@ -45,6 +49,7 @@ flows:
     name: Order Confirmation and Validation
     description: Verify the order completion, capture confirmation details, and logout
     goal: On the order confirmation page, verify the success message 'Thank you for your order!' is displayed. Verify the order completion icon (checkmark or similar) is visible. Capture a screenshot of the confirmation page. Verify the order total matches the expected amount from the overview page. Then click the 'Back Home' button to return to the inventory page. Finally, click the menu button (hamburger icon) in the top left, select 'Logout' from the menu, and verify you are redirected back to the SauceDemo login page
+    start_url: https://www.saucedemo.com/checkout-complete.html
     mode: autonomous
     priority: medium
     depends_on:

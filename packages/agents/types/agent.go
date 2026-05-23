@@ -98,6 +98,16 @@ func (p *Plan) GetHistory() string {
 		}
 		if step.Skip {
 			history += " [SKIPPED: " + step.Reason + "]"
+		} else if step.Result != nil {
+			if step.Result.Success {
+				history += " [SUCCESS]"
+			} else {
+				errStr := "unknown error"
+				if step.Result.Error != nil {
+					errStr = step.Result.Error.Error()
+				}
+				history += " [FAILED: " + errStr + "]"
+			}
 		} else if step.Reason != "" {
 			history += " - " + step.Reason
 		}
@@ -120,6 +130,7 @@ type PlanStep struct {
 	paramsJSON string
 	Skip       bool
 	Reason     string
+	Result     *StepResult
 }
 
 type Assertion = types.Assertion
@@ -135,6 +146,7 @@ const (
 	RecoveryActionEscalate RecoveryAction = "escalate"
 	RecoveryActionSucceed  RecoveryAction = "succeed"
 	RecoveryActionFail     RecoveryAction = "fail"
+	RecoveryActionRootNav  RecoveryAction = "root_nav"
 )
 
 type RecoveryDecision struct {
@@ -157,4 +169,8 @@ type ExecutionContext struct {
 	DependencyContext       string
 	LastStepSignature       string
 	ConsecutiveObserveCount int
+	VisitedURLs             map[string]bool
+	RepetitionBlockedSuccess bool
+	SteeringRetryRequested  bool
+	SteeringSkipRequested   bool
 }

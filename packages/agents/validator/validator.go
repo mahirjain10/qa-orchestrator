@@ -2,6 +2,7 @@ package validator
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	"qa-orchestrator/packages/agents/types"
@@ -100,7 +101,7 @@ func (v *Validator) validateAssertion(assertion types.Assertion, output any) Ass
 }
 
 func equals(a, b any) bool {
-	return fmt.Sprintf("%v", a) == fmt.Sprintf("%v", b)
+	return reflect.DeepEqual(a, b)
 }
 
 func (v *Validator) ValidateResults(results []*types.StepResult, steps []types.Step) (bool, []string) {

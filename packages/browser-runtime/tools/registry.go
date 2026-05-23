@@ -4,49 +4,98 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 
 	"qa-orchestrator/packages/browser-runtime"
+	sharedtypes "qa-orchestrator/packages/shared/types"
 )
 
 const observeUIJS = `(() => {
-	const candidates = document.querySelectorAll('input, button, textarea, select, a, [role="button"], [role="textbox"]');
-	const elements = [];
 	const maxElements = 50;
 	const priorityOrder = { 'INPUT': 0, 'BUTTON': 1, 'TEXTAREA': 2, 'SELECT': 3, 'A': 4 };
-	const collected = [];
-	for (const el of candidates) {
+	const interactiveTags = { 'INPUT': true, 'BUTTON': true, 'TEXTAREA': true, 'SELECT': true, 'A': true, 'FORM': true };
+
+	function isVisible(el) {
 		const rect = el.getBoundingClientRect();
-		if (rect.width === 0 || rect.height === 0) continue;
+		if (rect.width === 0 || rect.height === 0) return false;
 		const style = window.getComputedStyle(el);
-		if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') continue;
-		collected.push(el);
+		return style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
 	}
-	collected.sort((a, b) => (priorityOrder[a.tagName] || 99) - (priorityOrder[b.tagName] || 99));
-	for (let i = 0; i < Math.min(collected.length, maxElements); i++) {
+
+	function isCapturable(el) {
+		const tag = el.tagName;
+		if (interactiveTags[tag]) return true;
+		const role = el.getAttribute('role');
+		if (role) return true;
+		if (el.getAttribute('tabindex') !== null) return true;
+		const text = (el.textContent || '').trim();
+		if (text.length > 0) return true;
+		if (el.getAttribute('data-test')) return true;
+		return false;
+	}
+
+	function buildSelector(el) {
+		const tag = el.tagName.toLowerCase();
+		if (el.id) return '#' + el.id;
+		const name = el.getAttribute('name');
+		if (name) return tag + '[name="' + name.replace(/"/g, '\\"') + '"]';
+		const dataTest = el.getAttribute('data-test');
+		if (dataTest) return tag + '[data-test="' + dataTest.replace(/"/g, '\\"') + '"]';
+		const cls = el.getAttribute('class');
+		if (cls) {
+			const parts = cls.trim().split(/\s+/).filter(function(c) { return c.length > 0; });
+			if (parts.length > 0) {
+				const safeParts = [];
+				for (let p = 0; p < parts.length; p++) {
+					if (typeof CSS !== 'undefined' && CSS.escape) {
+						safeParts.push(CSS.escape(parts[p]));
+					} else {
+						safeParts.push(parts[p]);
+					}
+				}
+				return tag + '.' + safeParts.join('.');
+			}
+		}
+		let idx = 1;
+		let sib = el.previousElementSibling;
+		while (sib) { if (sib.tagName === el.tagName) idx++; sib = sib.previousElementSibling; }
+		return tag + ':nth-of-type(' + idx + ')';
+	}
+
+	const collected = [];
+	if (!document.body) return JSON.stringify({ page_state: 'empty', interactive: [] });
+	const walker = document.createTreeWalker(
+		document.body,
+		NodeFilter.SHOW_ELEMENT,
+		{
+			acceptNode: function(node) {
+				if (isVisible(node) && isCapturable(node)) return NodeFilter.FILTER_ACCEPT;
+				return NodeFilter.FILTER_SKIP;
+			}
+		},
+		false
+	);
+	while (walker.nextNode() && collected.length < maxElements) {
+		collected.push(walker.currentNode);
+	}
+
+	collected.sort(function(a, b) {
+		return (priorityOrder[a.tagName] || 99) - (priorityOrder[b.tagName] || 99);
+	});
+
+	const elements = [];
+	for (let i = 0; i < collected.length && i < maxElements; i++) {
 		const el = collected[i];
 		const tag = el.tagName.toLowerCase();
-		let selector = '';
-		if (el.id) {
-			selector = '#' + el.id;
-		} else if (el.getAttribute('name')) {
-			selector = tag + '[name="' + el.getAttribute('name') + '"]';
-		} else if (el.textContent && el.textContent.trim()) {
-			const text = el.textContent.trim().substring(0, 50).replace(/"/g, '\\"');
-			selector = tag + ':has-text("' + text + '")';
-		} else {
-			let idx = 1;
-			let sib = el.previousElementSibling;
-			while (sib) { if (sib.tagName === el.tagName) idx++; sib = sib.previousElementSibling; }
-			selector = tag + ':nth-of-type(' + idx + ')';
-		}
 		elements.push({
 			tag: tag,
 			text: (el.textContent || '').trim().substring(0, 100),
 			id: el.id || '',
 			name: el.getAttribute('name') || '',
+			class: el.getAttribute('class') || '',
 			placeholder: el.placeholder || '',
-			selector: selector
+			selector: buildSelector(el)
 		});
 	}
 	return JSON.stringify({
@@ -68,23 +117,8 @@ const selectorExistsJS = `((selector) => {
 
 type Tool func(params map[string]any) (any, error)
 
-// ParameterInfo describes a single parameter for a tool.
-// NOTE: Duplicated in packages/llm/prompts.go.
-// TODO: Consolidate into packages/shared/types/ in a future refactor.
-type ParameterInfo struct {
-	Type        string `json:"type"`
-	Description string `json:"description"`
-	Required    bool   `json:"required"`
-}
-
-// ToolInfo describes a tool for LLM consumption.
-// NOTE: Duplicated in packages/llm/prompts.go.
-// TODO: Consolidate into packages/shared/types/ in a future refactor.
-type ToolInfo struct {
-	Name        string                   `json:"name"`
-	Description string                   `json:"description"`
-	Parameters  map[string]ParameterInfo `json:"parameters"`
-}
+type ParameterInfo = sharedtypes.ParameterInfo
+type ToolInfo = sharedtypes.ToolInfo
 
 type ToolRegistry struct {
 	mu       sync.RWMutex
@@ -119,7 +153,7 @@ func (r *ToolRegistry) Cancel() {
 func (r *ToolRegistry) checkSelectorExists(runtime browserruntime.BrowserRuntimeInterface, selector string) error {
 	selectorJSON, _ := json.Marshal(selector)
 	js := selectorExistsJS + `(` + string(selectorJSON) + `)`
-	result, err := runtime.Evaluate(js)
+	result, err := runtime.Evaluate(r.ctx, js)
 	if err != nil {
 		return nil
 	}
@@ -136,6 +170,9 @@ func (r *ToolRegistry) checkSelectorExists(runtime browserruntime.BrowserRuntime
 		return nil
 	}
 	if !check.Exists {
+		if check.Error != "" {
+			return fmt.Errorf("invalid selector syntax for '%s': %s", selector, check.Error)
+		}
 		return fmt.Errorf("selector '%s' not found on page — selector does not exist in current DOM", selector)
 	}
 	return nil
@@ -152,6 +189,7 @@ func (r *ToolRegistry) registerDefaultTools(runtime browserruntime.BrowserRuntim
 	r.registerScreenshot(runtime)
 	r.registerFinish(runtime)
 	r.registerObserveUI(runtime)
+	r.registerEcho()
 }
 
 func (r *ToolRegistry) registerNavigate(runtime browserruntime.BrowserRuntimeInterface) {
@@ -180,7 +218,7 @@ func (r *ToolRegistry) registerClick(runtime browserruntime.BrowserRuntimeInterf
 		if err := r.checkSelectorExists(runtime, selector); err != nil {
 			return nil, err
 		}
-		if err := runtime.Click(selector); err != nil {
+		if err := runtime.Click(r.ctx, selector); err != nil {
 			return nil, fmt.Errorf("click failed: %w", err)
 		}
 		return fmt.Sprintf("clicked %s", selector), nil
@@ -203,7 +241,7 @@ func (r *ToolRegistry) registerTypeText(runtime browserruntime.BrowserRuntimeInt
 		if err := r.checkSelectorExists(runtime, selector); err != nil {
 			return nil, err
 		}
-		if err := runtime.Fill(selector, value); err != nil {
+		if err := runtime.Fill(r.ctx, selector, value); err != nil {
 			return nil, fmt.Errorf("type_text failed: %w", err)
 		}
 		return fmt.Sprintf("typed '%s' into %s", value, selector), nil
@@ -226,7 +264,7 @@ func (r *ToolRegistry) registerWaitFor(runtime browserruntime.BrowserRuntimeInte
 		if err := r.checkSelectorExists(runtime, selector); err != nil {
 			return nil, err
 		}
-		err := runtime.WaitForSelector(selector, &browserruntime.WaitForOptions{State: state})
+		err := runtime.WaitForSelector(r.ctx, selector, &browserruntime.WaitForOptions{State: state})
 		if err != nil {
 			return nil, fmt.Errorf("wait_for failed: %w", err)
 		}
@@ -242,7 +280,7 @@ func (r *ToolRegistry) registerGetText(runtime browserruntime.BrowserRuntimeInte
 		if !ok {
 			return nil, fmt.Errorf("selector parameter required")
 		}
-		text, err := runtime.TextContent(selector)
+		text, err := runtime.TextContent(r.ctx, selector)
 		if err != nil {
 			return nil, fmt.Errorf("get_text failed: %w", err)
 		}
@@ -258,7 +296,7 @@ func (r *ToolRegistry) registerGetHTML(runtime browserruntime.BrowserRuntimeInte
 		if !ok {
 			return nil, fmt.Errorf("selector parameter required")
 		}
-		html, err := runtime.InnerHTML(selector)
+		html, err := runtime.InnerHTML(r.ctx, selector)
 		if err != nil {
 			return nil, fmt.Errorf("get_html failed: %w", err)
 		}
@@ -274,7 +312,7 @@ func (r *ToolRegistry) registerEvaluate(runtime browserruntime.BrowserRuntimeInt
 		if !ok {
 			return nil, fmt.Errorf("expression parameter required")
 		}
-		result, err := runtime.Evaluate(expr)
+		result, err := runtime.Evaluate(r.ctx, expr)
 		if err != nil {
 			return nil, fmt.Errorf("evaluate failed: %w", err)
 		}
@@ -295,7 +333,7 @@ func (r *ToolRegistry) registerScreenshot(runtime browserruntime.BrowserRuntimeI
 		if fp, ok := params["full_page"].(bool); ok {
 			fullPage = fp
 		}
-		screenshot, err := runtime.Screenshot(&browserruntime.ScreenshotOptions{
+		screenshot, err := runtime.Screenshot(r.ctx, &browserruntime.ScreenshotOptions{
 			Path:     path,
 			FullPage: fullPage,
 		})
@@ -320,7 +358,7 @@ func (r *ToolRegistry) registerFinish(runtime browserruntime.BrowserRuntimeInter
 
 func (r *ToolRegistry) registerObserveUI(runtime browserruntime.BrowserRuntimeInterface) {
 	r.Register("observe_ui", map[string]ParameterInfo{}, func(params map[string]any) (any, error) {
-		result, err := runtime.Evaluate(observeUIJS)
+		result, err := runtime.Evaluate(r.ctx, observeUIJS)
 		if err != nil {
 			return nil, fmt.Errorf("observe_ui failed: %w", err)
 		}
@@ -332,7 +370,41 @@ func (r *ToolRegistry) registerObserveUI(runtime browserruntime.BrowserRuntimeIn
 		if err := json.Unmarshal([]byte(str), &parsed); err != nil {
 			return nil, fmt.Errorf("observe_ui: failed to parse result: %w", err)
 		}
+
+		// Check heading first (more targeted — h1/h2 with 404 content)
+		headingResult, _ := runtime.Evaluate(r.ctx, `
+			(() => {
+				const el = document.querySelector('h1, h2, .error, .not-found, .page-not-found, .error-page');
+				return el ? el.textContent.substring(0, 100) : '';
+			})()
+		`)
+		if headingStr, ok := headingResult.(string); ok {
+			headingLower := strings.ToLower(headingStr)
+			if strings.Contains(headingLower, "404") || strings.Contains(headingLower, "not found") {
+				parsed["warning"] = "⚠️ WARNING: Page appears to be a 404 or error page."
+			}
+		}
+
+		// Only check title if heading didn't trigger — require prefix match to avoid
+		// flagging legitimate pages whose titles mention "404" or "not found" in passing.
+		if _, exists := parsed["warning"]; !exists {
+			titleResult, _ := runtime.Evaluate(r.ctx, "document.title")
+			title, _ := titleResult.(string)
+			titleLower := strings.ToLower(title)
+			if strings.HasPrefix(titleLower, "404") || strings.HasPrefix(titleLower, "not found") {
+				parsed["warning"] = "⚠️ WARNING: Page appears to be a 404 or error page."
+			}
+		}
+
 		return parsed, nil
+	})
+}
+
+func (r *ToolRegistry) registerEcho() {
+	r.Register("echo", map[string]ParameterInfo{
+		"value": {Type: "string", Description: "The value to echo back", Required: true},
+	}, func(params map[string]any) (any, error) {
+		return params["value"], nil
 	})
 }
 
@@ -360,6 +432,7 @@ func getToolDescription(name string) string {
 		"screenshot": "Take a screenshot of the page",
 		"finish":     "Signal that the goal has been achieved (or is unachievable) and no more steps are needed",
 		"observe_ui": "Inspect the current page and return a list of visible interactive elements with their selectors",
+		"echo":       "Return the provided value as-is. Useful for testing tool integration and guided flow verification.",
 	}
 	if desc, ok := descriptions[name]; ok {
 		return desc

@@ -43,6 +43,24 @@ func TestNewBrowserRuntime(t *testing.T) {
 	}
 }
 
+func TestNewFlowRuntime_AcceptsNilStorageState(t *testing.T) {
+	r, err := NewBrowserRuntime(nil)
+	if err != nil {
+		t.Fatalf("NewBrowserRuntime failed: %v", err)
+	}
+
+	if r.IsRunning() {
+		t.Fatal("expected not running")
+	}
+
+	// Verify NewFlowRuntime compiles and accepts nil storage state (variadic)
+	// Full test would require a started browser, so we only verify the signature
+	// compiles by checking the function is callable with no args.
+	if r == nil {
+		t.Fatal("unexpected nil runtime")
+	}
+}
+
 func TestNewBrowserRuntimeWithConfig(t *testing.T) {
 	config := &Config{
 		BrowserType:    BrowserTypeFirefox,

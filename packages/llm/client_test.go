@@ -1,12 +1,37 @@
 package llm
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
 	"time"
 )
+
+// mockProvider implements Provider for testing with configurable behavior.
+type mockProvider struct {
+	name          string
+	endpoint      string
+	authHeadersFn func(apiKey string) map[string]string
+	buildReqFn    func(messages []Message, systemPrompt, model string, temperature float64, maxTokens int) ([]byte, error)
+	parseRespFn   func(body []byte) (*GenerateResponse, error)
+	parseErrFn    func(statusCode int, body []byte) error
+	validateFn    func(model string) error
+}
+
+func (m *mockProvider) Name() string                          { return m.name }
+func (m *mockProvider) Endpoint(model string) string          { return m.endpoint }
+func (m *mockProvider) AuthHeaders(apiKey string) map[string]string { return m.authHeadersFn(apiKey) }
+func (m *mockProvider) BuildRequest(messages []Message, systemPrompt, model string, temperature float64, maxTokens int) ([]byte, error) {
+	return m.buildReqFn(messages, systemPrompt, model, temperature, maxTokens)
+}
+func (m *mockProvider) ParseResponse(body []byte) (*GenerateResponse, error) { return m.parseRespFn(body) }
+func (m *mockProvider) ParseError(statusCode int, body []byte) error         { return m.parseErrFn(statusCode, body) }
+func (m *mockProvider) ValidateModel(model string) error                     { return m.validateFn(model) }
 
 func TestLoadConfig_Success(t *testing.T) {
 	os.Setenv("LLM_API_KEY", "test-key-123")
@@ -352,6 +377,10 @@ func TestBuildSystemPrompt(t *testing.T) {
 	if !contains(prompt, "navigate") {
 		t.Error("expected prompt to contain tool name")
 	}
+
+	if !contains(prompt, "observe_ui") {
+		t.Error("expected prompt to contain observe_ui rule")
+	}
 }
 
 func TestBuildUserPrompt(t *testing.T) {
@@ -372,6 +401,101 @@ func TestBuildUserPrompt(t *testing.T) {
 	}
 	if !contains(prompt, "Login form visible") {
 		t.Error("expected prompt to contain observation")
+	}
+}
+
+func TestBuildSystemPrompt_No404Prompts(t *testing.T) {
+	tools := []ToolInfo{
+		{Name: "navigate", Description: "Navigate to a URL",
+			Parameters: map[string]ParameterInfo{"url": {Type: "string", Required: true}}},
+		{Name: "click", Description: "Click an element",
+			Parameters: map[string]ParameterInfo{"selector": {Type: "string", Required: true}}},
+	}
+	prompt := BuildSystemPrompt(tools, "")
+
+	if contains(prompt, "NEVER use navigate()") {
+		t.Error("system prompt should NOT contain 404 URL ban — recovery is engine-level now")
+	}
+	if contains(prompt, "root domain") {
+		t.Error("system prompt should NOT mention root domain — recovery is engine-level now")
+	}
+}
+
+func TestBuildUserPrompt_No404NavBan(t *testing.T) {
+	data := PlannerPromptData{
+		Goal:        "Test login",
+		History:     "Step 1: opened page",
+		Observation: "Login form visible",
+		Tools:       []ToolInfo{},
+	}
+	prompt := BuildUserPrompt(data)
+
+	if contains(prompt, "NEVER use navigate()") {
+		t.Error("user prompt should NOT contain 404 URL ban — recovery is engine-level now")
+	}
+	if contains(prompt, "extract the root domain") {
+		t.Error("user prompt should NOT contain root domain extraction — recovery is engine-level now")
+	}
+}
+
+func TestEmptyResponseIsRetryable(t *testing.T) {
+	// Start a test server that returns 200 OK with empty content.
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"id":"","object":"chat.completion","created":0,"model":"test","choices":[]}`))
+	}))
+	defer server.Close()
+
+	provider := &mockProvider{
+		name:     "test",
+		endpoint: server.URL,
+		authHeadersFn: func(apiKey string) map[string]string {
+			return map[string]string{"Content-Type": "application/json"}
+		},
+		buildReqFn: func(messages []Message, systemPrompt, model string, temperature float64, maxTokens int) ([]byte, error) {
+			return json.Marshal(map[string]any{
+				"model":    model,
+				"messages": []map[string]string{{"role": "user", "content": "test"}},
+			})
+		},
+		parseRespFn: func(body []byte) (*GenerateResponse, error) {
+			return (&OpenAIProvider{}).ParseResponse(body)
+		},
+		parseErrFn: func(statusCode int, body []byte) error {
+			return fmt.Errorf("API error: %s", string(body))
+		},
+		validateFn: func(model string) error { return nil },
+	}
+
+	client := &HTTPClient{
+		config: &Config{
+			APIKey:     "test-key",
+			Model:      "test-model",
+			MaxRetries: 2,
+		},
+		provider:   provider,
+		httpClient: &http.Client{Timeout: 5 * time.Second},
+		retryConfig: &RetryConfig{
+			MaxRetries:   3,
+			InitialDelay: 10 * time.Millisecond,
+			MaxDelay:     100 * time.Millisecond,
+			Multiplier:   2.0,
+		},
+	}
+
+	_, err := client.Generate(context.Background(), &GenerateRequest{
+		Model:    "test-model",
+		Messages: []Message{{Role: RoleUser, Content: "test"}},
+	})
+
+	if err == nil {
+		t.Fatal("expected error from empty response, got nil")
+	}
+	if !IsRetryable(err) {
+		t.Errorf("expected retryable error, got non-retryable: %v", err)
+	}
+	if !contains(err.Error(), "empty response") {
+		t.Errorf("expected error to mention 'empty response', got: %v", err)
 	}
 }
 
