@@ -1,14 +1,21 @@
 package llm
 
 type GenerateRequest struct {
-	Model               string    `json:"model"`
-	Messages            []Message `json:"messages"`
-	Temperature         float64   `json:"temperature,omitempty"`
-	MaxTokens           int       `json:"max_tokens,omitempty"`
-	MaxCompletionTokens int       `json:"max_completion_tokens,omitempty"`
-	TopP                float64   `json:"top_p,omitempty"`
-	Stop                []string  `json:"stop,omitempty"`
-	Timeout             int       `json:"-"`
+	Model               string           `json:"model"`
+	Messages            []Message        `json:"messages"`
+	Temperature         float64          `json:"temperature,omitempty"`
+	MaxTokens           int              `json:"max_tokens,omitempty"`
+	MaxCompletionTokens int              `json:"max_completion_tokens,omitempty"`
+	TopP                float64          `json:"top_p,omitempty"`
+	Stop                []string         `json:"stop,omitempty"`
+	ReasoningEffort     string           `json:"reasoning_effort,omitempty"` // For GPT-5 reasoning models
+	Thinking            *ThinkingConfig  `json:"thinking,omitempty"`         // For DeepSeek models
+	Timeout             int              `json:"-"`
+}
+
+type ThinkingConfig struct {
+	Type         string `json:"type"`                   // "enabled", "disabled", or "max"
+	BudgetTokens int    `json:"budget_tokens,omitempty"` // Optional token budget for thinking
 }
 
 type ProviderSettings struct {
@@ -25,13 +32,14 @@ type Message struct {
 }
 
 type GenerateResponse struct {
-	ID      string   `json:"id"`
-	Object  string   `json:"object"`
-	Created int64    `json:"created"`
-	Model   string   `json:"model"`
-	Choices []Choice `json:"choices"`
-	Usage   Usage    `json:"usage"`
-	Content string   `json:"-"` // Populated after parsing for convenience
+	ID        string   `json:"id"`
+	Object    string   `json:"object"`
+	Created   int64    `json:"created"`
+	Model     string   `json:"model"`
+	Choices   []Choice `json:"choices"`
+	Usage     Usage    `json:"usage"`
+	Content   string   `json:"-"` // Populated after parsing for convenience
+	Reasoning string   `json:"-"` // Model's chain-of-thought/reasoning, extracted from response
 }
 
 type Choice struct {

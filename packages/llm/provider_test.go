@@ -1,6 +1,7 @@
 package llm
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -95,8 +96,15 @@ func TestOpenAIProvider_AuthHeaders(t *testing.T) {
 
 func TestOpenAIProvider_BuildRequest_WithTemperature(t *testing.T) {
 	p := &OpenAIProvider{}
-	messages := []Message{{Role: RoleUser, Content: "Hello"}}
-	body, err := p.BuildRequest(messages, "You are helpful", "gpt-4o-mini", 0.7, 100)
+	body, err := p.BuildRequest(context.Background(), &GenerateRequest{
+		Messages: []Message{
+			{Role: RoleSystem, Content: "You are helpful"},
+			{Role: RoleUser, Content: "Hello"},
+		},
+		Model:       "gpt-4o-mini",
+		Temperature: 0.7,
+		MaxTokens:   100,
+	})
 	if err != nil {
 		t.Fatalf("BuildRequest failed: %v", err)
 	}
@@ -142,11 +150,15 @@ func TestOpenAIProvider_BuildRequest_WithTemperature(t *testing.T) {
 
 func TestOpenAIProvider_BuildRequest_ReasoningModelOmitsTemperature(t *testing.T) {
 	p := &OpenAIProvider{}
-	messages := []Message{{Role: RoleUser, Content: "Hello"}}
 
 	reasoningModels := []string{"o1-mini", "o3-mini", "gpt-5-mini"}
 	for _, model := range reasoningModels {
-		body, err := p.BuildRequest(messages, "", model, 0.7, 100)
+		body, err := p.BuildRequest(context.Background(), &GenerateRequest{
+			Messages:    []Message{{Role: RoleUser, Content: "Hello"}},
+			Model:       model,
+			Temperature: 0.7,
+			MaxTokens:   100,
+		})
 		if err != nil {
 			t.Fatalf("BuildRequest(%s) failed: %v", model, err)
 		}
@@ -225,8 +237,12 @@ func TestOpenRouterProvider_AuthHeaders(t *testing.T) {
 
 func TestOpenRouterProvider_BuildRequest(t *testing.T) {
 	p := &OpenRouterProvider{}
-	messages := []Message{{Role: RoleUser, Content: "Hello"}}
-	body, err := p.BuildRequest(messages, "", "openai/gpt-4o-mini", 0.7, 100)
+	body, err := p.BuildRequest(context.Background(), &GenerateRequest{
+		Messages:    []Message{{Role: RoleUser, Content: "Hello"}},
+		Model:       "openai/gpt-4o-mini",
+		Temperature: 0.7,
+		MaxTokens:   100,
+	})
 	if err != nil {
 		t.Fatalf("BuildRequest failed: %v", err)
 	}
@@ -259,8 +275,12 @@ func TestOpenRouterProvider_BuildRequest_WithProviderSettings(t *testing.T) {
 			Only: []string{"OpenAI"},
 		},
 	}
-	messages := []Message{{Role: RoleUser, Content: "Hello"}}
-	body, err := p.BuildRequest(messages, "", "openai/gpt-4o-mini", 0.7, 100)
+	body, err := p.BuildRequest(context.Background(), &GenerateRequest{
+		Messages:    []Message{{Role: RoleUser, Content: "Hello"}},
+		Model:       "openai/gpt-4o-mini",
+		Temperature: 0.7,
+		MaxTokens:   100,
+	})
 	if err != nil {
 		t.Fatalf("BuildRequest failed: %v", err)
 	}
@@ -346,11 +366,16 @@ func TestGeminiProvider_AuthHeaders(t *testing.T) {
 
 func TestGeminiProvider_BuildRequest(t *testing.T) {
 	p := &GeminiProvider{}
-	messages := []Message{
-		{Role: RoleUser, Content: "Hello"},
-		{Role: RoleAssistant, Content: "Hi there!"},
-	}
-	body, err := p.BuildRequest(messages, "You are helpful", "gemini-2.0-flash", 0.7, 100)
+	body, err := p.BuildRequest(context.Background(), &GenerateRequest{
+		Messages: []Message{
+			{Role: RoleSystem, Content: "You are helpful"},
+			{Role: RoleUser, Content: "Hello"},
+			{Role: RoleAssistant, Content: "Hi there!"},
+		},
+		Model:       "gemini-2.0-flash",
+		Temperature: 0.7,
+		MaxTokens:   100,
+	})
 	if err != nil {
 		t.Fatalf("BuildRequest failed: %v", err)
 	}
@@ -481,6 +506,407 @@ func TestGeminiProvider_ValidateModel(t *testing.T) {
 	}
 	if err := p.ValidateModel("gemini-2.0-flash"); err != nil {
 		t.Errorf("unexpected error for valid model: %v", err)
+	}
+}
+
+func TestOpenAIProvider_BuildRequest_WithReasoningEffort(t *testing.T) {
+	p := &OpenAIProvider{}
+	body, err := p.BuildRequest(context.Background(), &GenerateRequest{
+		Messages:        []Message{{Role: RoleUser, Content: "Hello"}},
+		Model:           "gpt-4o-mini",
+		Temperature:     0.7,
+		MaxTokens:       100,
+		ReasoningEffort: "high",
+	})
+	if err != nil {
+		t.Fatalf("BuildRequest failed: %v", err)
+	}
+
+	var req map[string]any
+	if err := json.Unmarshal(body, &req); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+
+	effort, ok := req["reasoning_effort"]
+	if !ok {
+		t.Fatal("expected 'reasoning_effort' in request")
+	}
+	if effort != "high" {
+		t.Errorf("reasoning_effort = %v, want 'high'", effort)
+	}
+}
+
+func TestOpenAIProvider_BuildRequest_WithThinkingMapping(t *testing.T) {
+	p := &OpenAIProvider{}
+	body, err := p.BuildRequest(context.Background(), &GenerateRequest{
+		Messages: []Message{{Role: RoleUser, Content: "Hello"}},
+		Model:    "gpt-4o-mini",
+		Thinking: &ThinkingConfig{Type: "enabled", BudgetTokens: 2000},
+	})
+	if err != nil {
+		t.Fatalf("BuildRequest failed: %v", err)
+	}
+
+	var req map[string]any
+	if err := json.Unmarshal(body, &req); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+
+	// Thinking should be mapped to reasoning_effort="high" since no explicit ReasoningEffort was set.
+	effort, ok := req["reasoning_effort"]
+	if !ok {
+		t.Fatal("expected 'reasoning_effort' in request (mapped from Thinking)")
+	}
+	if effort != "high" {
+		t.Errorf("reasoning_effort = %v, want 'high' (mapped from Thinking)", effort)
+	}
+}
+
+func TestOpenAIProvider_BuildRequest_WithThinkingMappingRespectsExplicitEffort(t *testing.T) {
+	p := &OpenAIProvider{}
+	body, err := p.BuildRequest(context.Background(), &GenerateRequest{
+		Messages:        []Message{{Role: RoleUser, Content: "Hello"}},
+		Model:           "gpt-4o-mini",
+		ReasoningEffort: "low",
+		Thinking:        &ThinkingConfig{Type: "enabled"},
+	})
+	if err != nil {
+		t.Fatalf("BuildRequest failed: %v", err)
+	}
+
+	var req map[string]any
+	if err := json.Unmarshal(body, &req); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+
+	// Explicit ReasoningEffort should take precedence over Thinking mapping.
+	effort, ok := req["reasoning_effort"]
+	if !ok {
+		t.Fatal("expected 'reasoning_effort' in request")
+	}
+	if effort != "low" {
+		t.Errorf("reasoning_effort = %v, want 'low'", effort)
+	}
+}
+
+func TestOpenRouterProvider_BuildRequest_WithReasoningEffort(t *testing.T) {
+	p := &OpenRouterProvider{}
+	body, err := p.BuildRequest(context.Background(), &GenerateRequest{
+		Messages:        []Message{{Role: RoleUser, Content: "Hello"}},
+		Model:           "openai/gpt-4o-mini",
+		Temperature:     0.7,
+		MaxTokens:       100,
+		ReasoningEffort: "high",
+	})
+	if err != nil {
+		t.Fatalf("BuildRequest failed: %v", err)
+	}
+
+	var req map[string]any
+	if err := json.Unmarshal(body, &req); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+
+	effort, ok := req["reasoning_effort"]
+	if !ok {
+		t.Fatal("expected 'reasoning_effort' in request")
+	}
+	if effort != "high" {
+		t.Errorf("reasoning_effort = %v, want 'high'", effort)
+	}
+}
+
+func TestOpenRouterProvider_BuildRequest_WithThinking(t *testing.T) {
+	p := &OpenRouterProvider{}
+	body, err := p.BuildRequest(context.Background(), &GenerateRequest{
+		Messages: []Message{{Role: RoleUser, Content: "Hello"}},
+		Model:    "deepseek/deepseek-v4-pro",
+		MaxTokens: 4000,
+		Thinking:  &ThinkingConfig{Type: "enabled", BudgetTokens: 2000},
+	})
+	if err != nil {
+		t.Fatalf("BuildRequest failed: %v", err)
+	}
+
+	var req map[string]any
+	if err := json.Unmarshal(body, &req); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+
+	thinking, ok := req["thinking"]
+	if !ok {
+		t.Fatal("expected 'thinking' in request")
+	}
+	thinkingMap := thinking.(map[string]any)
+	if thinkingMap["type"] != "enabled" {
+		t.Errorf("thinking.type = %v, want 'enabled'", thinkingMap["type"])
+	}
+	if int(thinkingMap["budget_tokens"].(float64)) != 2000 {
+		t.Errorf("thinking.budget_tokens = %v, want 2000", thinkingMap["budget_tokens"])
+	}
+}
+
+func TestOpenRouterProvider_BuildRequest_ReasoningModelOmitsTemperature(t *testing.T) {
+	p := &OpenRouterProvider{}
+
+	models := []string{"openai/o1-mini", "openai/o3-mini", "openai/gpt-5-mini"}
+	for _, model := range models {
+		body, err := p.BuildRequest(context.Background(), &GenerateRequest{
+			Messages:    []Message{{Role: RoleUser, Content: "Hello"}},
+			Model:       model,
+			Temperature: 0.7,
+			MaxTokens:   100,
+		})
+		if err != nil {
+			t.Fatalf("BuildRequest(%s) failed: %v", model, err)
+		}
+
+		var req map[string]any
+		if err := json.Unmarshal(body, &req); err != nil {
+			t.Fatalf("unmarshal failed: %v", err)
+		}
+
+		_, hasTemp := req["temperature"]
+		if hasTemp {
+			t.Errorf("%s: must NOT include 'temperature' (reasoning model rejects it)", model)
+		}
+	}
+}
+
+func TestOpenRouterProvider_BuildRequest_NonReasoningModelKeepsTemperature(t *testing.T) {
+	p := &OpenRouterProvider{}
+	body, err := p.BuildRequest(context.Background(), &GenerateRequest{
+		Messages:    []Message{{Role: RoleUser, Content: "Hello"}},
+		Model:       "openai/gpt-4o-mini",
+		Temperature: 0.7,
+		MaxTokens:   100,
+	})
+	if err != nil {
+		t.Fatalf("BuildRequest failed: %v", err)
+	}
+
+	var req map[string]any
+	if err := json.Unmarshal(body, &req); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+
+	temp, hasTemp := req["temperature"]
+	if !hasTemp {
+		t.Fatal("non-reasoning model must include 'temperature'")
+	}
+	if temp.(float64) != 0.7 {
+		t.Errorf("temperature = %v, want 0.7", temp)
+	}
+}
+
+func TestIsReasoningModel(t *testing.T) {
+	tests := []struct {
+		model    string
+		expected bool
+	}{
+		// Direct model names
+		{"o1-mini", true},
+		{"o3-mini", true},
+		{"o4-mini", true},
+		{"gpt-5-mini", true},
+		{"gpt-4o-mini", false},
+		{"gpt-4o", false},
+		// Provider-prefixed (as used with OpenRouter)
+		{"openai/o1-mini", true},
+		{"openai/o3-mini", true},
+		{"openai/o4", true},
+		{"openai/gpt-5-mini", true},
+		{"openai/gpt-4o-mini", false},
+		// Other providers
+		{"deepseek/deepseek-v4-pro", false},
+		{"anthropic/claude-sonnet-4", false},
+		// Edge cases
+		{"", false},
+		{"o1", true},
+		{"o1-xyz", true},
+	}
+	for _, tt := range tests {
+		result := isReasoningModel(tt.model)
+		if result != tt.expected {
+			t.Errorf("isReasoningModel(%q) = %v, want %v", tt.model, result, tt.expected)
+		}
+	}
+}
+
+func TestParseOpenAIResponse_WithTopLevelReasoning(t *testing.T) {
+	jsonBody := `{
+		"id": "chatcmpl-123",
+		"object": "chat.completion",
+		"model": "openai/gpt-5-mini",
+		"choices": [{
+			"index": 0,
+			"message": {"role": "assistant", "content": "Final answer"},
+			"finish_reason": "stop"
+		}],
+		"reasoning": "The model's chain of thought here..."
+	}`
+
+	resp, err := parseOpenAIResponse([]byte(jsonBody))
+	if err != nil {
+		t.Fatalf("ParseResponse failed: %v", err)
+	}
+
+	if resp.Content != "Final answer" {
+		t.Errorf("content = %q, want 'Final answer'", resp.Content)
+	}
+	if resp.Reasoning != "The model's chain of thought here..." {
+		t.Errorf("reasoning = %q, want 'The model\\'s chain of thought here...'", resp.Reasoning)
+	}
+}
+
+func TestParseOpenAIResponse_WithReasoningContent(t *testing.T) {
+	jsonBody := `{
+		"id": "chatcmpl-456",
+		"object": "chat.completion",
+		"model": "deepseek/deepseek-v4-pro",
+		"choices": [{
+			"index": 0,
+			"message": {
+				"role": "assistant",
+				"content": "Final answer",
+				"reasoning_content": "DeepSeek chain of thought"
+			},
+			"finish_reason": "stop"
+		}]
+	}`
+
+	resp, err := parseOpenAIResponse([]byte(jsonBody))
+	if err != nil {
+		t.Fatalf("ParseResponse failed: %v", err)
+	}
+
+	if resp.Content != "Final answer" {
+		t.Errorf("content = %q, want 'Final answer'", resp.Content)
+	}
+	if resp.Reasoning != "DeepSeek chain of thought" {
+		t.Errorf("reasoning = %q, want 'DeepSeek chain of thought'", resp.Reasoning)
+	}
+}
+
+func TestParseOpenAIResponse_PrefersTopLevelReasoning(t *testing.T) {
+	// When both top-level "reasoning" and choice-level "reasoning_content" are present,
+	// top-level reasoning takes precedence (OpenRouter returns both in some cases).
+	jsonBody := `{
+		"id": "chatcmpl-789",
+		"model": "openai/o3-mini",
+		"choices": [{
+			"index": 0,
+			"message": {
+				"role": "assistant",
+				"content": "Answer",
+				"reasoning_content": "choice-level reasoning"
+			},
+			"finish_reason": "stop"
+		}],
+		"reasoning": "top-level reasoning"
+	}`
+
+	resp, err := parseOpenAIResponse([]byte(jsonBody))
+	if err != nil {
+		t.Fatalf("ParseResponse failed: %v", err)
+	}
+
+	if resp.Reasoning != "top-level reasoning" {
+		t.Errorf("reasoning = %q, want 'top-level reasoning'", resp.Reasoning)
+	}
+}
+
+func TestParseOpenAIResponse_NoReasoning(t *testing.T) {
+	jsonBody := `{
+		"id": "chatcmpl-123",
+		"model": "gpt-4o-mini",
+		"choices": [{
+			"index": 0,
+			"message": {"role": "assistant", "content": "Hello"},
+			"finish_reason": "stop"
+		}]
+	}`
+
+	resp, err := parseOpenAIResponse([]byte(jsonBody))
+	if err != nil {
+		t.Fatalf("ParseResponse failed: %v", err)
+	}
+
+	if resp.Reasoning != "" {
+		t.Errorf("expected empty reasoning for non-reasoning model, got %q", resp.Reasoning)
+	}
+}
+
+func TestGeminiProvider_BuildRequest_WithThinking(t *testing.T) {
+	p := &GeminiProvider{}
+	body, err := p.BuildRequest(context.Background(), &GenerateRequest{
+		Messages:    []Message{{Role: RoleUser, Content: "Hello"}},
+		Model:       "gemini-2.5-pro",
+		Temperature: 0.7,
+		MaxTokens:   4000,
+		Thinking:    &ThinkingConfig{Type: "enabled", BudgetTokens: 2000},
+	})
+	if err != nil {
+		t.Fatalf("BuildRequest failed: %v", err)
+	}
+
+	var req map[string]any
+	if err := json.Unmarshal(body, &req); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+
+	config, ok := req["generationConfig"].(map[string]any)
+	if !ok {
+		t.Fatal("expected 'generationConfig' in request")
+	}
+
+	tc, ok := config["thinkingConfig"].(map[string]any)
+	if !ok {
+		t.Fatal("expected 'thinkingConfig' in generationConfig")
+	}
+
+	budget := int(tc["thinkingBudget"].(float64))
+	if budget != 2000 {
+		t.Errorf("thinkingBudget = %d, want 2000", budget)
+	}
+
+	if int(config["maxOutputTokens"].(float64)) != 4000 {
+		t.Errorf("maxOutputTokens = %v, want 4000", config["maxOutputTokens"])
+	}
+}
+
+func TestGeminiProvider_ParseResponse_WithThoughtParts(t *testing.T) {
+	p := &GeminiProvider{}
+	jsonBody := `{
+		"candidates": [{
+			"content": {
+				"parts": [
+					{"text": "Let me think step by step...", "thought": true},
+					{"text": "The final answer is 42.", "thought": false}
+				],
+				"role": "model"
+			},
+			"finishReason": "STOP",
+			"index": 0
+		}],
+		"usageMetadata": {
+			"promptTokenCount": 20,
+			"candidatesTokenCount": 15,
+			"totalTokenCount": 35
+		},
+		"modelVersion": "gemini-2.5-pro"
+	}`
+
+	resp, err := p.ParseResponse([]byte(jsonBody))
+	if err != nil {
+		t.Fatalf("ParseResponse failed: %v", err)
+	}
+
+	if resp.Content != "The final answer is 42." {
+		t.Errorf("content = %q, want 'The final answer is 42.'", resp.Content)
+	}
+	if resp.Reasoning != "Let me think step by step..." {
+		t.Errorf("reasoning = %q, want 'Let me think step by step...'", resp.Reasoning)
 	}
 }
 

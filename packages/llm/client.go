@@ -61,8 +61,25 @@ func (c *HTTPClient) Generate(ctx context.Context, req *GenerateRequest) (*Gener
 		req.Temperature = 0.7
 	}
 
-	if req.MaxTokens == 0 {
-		req.MaxTokens = 1024
+	// Apply reasoning config defaults before MaxTokens so we can check thinking budget.
+	if req.ReasoningEffort == "" {
+		req.ReasoningEffort = c.config.ReasoningEffort
+	}
+
+	if req.Thinking == nil && c.config.ThinkingType != "" {
+		req.Thinking = &ThinkingConfig{
+			Type:         c.config.ThinkingType,
+			BudgetTokens: c.config.ThinkingBudget,
+		}
+	}
+
+	// Only default MaxTokens when there is no thinking budget and no MaxCompletionTokens.
+	// A thinking budget > 0 means the model needs room to think; capping at 1024 would
+	// truncate the thinking phase and produce a broken/incomplete response.
+	if req.MaxTokens == 0 && req.MaxCompletionTokens == 0 {
+		if req.Thinking == nil || req.Thinking.BudgetTokens == 0 {
+			req.MaxTokens = 1024
+		}
 	}
 
 	models := []string{req.Model}
@@ -115,15 +132,7 @@ func (c *HTTPClient) Generate(ctx context.Context, req *GenerateRequest) (*Gener
 }
 
 func (c *HTTPClient) doRequest(ctx context.Context, req *GenerateRequest) (*GenerateResponse, error) {
-	messages := req.Messages
-	systemPrompt := ""
-
-	if len(messages) > 0 && messages[0].Role == RoleSystem {
-		systemPrompt = messages[0].Content
-		messages = messages[1:]
-	}
-
-	body, err := c.provider.BuildRequest(messages, systemPrompt, req.Model, req.Temperature, req.MaxTokens)
+	body, err := c.provider.BuildRequest(ctx, req)
 	if err != nil {
 		return nil, NewRetryableError(fmt.Errorf("building request: %w", err), true)
 	}
@@ -197,6 +206,14 @@ func (c *HTTPClient) doRequest(ctx context.Context, req *GenerateRequest) (*Gene
 		Str("model_requested", req.Model).
 		Str("model_used", generateResp.Model).
 		Msg("LLM response received")
+
+	if generateResp.Reasoning != "" {
+		log.Debug().
+			Str("provider", c.provider.Name()).
+			Str("model", generateResp.Model).
+			Int("reasoning_len", len(generateResp.Reasoning)).
+			Msg("LLM reasoning content present")
+	}
 
 	if len(generateResp.Content) == 0 {
 		return nil, NewRetryableError(fmt.Errorf("%w: provider=%s model=%s", ErrEmptyResponse, c.provider.Name(), req.Model), true)

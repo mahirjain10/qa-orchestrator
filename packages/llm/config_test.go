@@ -59,3 +59,47 @@ func TestConfigFallbackModelsEmpty(t *testing.T) {
 		t.Error("expected fallback models to fall back to default when env var is empty")
 	}
 }
+
+func TestConfigReasoningDefaults(t *testing.T) {
+	defer setEnv("LLM_API_KEY", "test-key")()
+	defer setEnv("LLM_REASONING_EFFORT", "high")()
+	defer setEnv("LLM_THINKING_TYPE", "enabled")()
+	defer setEnv("LLM_THINKING_BUDGET", "4000")()
+
+	cfg, err := LoadConfig()
+	if err != nil {
+		t.Fatalf("LoadConfig() error: %v", err)
+	}
+
+	if cfg.ReasoningEffort != "high" {
+		t.Errorf("ReasoningEffort = %q, want 'high'", cfg.ReasoningEffort)
+	}
+	if cfg.ThinkingType != "enabled" {
+		t.Errorf("ThinkingType = %q, want 'enabled'", cfg.ThinkingType)
+	}
+	if cfg.ThinkingBudget != 4000 {
+		t.Errorf("ThinkingBudget = %d, want 4000", cfg.ThinkingBudget)
+	}
+}
+
+func TestConfigReasoningDefaultsEmpty(t *testing.T) {
+	defer setEnv("LLM_API_KEY", "test-key")()
+	os.Unsetenv("LLM_REASONING_EFFORT")
+	os.Unsetenv("LLM_THINKING_TYPE")
+	os.Unsetenv("LLM_THINKING_BUDGET")
+
+	cfg, err := LoadConfig()
+	if err != nil {
+		t.Fatalf("LoadConfig() error: %v", err)
+	}
+
+	if cfg.ReasoningEffort != "" {
+		t.Errorf("expected empty ReasoningEffort, got %q", cfg.ReasoningEffort)
+	}
+	if cfg.ThinkingType != "" {
+		t.Errorf("expected empty ThinkingType, got %q", cfg.ThinkingType)
+	}
+	if cfg.ThinkingBudget != 0 {
+		t.Errorf("expected ThinkingBudget 0, got %d", cfg.ThinkingBudget)
+	}
+}

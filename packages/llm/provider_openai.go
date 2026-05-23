@@ -1,9 +1,9 @@
 package llm
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 )
 
 type OpenAIProvider struct{}
@@ -23,33 +23,48 @@ func (p *OpenAIProvider) AuthHeaders(apiKey string) map[string]string {
 	}
 }
 
-func (p *OpenAIProvider) BuildRequest(messages []Message, systemPrompt string, model string, temperature float64, maxTokens int) ([]byte, error) {
+func (p *OpenAIProvider) BuildRequest(ctx context.Context, req *GenerateRequest) ([]byte, error) {
+	messages := req.Messages
+	systemPrompt := ""
+
+	if len(messages) > 0 && messages[0].Role == RoleSystem {
+		systemPrompt = messages[0].Content
+		messages = messages[1:]
+	}
+
 	allMessages := make([]Message, 0, len(messages)+1)
 	if systemPrompt != "" {
 		allMessages = append(allMessages, Message{Role: RoleSystem, Content: systemPrompt})
 	}
 	allMessages = append(allMessages, messages...)
 
-	req := openAIRequest{
-		Model:               model,
+	maxTokens := req.MaxCompletionTokens
+	if maxTokens == 0 {
+		maxTokens = req.MaxTokens
+	}
+
+	openReq := openAIRequest{
+		Model:               req.Model,
 		Messages:            allMessages,
 		MaxCompletionTokens: maxTokens,
+		ReasoningEffort:     req.ReasoningEffort,
 	}
 
-	// Reasoning models (o1, o3, gpt-5+) do not support temperature.
-	if supportsTemperature(model) {
-		req.Temperature = temperature
+
+	// OpenAI doesn't natively use ThinkingConfig, but it uses reasoning_effort.
+	// We map Thinking if provided for compatibility with DeepSeek via generic requests.
+	if req.Thinking != nil && openReq.ReasoningEffort == "" {
+		if req.Thinking.Type == "enabled" || req.Thinking.Type == "max" {
+			openReq.ReasoningEffort = "high"
+		}
 	}
 
-	return json.Marshal(req)
-}
+	// Reasoning models (o1, o3, o4, gpt-5+) do not support temperature.
+	if !isReasoningModel(req.Model) {
+		openReq.Temperature = req.Temperature
+	}
 
-// supportsTemperature returns false for reasoning models that reject the temperature parameter.
-func supportsTemperature(model string) bool {
-	lower := strings.ToLower(model)
-	return !strings.HasPrefix(lower, "o1") &&
-		!strings.HasPrefix(lower, "o3") &&
-		!strings.HasPrefix(lower, "gpt-5")
+	return json.Marshal(openReq)
 }
 
 func (p *OpenAIProvider) ParseResponse(body []byte) (*GenerateResponse, error) {

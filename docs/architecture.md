@@ -626,6 +626,15 @@ The `llm` package provides a client abstraction over OpenRouter and Gemini provi
 - **Retry strategy:** Empty responses (`ErrEmptyResponse` sentinel) are retryable with exponential backoff. Authentication and rate-limit errors are non-retryable.
 - **Model fallback:** If the primary model exhausts retries and the last error was an empty response, the client tries fallback models from `LLM_FALLBACK_MODELS` env var (default: `openai/gpt-4o-mini,gemini/gemini-2.0-flash-001`). Only empty responses trigger fallback — auth errors against the provider would recur on any model at the same endpoint.
 - **Provider detection:** Configured via `LLM_PROVIDER` env var (`"auto"`, `"openrouter"`, or `"gemini"`). Auto-detection selects based on API key presence and model prefix.
+- **Reasoning support:** Native support for next-gen reasoning models via three mechanisms:
+  - `reasoning_effort` (string) — passed for GPT-5, o1/o3/o4 series, and DeepSeek V4 models. OpenRouter-supported values: `"none"`, `"minimal"`, `"low"`, `"medium"`, `"high"`, `"xhigh"`. Configurable via `LLM_REASONING_EFFORT`.
+  - `thinking` (`ThinkingConfig` with `Type` and `BudgetTokens`) — used by DeepSeek for thinking mode. OpenRouter passes it through; Gemini maps it to `thinkingConfig.thinkingBudget`. Configurable via `LLM_THINKING_TYPE` and `LLM_THINKING_BUDGET`.
+  - **Temperature suppression:** For models that reject the temperature parameter (o1, o3, o4, gpt-5+), both OpenAI and OpenRouter providers omit `temperature` from the request. The `isReasoningModel()` helper strips provider prefixes (`openai/`, `google/`, etc.) before matching.
+- **Response reasoning extraction:** The `GenerateResponse.Reasoning` field captures the model's chain-of-thought from three sources:
+  - OpenRouter's top-level `reasoning` field (highest priority)
+  - DeepSeek's `choices[0].message.reasoning_content` field
+  - Gemini's `candidates[0].content.parts[].thought` boolean parts
+- **MaxTokens behavior:** When a thinking budget is configured (via `Thinking.BudgetTokens` or `LLM_THINKING_BUDGET`), the 1024-token `MaxTokens` default is suppressed to avoid capping the model mid-thought.
 
 ## Failure handling
 
@@ -745,6 +754,7 @@ All MVP phases, V2 autonomous upgrade, and V4 TUI revamp are complete. See [docs
 - `--resume` flag for session recovery
 - Prompt injection defense (sanitize + XML isolation + precedence statement)
 - LLM model fallback chain + retryable empty responses
+- DeepSeek-V4-Pro and GPT-5-Mini reasoning/thinking mode support via OpenRouter
 - 404 detection in observe_ui with RecoveryActionRootNav
 - Realistic MockToolRegistry (5 interactive elements) for representative testing
 - Grounded observe_ui using DOM tree walk (no `:has-text()`) with class attribute output

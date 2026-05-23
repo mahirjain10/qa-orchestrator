@@ -22,6 +22,9 @@ const (
 	envGeminiAPIKey     = "GEMINI_API_KEY"
 	envGeminiModel      = "GEMINI_MODEL"
 	envFallbackModels   = "LLM_FALLBACK_MODELS"
+	envReasoningEffort  = "LLM_REASONING_EFFORT"
+	envThinkingType     = "LLM_THINKING_TYPE"
+	envThinkingBudget   = "LLM_THINKING_BUDGET"
 
 	defaultBaseURL        = "https://openrouter.ai/api/v1"
 	defaultModel          = "openai/gpt-4o-mini"
@@ -47,6 +50,9 @@ type Config struct {
 	Provider         string
 	GeminiAPIKey     string
 	GeminiModel      string
+	ReasoningEffort  string
+	ThinkingType     string
+	ThinkingBudget   int
 }
 
 func LoadConfig() (*Config, error) {
@@ -137,6 +143,11 @@ func LoadConfig() (*Config, error) {
 		}
 	}
 
+	budget := 0
+	if budgetStr := os.Getenv(envThinkingBudget); budgetStr != "" {
+		budget, _ = parseInt(budgetStr)
+	}
+
 	return &Config{
 		APIKey:           apiKey,
 		BaseURL:          baseURL,
@@ -152,6 +163,9 @@ func LoadConfig() (*Config, error) {
 		Provider:         provider,
 		GeminiAPIKey:     geminiAPIKey,
 		GeminiModel:      geminiModel,
+		ReasoningEffort:  os.Getenv(envReasoningEffort),
+		ThinkingType:     os.Getenv(envThinkingType),
+		ThinkingBudget:   budget,
 	}, nil
 }
 

@@ -17,7 +17,7 @@ type mockProvider struct {
 	name          string
 	endpoint      string
 	authHeadersFn func(apiKey string) map[string]string
-	buildReqFn    func(messages []Message, systemPrompt, model string, temperature float64, maxTokens int) ([]byte, error)
+	buildReqFn    func(ctx context.Context, req *GenerateRequest) ([]byte, error)
 	parseRespFn   func(body []byte) (*GenerateResponse, error)
 	parseErrFn    func(statusCode int, body []byte) error
 	validateFn    func(model string) error
@@ -26,8 +26,8 @@ type mockProvider struct {
 func (m *mockProvider) Name() string                          { return m.name }
 func (m *mockProvider) Endpoint(model string) string          { return m.endpoint }
 func (m *mockProvider) AuthHeaders(apiKey string) map[string]string { return m.authHeadersFn(apiKey) }
-func (m *mockProvider) BuildRequest(messages []Message, systemPrompt, model string, temperature float64, maxTokens int) ([]byte, error) {
-	return m.buildReqFn(messages, systemPrompt, model, temperature, maxTokens)
+func (m *mockProvider) BuildRequest(ctx context.Context, req *GenerateRequest) ([]byte, error) {
+	return m.buildReqFn(ctx, req)
 }
 func (m *mockProvider) ParseResponse(body []byte) (*GenerateResponse, error) { return m.parseRespFn(body) }
 func (m *mockProvider) ParseError(statusCode int, body []byte) error         { return m.parseErrFn(statusCode, body) }
@@ -452,9 +452,9 @@ func TestEmptyResponseIsRetryable(t *testing.T) {
 		authHeadersFn: func(apiKey string) map[string]string {
 			return map[string]string{"Content-Type": "application/json"}
 		},
-		buildReqFn: func(messages []Message, systemPrompt, model string, temperature float64, maxTokens int) ([]byte, error) {
+		buildReqFn: func(ctx context.Context, req *GenerateRequest) ([]byte, error) {
 			return json.Marshal(map[string]any{
-				"model":    model,
+				"model":    req.Model,
 				"messages": []map[string]string{{"role": "user", "content": "test"}},
 			})
 		},
@@ -497,6 +497,125 @@ func TestEmptyResponseIsRetryable(t *testing.T) {
 	if !contains(err.Error(), "empty response") {
 		t.Errorf("expected error to mention 'empty response', got: %v", err)
 	}
+}
+
+func TestGenerate_MaxTokensNotDefaultedWithThinkingBudget(t *testing.T) {
+	// When thinking budget is set, MaxTokens should NOT be defaulted to 1024.
+	buildReqCalled := false
+	provider := &mockProvider{
+		name:     "test",
+		endpoint: "http://localhost:9999/v1/chat/completions",
+		authHeadersFn: func(apiKey string) map[string]string {
+			return map[string]string{"Content-Type": "application/json"}
+		},
+		buildReqFn: func(ctx context.Context, req *GenerateRequest) ([]byte, error) {
+			buildReqCalled = true
+			if req.MaxTokens != 0 {
+				t.Errorf("MaxTokens = %d, want 0 (should not be defaulted when thinking budget is set)", req.MaxTokens)
+			}
+			return json.Marshal(map[string]any{
+				"model":    req.Model,
+				"messages": []map[string]string{{"role": "user", "content": "test"}},
+			})
+		},
+		parseRespFn: func(body []byte) (*GenerateResponse, error) {
+			return &GenerateResponse{
+				Content: "response",
+				Choices: []Choice{{Message: Message{Role: RoleAssistant, Content: "response"}}},
+			}, nil
+		},
+		parseErrFn: func(statusCode int, body []byte) error {
+			return fmt.Errorf("error")
+		},
+		validateFn: func(model string) error { return nil },
+	}
+
+	client := &HTTPClient{
+		config: &Config{
+			APIKey:     "test-key",
+			Model:      "test-model",
+			MaxRetries: 1,
+		},
+		provider:   provider,
+		httpClient: &http.Client{Timeout: 5 * time.Second},
+		retryConfig: &RetryConfig{
+			MaxRetries:   1,
+			InitialDelay: 1 * time.Millisecond,
+			MaxDelay:     10 * time.Millisecond,
+			Multiplier:   1.0,
+		},
+	}
+
+	_, err := client.Generate(context.Background(), &GenerateRequest{
+		Model:    "test-model",
+		Messages: []Message{{Role: RoleUser, Content: "test"}},
+		Thinking: &ThinkingConfig{Type: "enabled", BudgetTokens: 4000},
+	})
+	// Error is expected since the endpoint doesn't exist, but buildReqFn must be called.
+	if !buildReqCalled {
+		t.Error("buildReqFn was never called")
+	}
+	_ = err
+}
+
+func TestGenerate_MaxTokensDefaultedWithoutThinking(t *testing.T) {
+	// Without thinking budget, MaxTokens should default to 1024.
+	buildReqCalled := false
+	provider := &mockProvider{
+		name:     "test",
+		endpoint: "http://localhost:9999/v1/chat/completions",
+		authHeadersFn: func(apiKey string) map[string]string {
+			return map[string]string{"Content-Type": "application/json"}
+		},
+		buildReqFn: func(ctx context.Context, req *GenerateRequest) ([]byte, error) {
+			buildReqCalled = true
+			if req.MaxTokens == 0 {
+				t.Error("MaxTokens = 0, want 1024 (should be defaulted without thinking budget)")
+			}
+			if req.MaxTokens != 1024 {
+				t.Errorf("MaxTokens = %d, want 1024", req.MaxTokens)
+			}
+			return json.Marshal(map[string]any{
+				"model":    req.Model,
+				"messages": []map[string]string{{"role": "user", "content": "test"}},
+			})
+		},
+		parseRespFn: func(body []byte) (*GenerateResponse, error) {
+			return &GenerateResponse{
+				Content: "response",
+				Choices: []Choice{{Message: Message{Role: RoleAssistant, Content: "response"}}},
+			}, nil
+		},
+		parseErrFn: func(statusCode int, body []byte) error {
+			return fmt.Errorf("error")
+		},
+		validateFn: func(model string) error { return nil },
+	}
+
+	client := &HTTPClient{
+		config: &Config{
+			APIKey:     "test-key",
+			Model:      "test-model",
+			MaxRetries: 1,
+		},
+		provider:   provider,
+		httpClient: &http.Client{Timeout: 5 * time.Second},
+		retryConfig: &RetryConfig{
+			MaxRetries:   1,
+			InitialDelay: 1 * time.Millisecond,
+			MaxDelay:     10 * time.Millisecond,
+			Multiplier:   1.0,
+		},
+	}
+
+	_, err := client.Generate(context.Background(), &GenerateRequest{
+		Model:    "test-model",
+		Messages: []Message{{Role: RoleUser, Content: "test"}},
+	})
+	if !buildReqCalled {
+		t.Error("buildReqFn was never called")
+	}
+	_ = err
 }
 
 func contains(s, substr string) bool {

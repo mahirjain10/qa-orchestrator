@@ -1,6 +1,7 @@
 package llm
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -34,18 +35,32 @@ func (p *OpenRouterProvider) AuthHeaders(apiKey string) map[string]string {
 	return headers
 }
 
-func (p *OpenRouterProvider) BuildRequest(messages []Message, systemPrompt string, model string, temperature float64, maxTokens int) ([]byte, error) {
+func (p *OpenRouterProvider) BuildRequest(ctx context.Context, req *GenerateRequest) ([]byte, error) {
+	messages := req.Messages
+	systemPrompt := ""
+
+	if len(messages) > 0 && messages[0].Role == RoleSystem {
+		systemPrompt = messages[0].Content
+		messages = messages[1:]
+	}
+
 	allMessages := make([]Message, 0, len(messages)+1)
 	if systemPrompt != "" {
 		allMessages = append(allMessages, Message{Role: RoleSystem, Content: systemPrompt})
 	}
 	allMessages = append(allMessages, messages...)
 
-	req := openAIRequest{
-		Model:       model,
-		Messages:    allMessages,
-		Temperature: temperature,
-		MaxTokens:   maxTokens,
+	openReq := openAIRequest{
+		Model:           req.Model,
+		Messages:        allMessages,
+		MaxTokens:       req.MaxTokens,
+		ReasoningEffort: req.ReasoningEffort,
+		Thinking:        req.Thinking,
+	}
+
+	// Reasoning models (o1, o3, o4, gpt-5+) reject the temperature parameter.
+	if !isReasoningModel(req.Model) {
+		openReq.Temperature = req.Temperature
 	}
 
 	type openRouterRequest struct {
@@ -54,7 +69,7 @@ func (p *OpenRouterProvider) BuildRequest(messages []Message, systemPrompt strin
 	}
 
 	orReq := openRouterRequest{
-		openAIRequest: req,
+		openAIRequest: openReq,
 		Provider:      p.Provider,
 	}
 
