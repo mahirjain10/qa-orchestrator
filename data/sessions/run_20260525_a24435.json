@@ -6,7 +6,7 @@
   "current_flow_id": "browse-flow",
   "current_agent": "planner (step 11)",
   "started_at": "2026-05-25T15:12:46.5418607Z",
-  "updated_at": "2026-05-25T16:14:58.7433599Z",
+  "updated_at": "2026-05-25T17:00:34.076628Z",
   "flows": [
     {
       "flow_id": "login-flow",
@@ -25,7 +25,7 @@
       "priority": "high",
       "status": "RUNNING",
       "started_at": "2026-05-25T15:13:32.6815514Z",
-      "finished_at": "2026-05-25T16:05:22.3514359Z",
+      "finished_at": "2026-05-25T16:52:07.6568289Z",
       "retry_count": 0
     },
     {
@@ -56,11 +56,11 @@
   "retry_count": 0,
   "checkpoint": {
     "flow_id": "browse-flow",
-    "step_index": 7,
-    "step_id": "auto-step-8",
+    "step_index": 9,
+    "step_id": "auto-step-10",
     "payload": {
       "consecutive_observe_count": 1,
-      "current_step": "auto-step-8",
+      "current_step": "auto-step-10",
       "current_url": "https://www.saucedemo.com/inventory.html",
       "last_step_signature": "",
       "obs_0": {
@@ -844,517 +844,7 @@
         "source": "observe_ui"
       },
       "obs_11": {
-        "last_output": {
-          "interactive": [
-            {
-              "checked": false,
-              "disabled": false,
-              "id": "root",
-              "selected": false,
-              "selector": "#root",
-              "tag": "div",
-              "text": "Open MenuAll ItemsAboutLogoutReset App StateClose MenuSwag Labs1ProductsName (A to Z)Name (A to Z)Na"
-            },
-            {
-              "checked": false,
-              "class": "page_wrapper",
-              "disabled": false,
-              "id": "page_wrapper",
-              "selected": false,
-              "selector": "#page_wrapper",
-              "tag": "div",
-              "text": "Open MenuAll ItemsAboutLogoutReset App StateClose MenuSwag Labs1ProductsName (A to Z)Name (A to Z)Na"
-            },
-            {
-              "checked": false,
-              "disabled": false,
-              "id": "contents_wrapper",
-              "selected": false,
-              "selector": "#contents_wrapper",
-              "tag": "div",
-              "text": "Open MenuAll ItemsAboutLogoutReset App StateClose MenuSwag Labs1ProductsName (A to Z)Name (A to Z)Na"
-            },
-            {
-              "checked": false,
-              "class": "header_container",
-              "data-test": "header-container",
-              "disabled": false,
-              "id": "header_container",
-              "selected": false,
-              "selector": "#header_container",
-              "tag": "div",
-              "text": "Open MenuAll ItemsAboutLogoutReset App StateClose MenuSwag Labs1ProductsName (A to Z)Name (A to Z)Na"
-            },
-            {
-              "checked": false,
-              "class": "primary_header",
-              "data-test": "primary-header",
-              "disabled": false,
-              "selected": false,
-              "selector": "div[data-test=\"primary-header\"]",
-              "tag": "div",
-              "text": "Open MenuAll ItemsAboutLogoutReset App StateClose MenuSwag Labs1"
-            },
-            {
-              "checked": false,
-              "class": "bm-burger-button",
-              "disabled": false,
-              "selected": false,
-              "selector": "div.bm-burger-button",
-              "tag": "div",
-              "text": "Open Menu"
-            },
-            {
-              "checked": false,
-              "disabled": false,
-              "id": "react-burger-menu-btn",
-              "selected": false,
-              "selector": "#react-burger-menu-btn",
-              "tag": "button",
-              "text": "Open Menu",
-              "type": "button"
-            },
-            {
-              "alt": "Open Menu",
-              "checked": false,
-              "class": "bm-icon",
-              "data-test": "open-menu",
-              "disabled": false,
-              "selected": false,
-              "selector": "img[data-test=\"open-menu\"]",
-              "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyhpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUC",
-              "srcset": "/static/media/menu3x.52cc17a327296e6394f33e8c20abc62c.svg",
-              "tag": "img",
-              "text": ""
-            },
-            {
-              "checked": false,
-              "class": "header_label",
-              "disabled": false,
-              "selected": false,
-              "selector": "div.header_label",
-              "tag": "div",
-              "text": "Swag Labs"
-            },
-            {
-              "checked": false,
-              "class": "app_logo",
-              "disabled": false,
-              "selected": false,
-              "selector": "div.app_logo",
-              "tag": "div",
-              "text": "Swag Labs"
-            },
-            {
-              "checked": false,
-              "class": "shopping_cart_container",
-              "disabled": false,
-              "id": "shopping_cart_container",
-              "selected": false,
-              "selector": "#shopping_cart_container",
-              "tag": "div",
-              "text": "1"
-            },
-            {
-              "checked": false,
-              "class": "shopping_cart_link",
-              "data-test": "shopping-cart-link",
-              "disabled": false,
-              "selected": false,
-              "selector": "a[data-test=\"shopping-cart-link\"]",
-              "tag": "a",
-              "text": "1"
-            },
-            {
-              "checked": false,
-              "class": "shopping_cart_badge",
-              "data-test": "shopping-cart-badge",
-              "disabled": false,
-              "selected": false,
-              "selector": "span[data-test=\"shopping-cart-badge\"]",
-              "tag": "span",
-              "text": "1"
-            },
-            {
-              "checked": false,
-              "class": "header_secondary_container",
-              "data-test": "secondary-header",
-              "disabled": false,
-              "selected": false,
-              "selector": "div[data-test=\"secondary-header\"]",
-              "tag": "div",
-              "text": "ProductsName (A to Z)Name (A to Z)Name (Z to A)Price (low to high)Price (high to low)"
-            },
-            {
-              "checked": false,
-              "class": "title",
-              "data-test": "title",
-              "disabled": false,
-              "selected": false,
-              "selector": "span[data-test=\"title\"]",
-              "tag": "span",
-              "text": "Products"
-            },
-            {
-              "checked": false,
-              "class": "right_component",
-              "disabled": false,
-              "selected": false,
-              "selector": "div.right_component",
-              "tag": "div",
-              "text": "Name (A to Z)Name (A to Z)Name (Z to A)Price (low to high)Price (high to low)"
-            },
-            {
-              "checked": false,
-              "class": "select_container",
-              "disabled": false,
-              "selected": false,
-              "selector": "span.select_container",
-              "tag": "span",
-              "text": "Name (A to Z)Name (A to Z)Name (Z to A)Price (low to high)Price (high to low)"
-            },
-            {
-              "checked": false,
-              "class": "active_option",
-              "data-test": "active-option",
-              "disabled": false,
-              "selected": false,
-              "selector": "span[data-test=\"active-option\"]",
-              "tag": "span",
-              "text": "Name (A to Z)"
-            },
-            {
-              "checked": false,
-              "class": "product_sort_container",
-              "data-test": "product-sort-container",
-              "disabled": false,
-              "selected": false,
-              "selector": "select[data-test=\"product-sort-container\"]",
-              "tag": "select",
-              "text": "Name (A to Z)Name (Z to A)Price (low to high)Price (high to low)",
-              "value": "az"
-            },
-            {
-              "checked": false,
-              "disabled": false,
-              "id": "inventory_container",
-              "selected": false,
-              "selector": "#inventory_container",
-              "tag": "div",
-              "text": "Sauce Labs Backpackcarry.allTheThings() with the sleek, streamlined Sly Pack that melds uncompromisi"
-            },
-            {
-              "checked": false,
-              "disabled": false,
-              "selected": false,
-              "selector": "div:nth-of-type(1)",
-              "tag": "div",
-              "text": "Sauce Labs Backpackcarry.allTheThings() with the sleek, streamlined Sly Pack that melds uncompromisi"
-            },
-            {
-              "checked": false,
-              "class": "inventory_container",
-              "data-test": "inventory-container",
-              "disabled": false,
-              "id": "inventory_container",
-              "selected": false,
-              "selector": "#inventory_container",
-              "tag": "div",
-              "text": "Sauce Labs Backpackcarry.allTheThings() with the sleek, streamlined Sly Pack that melds uncompromisi"
-            },
-            {
-              "checked": false,
-              "class": "inventory_list",
-              "data-test": "inventory-list",
-              "disabled": false,
-              "selected": false,
-              "selector": "div[data-test=\"inventory-list\"]",
-              "tag": "div",
-              "text": "Sauce Labs Backpackcarry.allTheThings() with the sleek, streamlined Sly Pack that melds uncompromisi"
-            },
-            {
-              "checked": false,
-              "class": "inventory_item",
-              "data-test": "inventory-item",
-              "disabled": false,
-              "selected": false,
-              "selector": "div[data-test=\"inventory-item\"]",
-              "tag": "div",
-              "text": "Sauce Labs Backpackcarry.allTheThings() with the sleek, streamlined Sly Pack that melds uncompromisi"
-            },
-            {
-              "checked": false,
-              "data-test": "item-4-img-link",
-              "disabled": false,
-              "href": "#",
-              "id": "item_4_img_link",
-              "selected": false,
-              "selector": "#item_4_img_link",
-              "tag": "a",
-              "text": ""
-            },
-            {
-              "alt": "Sauce Labs Backpack",
-              "checked": false,
-              "class": "inventory_item_img",
-              "data-test": "inventory-item-sauce-labs-backpack-img",
-              "disabled": false,
-              "selected": false,
-              "selector": "img[data-test=\"inventory-item-sauce-labs-backpack-img\"]",
-              "src": "/static/media/sauce-backpack-1200x1500.0a0b85a385945026062b.jpg",
-              "tag": "img",
-              "text": ""
-            },
-            {
-              "checked": false,
-              "class": "inventory_item_description",
-              "data-test": "inventory-item-description",
-              "disabled": false,
-              "selected": false,
-              "selector": "div[data-test=\"inventory-item-description\"]",
-              "tag": "div",
-              "text": "Sauce Labs Backpackcarry.allTheThings() with the sleek, streamlined Sly Pack that melds uncompromisi"
-            },
-            {
-              "checked": false,
-              "class": "inventory_item_label",
-              "disabled": false,
-              "selected": false,
-              "selector": "div.inventory_item_label",
-              "tag": "div",
-              "text": "Sauce Labs Backpackcarry.allTheThings() with the sleek, streamlined Sly Pack that melds uncompromisi"
-            },
-            {
-              "checked": false,
-              "data-test": "item-4-title-link",
-              "disabled": false,
-              "href": "#",
-              "id": "item_4_title_link",
-              "selected": false,
-              "selector": "#item_4_title_link",
-              "tag": "a",
-              "text": "Sauce Labs Backpack"
-            },
-            {
-              "checked": false,
-              "class": "inventory_item_name ",
-              "data-test": "inventory-item-name",
-              "disabled": false,
-              "selected": false,
-              "selector": "div[data-test=\"inventory-item-name\"]",
-              "tag": "div",
-              "text": "Sauce Labs Backpack"
-            },
-            {
-              "checked": false,
-              "class": "inventory_item_desc",
-              "data-test": "inventory-item-desc",
-              "disabled": false,
-              "selected": false,
-              "selector": "div[data-test=\"inventory-item-desc\"]",
-              "tag": "div",
-              "text": "carry.allTheThings() with the sleek, streamlined Sly Pack that melds uncompromising style with unequ"
-            },
-            {
-              "checked": false,
-              "class": "pricebar",
-              "disabled": false,
-              "selected": false,
-              "selector": "div.pricebar",
-              "tag": "div",
-              "text": "$29.99Add to cart"
-            },
-            {
-              "checked": false,
-              "class": "inventory_item_price",
-              "data-test": "inventory-item-price",
-              "disabled": false,
-              "selected": false,
-              "selector": "div[data-test=\"inventory-item-price\"]",
-              "tag": "div",
-              "text": "$29.99"
-            },
-            {
-              "checked": false,
-              "class": "btn btn_primary btn_small btn_inventory ",
-              "data-test": "add-to-cart-sauce-labs-backpack",
-              "disabled": false,
-              "id": "add-to-cart-sauce-labs-backpack",
-              "name": "add-to-cart-sauce-labs-backpack",
-              "selected": false,
-              "selector": "#add-to-cart-sauce-labs-backpack",
-              "tag": "button",
-              "text": "Add to cart"
-            },
-            {
-              "checked": false,
-              "class": "inventory_item",
-              "data-test": "inventory-item",
-              "disabled": false,
-              "selected": false,
-              "selector": "div[data-test=\"inventory-item\"]",
-              "tag": "div",
-              "text": "Sauce Labs Bike LightA red light isn't the desired state in testing but it sure helps when riding yo"
-            },
-            {
-              "checked": false,
-              "data-test": "item-0-img-link",
-              "disabled": false,
-              "href": "#",
-              "id": "item_0_img_link",
-              "selected": false,
-              "selector": "#item_0_img_link",
-              "tag": "a",
-              "text": ""
-            },
-            {
-              "alt": "Sauce Labs Bike Light",
-              "checked": false,
-              "class": "inventory_item_img",
-              "data-test": "inventory-item-sauce-labs-bike-light-img",
-              "disabled": false,
-              "selected": false,
-              "selector": "img[data-test=\"inventory-item-sauce-labs-bike-light-img\"]",
-              "src": "/static/media/bike-light-1200x1500.37c843b09a7d77409d63.jpg",
-              "tag": "img",
-              "text": ""
-            },
-            {
-              "checked": false,
-              "class": "inventory_item_description",
-              "data-test": "inventory-item-description",
-              "disabled": false,
-              "selected": false,
-              "selector": "div[data-test=\"inventory-item-description\"]",
-              "tag": "div",
-              "text": "Sauce Labs Bike LightA red light isn't the desired state in testing but it sure helps when riding yo"
-            },
-            {
-              "checked": false,
-              "class": "inventory_item_label",
-              "disabled": false,
-              "selected": false,
-              "selector": "div.inventory_item_label",
-              "tag": "div",
-              "text": "Sauce Labs Bike LightA red light isn't the desired state in testing but it sure helps when riding yo"
-            },
-            {
-              "checked": false,
-              "data-test": "item-0-title-link",
-              "disabled": false,
-              "href": "#",
-              "id": "item_0_title_link",
-              "selected": false,
-              "selector": "#item_0_title_link",
-              "tag": "a",
-              "text": "Sauce Labs Bike Light"
-            },
-            {
-              "checked": false,
-              "class": "inventory_item_name ",
-              "data-test": "inventory-item-name",
-              "disabled": false,
-              "selected": false,
-              "selector": "div[data-test=\"inventory-item-name\"]",
-              "tag": "div",
-              "text": "Sauce Labs Bike Light"
-            },
-            {
-              "checked": false,
-              "class": "inventory_item_desc",
-              "data-test": "inventory-item-desc",
-              "disabled": false,
-              "selected": false,
-              "selector": "div[data-test=\"inventory-item-desc\"]",
-              "tag": "div",
-              "text": "A red light isn't the desired state in testing but it sure helps when riding your bike at night. Wat"
-            },
-            {
-              "checked": false,
-              "class": "pricebar",
-              "disabled": false,
-              "selected": false,
-              "selector": "div.pricebar",
-              "tag": "div",
-              "text": "$9.99Add to cart"
-            },
-            {
-              "checked": false,
-              "class": "inventory_item_price",
-              "data-test": "inventory-item-price",
-              "disabled": false,
-              "selected": false,
-              "selector": "div[data-test=\"inventory-item-price\"]",
-              "tag": "div",
-              "text": "$9.99"
-            },
-            {
-              "checked": false,
-              "class": "btn btn_primary btn_small btn_inventory ",
-              "data-test": "add-to-cart-sauce-labs-bike-light",
-              "disabled": false,
-              "id": "add-to-cart-sauce-labs-bike-light",
-              "name": "add-to-cart-sauce-labs-bike-light",
-              "selected": false,
-              "selector": "#add-to-cart-sauce-labs-bike-light",
-              "tag": "button",
-              "text": "Add to cart"
-            },
-            {
-              "checked": false,
-              "class": "inventory_item",
-              "data-test": "inventory-item",
-              "disabled": false,
-              "selected": false,
-              "selector": "div[data-test=\"inventory-item\"]",
-              "tag": "div",
-              "text": "Sauce Labs Bolt T-ShirtGet your testing superhero on with the Sauce Labs bolt T-shirt. From American"
-            },
-            {
-              "checked": false,
-              "data-test": "item-1-img-link",
-              "disabled": false,
-              "href": "#",
-              "id": "item_1_img_link",
-              "selected": false,
-              "selector": "#item_1_img_link",
-              "tag": "a",
-              "text": ""
-            },
-            {
-              "alt": "Sauce Labs Bolt T-Shirt",
-              "checked": false,
-              "class": "inventory_item_img",
-              "data-test": "inventory-item-sauce-labs-bolt-t-shirt-img",
-              "disabled": false,
-              "selected": false,
-              "selector": "img[data-test=\"inventory-item-sauce-labs-bolt-t-shirt-img\"]",
-              "src": "/static/media/bolt-shirt-1200x1500.c2599ac5f0a35ed5931e.jpg",
-              "tag": "img",
-              "text": ""
-            },
-            {
-              "checked": false,
-              "class": "inventory_item_description",
-              "data-test": "inventory-item-description",
-              "disabled": false,
-              "selected": false,
-              "selector": "div[data-test=\"inventory-item-description\"]",
-              "tag": "div",
-              "text": "Sauce Labs Bolt T-ShirtGet your testing superhero on with the Sauce Labs bolt T-shirt. From American"
-            },
-            {
-              "checked": false,
-              "class": "inventory_item_label",
-              "disabled": false,
-              "selected": false,
-              "selector": "div.inventory_item_label",
-              "tag": "div",
-              "text": "Sauce Labs Bolt T-ShirtGet your testing superhero on with the Sauce Labs bolt T-shirt. From American"
-            }
-          ],
-          "page_state": "loaded"
-        },
+        "last_output": "\u003cdiv\u003e\u003cdiv id=\"inventory_container\" class=\"inventory_container\" data-test=\"inventory-container\"\u003e\u003cdiv class=\"inventory_list\" data-test=\"inventory-list\"\u003e\u003cdiv class=\"inventory_item\" data-test=\"inventory-item\"\u003e\u003cdiv class=\"inventory_item_img\"\u003e\u003ca href=\"#\" id=\"item_4_img_link\" data-test=\"item-4-img-link\"\u003e\u003cimg alt=\"Sauce Labs Backpack\" class=\"inventory_item_img\" src=\"/static/media/sauce-backpack-1200x1500.0a0b85a385945026062b.jpg\" data-test=\"inventory-item-sauce-labs-backpack-img\"\u003e\u003c/a\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item_description\" data-test=\"inventory-item-description\"\u003e\u003cdiv class=\"inventory_item_label\"\u003e\u003ca href=\"#\" id=\"item_4_title_link\" data-test=\"item-4-title-link\"\u003e\u003cdiv class=\"inventory_item_name \" data-test=\"inventory-item-name\"\u003eSauce Labs Backpack\u003c/div\u003e\u003c/a\u003e\u003cdiv class=\"inventory_item_desc\" data-test=\"inventory-item-desc\"\u003ecarry.allTheThings() with the sleek, streamlined Sly Pack that melds uncompromising style with unequaled laptop and tablet protection.\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"pricebar\"\u003e\u003cdiv class=\"inventory_item_price\" data-test=\"inventory-item-price\"\u003e$29.99\u003c/div\u003e\u003cbutton class=\"btn btn_primary btn_small btn_inventory \" data-test=\"add-to-cart-sauce-labs-backpack\" id=\"add-to-cart-sauce-labs-backpack\" name=\"add-to-cart-sauce-labs-backpack\"\u003eAdd to cart\u003c/button\u003e\u003c/div\u003e\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item\" data-test=\"inventory-item\"\u003e\u003cdiv class=\"inventory_item_img\"\u003e\u003ca href=\"#\" id=\"item_0_img_link\" data-test=\"item-0-img-link\"\u003e\u003cimg alt=\"Sauce Labs Bike Light\" class=\"inventory_item_img\" src=\"/static/media/bike-light-1200x1500.37c843b09a7d77409d63.jpg\" data-test=\"inventory-item-sauce-labs-bike-light-img\"\u003e\u003c/a\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item_description\" data-test=\"inventory-item-description\"\u003e\u003cdiv class=\"inventory_item_label\"\u003e\u003ca href=\"#\" id=\"item_0_title_link\" data-test=\"item-0-title-link\"\u003e\u003cdiv class=\"inventory_item_name \" data-test=\"inventory-item-name\"\u003eSauce Labs Bike Light\u003c/div\u003e\u003c/a\u003e\u003cdiv class=\"inventory_item_desc\" data-test=\"inventory-item-desc\"\u003eA red light isn't the desired state in testing but it sure helps when riding your bike at night. Water-resistant with 3 lighting modes, 1 AAA battery included.\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"pricebar\"\u003e\u003cdiv class=\"inventory_item_price\" data-test=\"inventory-item-price\"\u003e$9.99\u003c/div\u003e\u003cbutton class=\"btn btn_primary btn_small btn_inventory \" data-test=\"add-to-cart-sauce-labs-bike-light\" id=\"add-to-cart-sauce-labs-bike-light\" name=\"add-to-cart-sauce-labs-bike-light\"\u003eAdd to cart\u003c/button\u003e\u003c/div\u003e\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item\" data-test=\"inventory-item\"\u003e\u003cdiv class=\"inventory_item_img\"\u003e\u003ca href=\"#\" id=\"item_1_img_link\" data-test=\"item-1-img-link\"\u003e\u003cimg alt=\"Sauce Labs Bolt T-Shirt\" class=\"inventory_item_img\" src=\"/static/media/bolt-shirt-1200x1500.c2599ac5f0a35ed5931e.jpg\" data-test=\"inventory-item-sauce-labs-bolt-t-shirt-img\"\u003e\u003c/a\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item_description\" data-test=\"inventory-item-description\"\u003e\u003cdiv class=\"inventory_item_label\"\u003e\u003ca href=\"#\" id=\"item_1_title_link\" data-test=\"item-1-title-link\"\u003e\u003cdiv class=\"inventory_item_name \" data-test=\"inventory-item-name\"\u003eSauce Labs Bolt T-Shirt\u003c/div\u003e\u003c/a\u003e\u003cdiv class=\"inventory_item_desc\" data-test=\"inventory-item-desc\"\u003eGet your testing superhero on with the Sauce Labs bolt T-shirt. From American Apparel, 100% ringspun combed cotton, heather gray with red bolt.\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"pricebar\"\u003e\u003cdiv class=\"inventory_item_price\" data-test=\"inventory-item-price\"\u003e$15.99\u003c/div\u003e\u003cbutton class=\"btn btn_primary btn_small btn_inventory \" data-test=\"add-to-cart-sauce-labs-bolt-t-shirt\" id=\"add-to-cart-sauce-labs-bolt-t-shirt\" name=\"add-to-cart-sauce-labs-bolt-t-shirt\"\u003eAdd to cart\u003c/button\u003e\u003c/div\u003e\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item\" data-test=\"inventory-item\"\u003e\u003cdiv class=\"inventory_item_img\"\u003e\u003ca href=\"#\" id=\"item_5_img_link\" data-test=\"item-5-img-link\"\u003e\u003cimg alt=\"Sauce Labs Fleece Jacket\" class=\"inventory_item_img\" src=\"/static/media/sauce-pullover-1200x1500.51d7ffaf301e698772c8.jpg\" data-test=\"inventory-item-sauce-labs-fleece-jacket-img\"\u003e\u003c/a\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item_description\" data-test=\"inventory-item-description\"\u003e\u003cdiv class=\"inventory_item_label\"\u003e\u003ca href=\"#\" id=\"item_5_title_link\" data-test=\"item-5-title-link\"\u003e\u003cdiv class=\"inventory_item_name \" data-test=\"inventory-item-name\"\u003eSauce Labs Fleece Jacket\u003c/div\u003e\u003c/a\u003e\u003cdiv class=\"inventory_item_desc\" data-test=\"inventory-item-desc\"\u003eIt's not every day that you come across a midweight quarter-zip fleece jacket capable of handling everything from a relaxing day outdoors to a busy day at the office.\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"pricebar\"\u003e\u003cdiv class=\"inventory_item_price\" data-test=\"inventory-item-price\"\u003e$49.99\u003c/div\u003e\u003cbutton class=\"btn btn_primary btn_small btn_inventory \" data-test=\"add-to-cart-sauce-labs-fleece-jacket\" id=\"add-to-cart-sauce-labs-fleece-jacket\" name=\"add-to-cart-sauce-labs-fleece-jacket\"\u003eAdd to cart\u003c/button\u003e\u003c/div\u003e\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item\" data-test=\"inventory-item\"\u003e\u003cdiv class=\"inventory_item_img\"\u003e\u003ca href=\"#\" id=\"item_2_img_link\" data-test=\"item-2-img-link\"\u003e\u003cimg alt=\"Sauce Labs Onesie\" class=\"inventory_item_img\" src=\"/static/media/red-onesie-1200x1500.2ec615b271ef4c3bc430.jpg\" data-test=\"inventory-item-sauce-labs-onesie-img\"\u003e\u003c/a\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item_description\" data-test=\"inventory-item-description\"\u003e\u003cdiv class=\"inventory_item_label\"\u003e\u003ca href=\"#\" id=\"item_2_title_link\" data-test=\"item-2-title-link\"\u003e\u003cdiv class=\"inventory_item_name \" data-test=\"inventory-item-name\"\u003eSauce Labs Onesie\u003c/div\u003e\u003c/a\u003e\u003cdiv class=\"inventory_item_desc\" data-test=\"inventory-item-desc\"\u003eRib snap infant onesie for the junior automation engineer in development. Reinforced 3-snap bottom closure, two-needle hemmed sleeved and bottom won't unravel.\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"pricebar\"\u003e\u003cdiv class=\"inventory_item_price\" data-test=\"inventory-item-price\"\u003e$7.99\u003c/div\u003e\u003cbutton class=\"btn btn_secondary btn_small btn_inventory \" data-test=\"remove-sauce-labs-onesie\" id=\"remove-sauce-labs-onesie\" name=\"remove-sauce-labs-onesie\"\u003eRemove\u003c/button\u003e\u003c/div\u003e\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item\" data-test=\"inventory-item\"\u003e\u003cdiv class=\"inventory_item_img\"\u003e\u003ca href=\"#\" id=\"item_3_img_link\" data-test=\"item-3-img-link\"\u003e\u003cimg alt=\"Test.allTheThings() T-Shirt (Red)\" class=\"inventory_item_img\" src=\"/static/media/red-tatt-1200x1500.30dadef477804e54fc7b.jpg\" data-test=\"inventory-item-test.allthethings()-t-shirt-(red)-img\"\u003e\u003c/a\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item_description\" data-test=\"inventory-item-description\"\u003e\u003cdiv class=\"inventory_item_label\"\u003e\u003ca href=\"#\" id=\"item_3_title_link\" data-test=\"item-3-title-link\"\u003e\u003cdiv class=\"inventory_item_name \" data-test=\"inventory-item-name\"\u003eTest.allTheThings() T-Shirt (Red)\u003c/div\u003e\u003c/a\u003e\u003cdiv class=\"inventory_item_desc\" data-test=\"inventory-item-desc\"\u003eThis classic Sauce Labs t-shirt is perfect to wear when cozying up to your keyboard to automate a few tests. Super-soft and comfy ringspun combed cotton.\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"pricebar\"\u003e\u003cdiv class=\"inventory_item_price\" data-test=\"inventory-item-price\"\u003e$15.99\u003c/div\u003e\u003cbutton class=\"btn btn_primary btn_small btn_inventory \" data-test=\"add-to-cart-test.allthethings()-t-shirt-(red)\" id=\"add-to-cart-test.allthethings()-t-shirt-(red)\" name=\"add-to-cart-test.allthethings()-t-shirt-(red)\"\u003eAdd to cart\u003c/button\u003e\u003c/div\u003e\u003c/div\u003e\u003c/div\u003e\u003c/div\u003e\u003c/div\u003e\u003c/div\u003e",
         "last_step_id": "auto-step-6",
         "last_step_success": true
       },
@@ -1873,7 +1363,7 @@
         "source": "observe_ui"
       },
       "obs_13": {
-        "last_output": "\u003cdiv\u003e\u003cdiv id=\"inventory_container\" class=\"inventory_container\" data-test=\"inventory-container\"\u003e\u003cdiv class=\"inventory_list\" data-test=\"inventory-list\"\u003e\u003cdiv class=\"inventory_item\" data-test=\"inventory-item\"\u003e\u003cdiv class=\"inventory_item_img\"\u003e\u003ca href=\"#\" id=\"item_4_img_link\" data-test=\"item-4-img-link\"\u003e\u003cimg alt=\"Sauce Labs Backpack\" class=\"inventory_item_img\" src=\"/static/media/sauce-backpack-1200x1500.0a0b85a385945026062b.jpg\" data-test=\"inventory-item-sauce-labs-backpack-img\"\u003e\u003c/a\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item_description\" data-test=\"inventory-item-description\"\u003e\u003cdiv class=\"inventory_item_label\"\u003e\u003ca href=\"#\" id=\"item_4_title_link\" data-test=\"item-4-title-link\"\u003e\u003cdiv class=\"inventory_item_name \" data-test=\"inventory-item-name\"\u003eSauce Labs Backpack\u003c/div\u003e\u003c/a\u003e\u003cdiv class=\"inventory_item_desc\" data-test=\"inventory-item-desc\"\u003ecarry.allTheThings() with the sleek, streamlined Sly Pack that melds uncompromising style with unequaled laptop and tablet protection.\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"pricebar\"\u003e\u003cdiv class=\"inventory_item_price\" data-test=\"inventory-item-price\"\u003e$29.99\u003c/div\u003e\u003cbutton class=\"btn btn_primary btn_small btn_inventory \" data-test=\"add-to-cart-sauce-labs-backpack\" id=\"add-to-cart-sauce-labs-backpack\" name=\"add-to-cart-sauce-labs-backpack\"\u003eAdd to cart\u003c/button\u003e\u003c/div\u003e\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item\" data-test=\"inventory-item\"\u003e\u003cdiv class=\"inventory_item_img\"\u003e\u003ca href=\"#\" id=\"item_0_img_link\" data-test=\"item-0-img-link\"\u003e\u003cimg alt=\"Sauce Labs Bike Light\" class=\"inventory_item_img\" src=\"/static/media/bike-light-1200x1500.37c843b09a7d77409d63.jpg\" data-test=\"inventory-item-sauce-labs-bike-light-img\"\u003e\u003c/a\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item_description\" data-test=\"inventory-item-description\"\u003e\u003cdiv class=\"inventory_item_label\"\u003e\u003ca href=\"#\" id=\"item_0_title_link\" data-test=\"item-0-title-link\"\u003e\u003cdiv class=\"inventory_item_name \" data-test=\"inventory-item-name\"\u003eSauce Labs Bike Light\u003c/div\u003e\u003c/a\u003e\u003cdiv class=\"inventory_item_desc\" data-test=\"inventory-item-desc\"\u003eA red light isn't the desired state in testing but it sure helps when riding your bike at night. Water-resistant with 3 lighting modes, 1 AAA battery included.\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"pricebar\"\u003e\u003cdiv class=\"inventory_item_price\" data-test=\"inventory-item-price\"\u003e$9.99\u003c/div\u003e\u003cbutton class=\"btn btn_primary btn_small btn_inventory \" data-test=\"add-to-cart-sauce-labs-bike-light\" id=\"add-to-cart-sauce-labs-bike-light\" name=\"add-to-cart-sauce-labs-bike-light\"\u003eAdd to cart\u003c/button\u003e\u003c/div\u003e\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item\" data-test=\"inventory-item\"\u003e\u003cdiv class=\"inventory_item_img\"\u003e\u003ca href=\"#\" id=\"item_1_img_link\" data-test=\"item-1-img-link\"\u003e\u003cimg alt=\"Sauce Labs Bolt T-Shirt\" class=\"inventory_item_img\" src=\"/static/media/bolt-shirt-1200x1500.c2599ac5f0a35ed5931e.jpg\" data-test=\"inventory-item-sauce-labs-bolt-t-shirt-img\"\u003e\u003c/a\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item_description\" data-test=\"inventory-item-description\"\u003e\u003cdiv class=\"inventory_item_label\"\u003e\u003ca href=\"#\" id=\"item_1_title_link\" data-test=\"item-1-title-link\"\u003e\u003cdiv class=\"inventory_item_name \" data-test=\"inventory-item-name\"\u003eSauce Labs Bolt T-Shirt\u003c/div\u003e\u003c/a\u003e\u003cdiv class=\"inventory_item_desc\" data-test=\"inventory-item-desc\"\u003eGet your testing superhero on with the Sauce Labs bolt T-shirt. From American Apparel, 100% ringspun combed cotton, heather gray with red bolt.\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"pricebar\"\u003e\u003cdiv class=\"inventory_item_price\" data-test=\"inventory-item-price\"\u003e$15.99\u003c/div\u003e\u003cbutton class=\"btn btn_primary btn_small btn_inventory \" data-test=\"add-to-cart-sauce-labs-bolt-t-shirt\" id=\"add-to-cart-sauce-labs-bolt-t-shirt\" name=\"add-to-cart-sauce-labs-bolt-t-shirt\"\u003eAdd to cart\u003c/button\u003e\u003c/div\u003e\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item\" data-test=\"inventory-item\"\u003e\u003cdiv class=\"inventory_item_img\"\u003e\u003ca href=\"#\" id=\"item_5_img_link\" data-test=\"item-5-img-link\"\u003e\u003cimg alt=\"Sauce Labs Fleece Jacket\" class=\"inventory_item_img\" src=\"/static/media/sauce-pullover-1200x1500.51d7ffaf301e698772c8.jpg\" data-test=\"inventory-item-sauce-labs-fleece-jacket-img\"\u003e\u003c/a\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item_description\" data-test=\"inventory-item-description\"\u003e\u003cdiv class=\"inventory_item_label\"\u003e\u003ca href=\"#\" id=\"item_5_title_link\" data-test=\"item-5-title-link\"\u003e\u003cdiv class=\"inventory_item_name \" data-test=\"inventory-item-name\"\u003eSauce Labs Fleece Jacket\u003c/div\u003e\u003c/a\u003e\u003cdiv class=\"inventory_item_desc\" data-test=\"inventory-item-desc\"\u003eIt's not every day that you come across a midweight quarter-zip fleece jacket capable of handling everything from a relaxing day outdoors to a busy day at the office.\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"pricebar\"\u003e\u003cdiv class=\"inventory_item_price\" data-test=\"inventory-item-price\"\u003e$49.99\u003c/div\u003e\u003cbutton class=\"btn btn_primary btn_small btn_inventory \" data-test=\"add-to-cart-sauce-labs-fleece-jacket\" id=\"add-to-cart-sauce-labs-fleece-jacket\" name=\"add-to-cart-sauce-labs-fleece-jacket\"\u003eAdd to cart\u003c/button\u003e\u003c/div\u003e\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item\" data-test=\"inventory-item\"\u003e\u003cdiv class=\"inventory_item_img\"\u003e\u003ca href=\"#\" id=\"item_2_img_link\" data-test=\"item-2-img-link\"\u003e\u003cimg alt=\"Sauce Labs Onesie\" class=\"inventory_item_img\" src=\"/static/media/red-onesie-1200x1500.2ec615b271ef4c3bc430.jpg\" data-test=\"inventory-item-sauce-labs-onesie-img\"\u003e\u003c/a\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item_description\" data-test=\"inventory-item-description\"\u003e\u003cdiv class=\"inventory_item_label\"\u003e\u003ca href=\"#\" id=\"item_2_title_link\" data-test=\"item-2-title-link\"\u003e\u003cdiv class=\"inventory_item_name \" data-test=\"inventory-item-name\"\u003eSauce Labs Onesie\u003c/div\u003e\u003c/a\u003e\u003cdiv class=\"inventory_item_desc\" data-test=\"inventory-item-desc\"\u003eRib snap infant onesie for the junior automation engineer in development. Reinforced 3-snap bottom closure, two-needle hemmed sleeved and bottom won't unravel.\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"pricebar\"\u003e\u003cdiv class=\"inventory_item_price\" data-test=\"inventory-item-price\"\u003e$7.99\u003c/div\u003e\u003cbutton class=\"btn btn_secondary btn_small btn_inventory \" data-test=\"remove-sauce-labs-onesie\" id=\"remove-sauce-labs-onesie\" name=\"remove-sauce-labs-onesie\"\u003eRemove\u003c/button\u003e\u003c/div\u003e\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item\" data-test=\"inventory-item\"\u003e\u003cdiv class=\"inventory_item_img\"\u003e\u003ca href=\"#\" id=\"item_3_img_link\" data-test=\"item-3-img-link\"\u003e\u003cimg alt=\"Test.allTheThings() T-Shirt (Red)\" class=\"inventory_item_img\" src=\"/static/media/red-tatt-1200x1500.30dadef477804e54fc7b.jpg\" data-test=\"inventory-item-test.allthethings()-t-shirt-(red)-img\"\u003e\u003c/a\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item_description\" data-test=\"inventory-item-description\"\u003e\u003cdiv class=\"inventory_item_label\"\u003e\u003ca href=\"#\" id=\"item_3_title_link\" data-test=\"item-3-title-link\"\u003e\u003cdiv class=\"inventory_item_name \" data-test=\"inventory-item-name\"\u003eTest.allTheThings() T-Shirt (Red)\u003c/div\u003e\u003c/a\u003e\u003cdiv class=\"inventory_item_desc\" data-test=\"inventory-item-desc\"\u003eThis classic Sauce Labs t-shirt is perfect to wear when cozying up to your keyboard to automate a few tests. Super-soft and comfy ringspun combed cotton.\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"pricebar\"\u003e\u003cdiv class=\"inventory_item_price\" data-test=\"inventory-item-price\"\u003e$15.99\u003c/div\u003e\u003cbutton class=\"btn btn_primary btn_small btn_inventory \" data-test=\"add-to-cart-test.allthethings()-t-shirt-(red)\" id=\"add-to-cart-test.allthethings()-t-shirt-(red)\" name=\"add-to-cart-test.allthethings()-t-shirt-(red)\"\u003eAdd to cart\u003c/button\u003e\u003c/div\u003e\u003c/div\u003e\u003c/div\u003e\u003c/div\u003e\u003c/div\u003e\u003c/div\u003e",
+        "last_output": "Sauce Labs Backpackcarry.allTheThings() with the sleek, streamlined Sly Pack that melds uncompromising style with unequaled laptop and tablet protection.$29.99Add to cartSauce Labs Bike LightA red light isn't the desired state in testing but it sure helps when riding your bike at night. Water-resistant with 3 lighting modes, 1 AAA battery included.$9.99Add to cartSauce Labs Bolt T-ShirtGet your testing superhero on with the Sauce Labs bolt T-shirt. From American Apparel, 100% ringspun combed cotton, heather gray with red bolt.$15.99Add to cartSauce Labs Fleece JacketIt's not every day that you come across a midweight quarter-zip fleece jacket capable of handling everything from a relaxing day outdoors to a busy day at the office.$49.99Add to cartSauce Labs OnesieRib snap infant onesie for the junior automation engineer in development. Reinforced 3-snap bottom closure, two-needle hemmed sleeved and bottom won't unravel.$7.99RemoveTest.allTheThings() T-Shirt (Red)This classic Sauce Labs t-shirt is perfect to wear when cozying up to your keyboard to automate a few tests. Super-soft and comfy ringspun combed cotton.$15.99Add to cart",
         "last_step_id": "auto-step-7",
         "last_step_success": true
       },
@@ -2392,7 +1882,7 @@
         "source": "observe_ui"
       },
       "obs_15": {
-        "last_output": "selected option label 'Price (low to high)' on select[data-test=\"product-sort-container\"]",
+        "last_output": "\u003cdiv\u003e\u003cdiv id=\"inventory_container\" class=\"inventory_container\" data-test=\"inventory-container\"\u003e\u003cdiv class=\"inventory_list\" data-test=\"inventory-list\"\u003e\u003cdiv class=\"inventory_item\" data-test=\"inventory-item\"\u003e\u003cdiv class=\"inventory_item_img\"\u003e\u003ca href=\"#\" id=\"item_4_img_link\" data-test=\"item-4-img-link\"\u003e\u003cimg alt=\"Sauce Labs Backpack\" class=\"inventory_item_img\" src=\"/static/media/sauce-backpack-1200x1500.0a0b85a385945026062b.jpg\" data-test=\"inventory-item-sauce-labs-backpack-img\"\u003e\u003c/a\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item_description\" data-test=\"inventory-item-description\"\u003e\u003cdiv class=\"inventory_item_label\"\u003e\u003ca href=\"#\" id=\"item_4_title_link\" data-test=\"item-4-title-link\"\u003e\u003cdiv class=\"inventory_item_name \" data-test=\"inventory-item-name\"\u003eSauce Labs Backpack\u003c/div\u003e\u003c/a\u003e\u003cdiv class=\"inventory_item_desc\" data-test=\"inventory-item-desc\"\u003ecarry.allTheThings() with the sleek, streamlined Sly Pack that melds uncompromising style with unequaled laptop and tablet protection.\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"pricebar\"\u003e\u003cdiv class=\"inventory_item_price\" data-test=\"inventory-item-price\"\u003e$29.99\u003c/div\u003e\u003cbutton class=\"btn btn_primary btn_small btn_inventory \" data-test=\"add-to-cart-sauce-labs-backpack\" id=\"add-to-cart-sauce-labs-backpack\" name=\"add-to-cart-sauce-labs-backpack\"\u003eAdd to cart\u003c/button\u003e\u003c/div\u003e\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item\" data-test=\"inventory-item\"\u003e\u003cdiv class=\"inventory_item_img\"\u003e\u003ca href=\"#\" id=\"item_0_img_link\" data-test=\"item-0-img-link\"\u003e\u003cimg alt=\"Sauce Labs Bike Light\" class=\"inventory_item_img\" src=\"/static/media/bike-light-1200x1500.37c843b09a7d77409d63.jpg\" data-test=\"inventory-item-sauce-labs-bike-light-img\"\u003e\u003c/a\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item_description\" data-test=\"inventory-item-description\"\u003e\u003cdiv class=\"inventory_item_label\"\u003e\u003ca href=\"#\" id=\"item_0_title_link\" data-test=\"item-0-title-link\"\u003e\u003cdiv class=\"inventory_item_name \" data-test=\"inventory-item-name\"\u003eSauce Labs Bike Light\u003c/div\u003e\u003c/a\u003e\u003cdiv class=\"inventory_item_desc\" data-test=\"inventory-item-desc\"\u003eA red light isn't the desired state in testing but it sure helps when riding your bike at night. Water-resistant with 3 lighting modes, 1 AAA battery included.\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"pricebar\"\u003e\u003cdiv class=\"inventory_item_price\" data-test=\"inventory-item-price\"\u003e$9.99\u003c/div\u003e\u003cbutton class=\"btn btn_primary btn_small btn_inventory \" data-test=\"add-to-cart-sauce-labs-bike-light\" id=\"add-to-cart-sauce-labs-bike-light\" name=\"add-to-cart-sauce-labs-bike-light\"\u003eAdd to cart\u003c/button\u003e\u003c/div\u003e\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item\" data-test=\"inventory-item\"\u003e\u003cdiv class=\"inventory_item_img\"\u003e\u003ca href=\"#\" id=\"item_1_img_link\" data-test=\"item-1-img-link\"\u003e\u003cimg alt=\"Sauce Labs Bolt T-Shirt\" class=\"inventory_item_img\" src=\"/static/media/bolt-shirt-1200x1500.c2599ac5f0a35ed5931e.jpg\" data-test=\"inventory-item-sauce-labs-bolt-t-shirt-img\"\u003e\u003c/a\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item_description\" data-test=\"inventory-item-description\"\u003e\u003cdiv class=\"inventory_item_label\"\u003e\u003ca href=\"#\" id=\"item_1_title_link\" data-test=\"item-1-title-link\"\u003e\u003cdiv class=\"inventory_item_name \" data-test=\"inventory-item-name\"\u003eSauce Labs Bolt T-Shirt\u003c/div\u003e\u003c/a\u003e\u003cdiv class=\"inventory_item_desc\" data-test=\"inventory-item-desc\"\u003eGet your testing superhero on with the Sauce Labs bolt T-shirt. From American Apparel, 100% ringspun combed cotton, heather gray with red bolt.\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"pricebar\"\u003e\u003cdiv class=\"inventory_item_price\" data-test=\"inventory-item-price\"\u003e$15.99\u003c/div\u003e\u003cbutton class=\"btn btn_primary btn_small btn_inventory \" data-test=\"add-to-cart-sauce-labs-bolt-t-shirt\" id=\"add-to-cart-sauce-labs-bolt-t-shirt\" name=\"add-to-cart-sauce-labs-bolt-t-shirt\"\u003eAdd to cart\u003c/button\u003e\u003c/div\u003e\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item\" data-test=\"inventory-item\"\u003e\u003cdiv class=\"inventory_item_img\"\u003e\u003ca href=\"#\" id=\"item_5_img_link\" data-test=\"item-5-img-link\"\u003e\u003cimg alt=\"Sauce Labs Fleece Jacket\" class=\"inventory_item_img\" src=\"/static/media/sauce-pullover-1200x1500.51d7ffaf301e698772c8.jpg\" data-test=\"inventory-item-sauce-labs-fleece-jacket-img\"\u003e\u003c/a\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item_description\" data-test=\"inventory-item-description\"\u003e\u003cdiv class=\"inventory_item_label\"\u003e\u003ca href=\"#\" id=\"item_5_title_link\" data-test=\"item-5-title-link\"\u003e\u003cdiv class=\"inventory_item_name \" data-test=\"inventory-item-name\"\u003eSauce Labs Fleece Jacket\u003c/div\u003e\u003c/a\u003e\u003cdiv class=\"inventory_item_desc\" data-test=\"inventory-item-desc\"\u003eIt's not every day that you come across a midweight quarter-zip fleece jacket capable of handling everything from a relaxing day outdoors to a busy day at the office.\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"pricebar\"\u003e\u003cdiv class=\"inventory_item_price\" data-test=\"inventory-item-price\"\u003e$49.99\u003c/div\u003e\u003cbutton class=\"btn btn_primary btn_small btn_inventory \" data-test=\"add-to-cart-sauce-labs-fleece-jacket\" id=\"add-to-cart-sauce-labs-fleece-jacket\" name=\"add-to-cart-sauce-labs-fleece-jacket\"\u003eAdd to cart\u003c/button\u003e\u003c/div\u003e\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item\" data-test=\"inventory-item\"\u003e\u003cdiv class=\"inventory_item_img\"\u003e\u003ca href=\"#\" id=\"item_2_img_link\" data-test=\"item-2-img-link\"\u003e\u003cimg alt=\"Sauce Labs Onesie\" class=\"inventory_item_img\" src=\"/static/media/red-onesie-1200x1500.2ec615b271ef4c3bc430.jpg\" data-test=\"inventory-item-sauce-labs-onesie-img\"\u003e\u003c/a\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item_description\" data-test=\"inventory-item-description\"\u003e\u003cdiv class=\"inventory_item_label\"\u003e\u003ca href=\"#\" id=\"item_2_title_link\" data-test=\"item-2-title-link\"\u003e\u003cdiv class=\"inventory_item_name \" data-test=\"inventory-item-name\"\u003eSauce Labs Onesie\u003c/div\u003e\u003c/a\u003e\u003cdiv class=\"inventory_item_desc\" data-test=\"inventory-item-desc\"\u003eRib snap infant onesie for the junior automation engineer in development. Reinforced 3-snap bottom closure, two-needle hemmed sleeved and bottom won't unravel.\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"pricebar\"\u003e\u003cdiv class=\"inventory_item_price\" data-test=\"inventory-item-price\"\u003e$7.99\u003c/div\u003e\u003cbutton class=\"btn btn_secondary btn_small btn_inventory \" data-test=\"remove-sauce-labs-onesie\" id=\"remove-sauce-labs-onesie\" name=\"remove-sauce-labs-onesie\"\u003eRemove\u003c/button\u003e\u003c/div\u003e\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item\" data-test=\"inventory-item\"\u003e\u003cdiv class=\"inventory_item_img\"\u003e\u003ca href=\"#\" id=\"item_3_img_link\" data-test=\"item-3-img-link\"\u003e\u003cimg alt=\"Test.allTheThings() T-Shirt (Red)\" class=\"inventory_item_img\" src=\"/static/media/red-tatt-1200x1500.30dadef477804e54fc7b.jpg\" data-test=\"inventory-item-test.allthethings()-t-shirt-(red)-img\"\u003e\u003c/a\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item_description\" data-test=\"inventory-item-description\"\u003e\u003cdiv class=\"inventory_item_label\"\u003e\u003ca href=\"#\" id=\"item_3_title_link\" data-test=\"item-3-title-link\"\u003e\u003cdiv class=\"inventory_item_name \" data-test=\"inventory-item-name\"\u003eTest.allTheThings() T-Shirt (Red)\u003c/div\u003e\u003c/a\u003e\u003cdiv class=\"inventory_item_desc\" data-test=\"inventory-item-desc\"\u003eThis classic Sauce Labs t-shirt is perfect to wear when cozying up to your keyboard to automate a few tests. Super-soft and comfy ringspun combed cotton.\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"pricebar\"\u003e\u003cdiv class=\"inventory_item_price\" data-test=\"inventory-item-price\"\u003e$15.99\u003c/div\u003e\u003cbutton class=\"btn btn_primary btn_small btn_inventory \" data-test=\"add-to-cart-test.allthethings()-t-shirt-(red)\" id=\"add-to-cart-test.allthethings()-t-shirt-(red)\" name=\"add-to-cart-test.allthethings()-t-shirt-(red)\"\u003eAdd to cart\u003c/button\u003e\u003c/div\u003e\u003c/div\u003e\u003c/div\u003e\u003c/div\u003e\u003c/div\u003e\u003c/div\u003e",
         "last_step_id": "auto-step-8",
         "last_step_success": true
       },
@@ -2406,7 +1896,7 @@
               "selected": false,
               "selector": "#root",
               "tag": "div",
-              "text": "Open MenuAll ItemsAboutLogoutReset App StateClose MenuSwag Labs1ProductsPrice (low to high)Name (A t"
+              "text": "Open MenuAll ItemsAboutLogoutReset App StateClose MenuSwag Labs1ProductsName (A to Z)Name (A to Z)Na"
             },
             {
               "checked": false,
@@ -2416,7 +1906,7 @@
               "selected": false,
               "selector": "#page_wrapper",
               "tag": "div",
-              "text": "Open MenuAll ItemsAboutLogoutReset App StateClose MenuSwag Labs1ProductsPrice (low to high)Name (A t"
+              "text": "Open MenuAll ItemsAboutLogoutReset App StateClose MenuSwag Labs1ProductsName (A to Z)Name (A to Z)Na"
             },
             {
               "checked": false,
@@ -2425,7 +1915,7 @@
               "selected": false,
               "selector": "#contents_wrapper",
               "tag": "div",
-              "text": "Open MenuAll ItemsAboutLogoutReset App StateClose MenuSwag Labs1ProductsPrice (low to high)Name (A t"
+              "text": "Open MenuAll ItemsAboutLogoutReset App StateClose MenuSwag Labs1ProductsName (A to Z)Name (A to Z)Na"
             },
             {
               "checked": false,
@@ -2436,7 +1926,7 @@
               "selected": false,
               "selector": "#header_container",
               "tag": "div",
-              "text": "Open MenuAll ItemsAboutLogoutReset App StateClose MenuSwag Labs1ProductsPrice (low to high)Name (A t"
+              "text": "Open MenuAll ItemsAboutLogoutReset App StateClose MenuSwag Labs1ProductsName (A to Z)Name (A to Z)Na"
             },
             {
               "checked": false,
@@ -2536,7 +2026,7 @@
               "selected": false,
               "selector": "div[data-test=\"secondary-header\"]",
               "tag": "div",
-              "text": "ProductsPrice (low to high)Name (A to Z)Name (Z to A)Price (low to high)Price (high to low)"
+              "text": "ProductsName (A to Z)Name (A to Z)Name (Z to A)Price (low to high)Price (high to low)"
             },
             {
               "checked": false,
@@ -2555,7 +2045,7 @@
               "selected": false,
               "selector": "div.right_component",
               "tag": "div",
-              "text": "Price (low to high)Name (A to Z)Name (Z to A)Price (low to high)Price (high to low)"
+              "text": "Name (A to Z)Name (A to Z)Name (Z to A)Price (low to high)Price (high to low)"
             },
             {
               "checked": false,
@@ -2564,7 +2054,7 @@
               "selected": false,
               "selector": "span.select_container",
               "tag": "span",
-              "text": "Price (low to high)Name (A to Z)Name (Z to A)Price (low to high)Price (high to low)"
+              "text": "Name (A to Z)Name (A to Z)Name (Z to A)Price (low to high)Price (high to low)"
             },
             {
               "checked": false,
@@ -2574,7 +2064,7 @@
               "selected": false,
               "selector": "span[data-test=\"active-option\"]",
               "tag": "span",
-              "text": "Price (low to high)"
+              "text": "Name (A to Z)"
             },
             {
               "checked": false,
@@ -2585,7 +2075,7 @@
               "selector": "select[data-test=\"product-sort-container\"]",
               "tag": "select",
               "text": "Name (A to Z)Name (Z to A)Price (low to high)Price (high to low)",
-              "value": "lohi"
+              "value": "az"
             },
             {
               "checked": false,
@@ -2594,7 +2084,7 @@
               "selected": false,
               "selector": "#inventory_container",
               "tag": "div",
-              "text": "Sauce Labs OnesieRib snap infant onesie for the junior automation engineer in development. Reinforce"
+              "text": "Sauce Labs Backpackcarry.allTheThings() with the sleek, streamlined Sly Pack that melds uncompromisi"
             },
             {
               "checked": false,
@@ -2602,7 +2092,7 @@
               "selected": false,
               "selector": "div:nth-of-type(1)",
               "tag": "div",
-              "text": "Sauce Labs OnesieRib snap infant onesie for the junior automation engineer in development. Reinforce"
+              "text": "Sauce Labs Backpackcarry.allTheThings() with the sleek, streamlined Sly Pack that melds uncompromisi"
             },
             {
               "checked": false,
@@ -2613,7 +2103,7 @@
               "selected": false,
               "selector": "#inventory_container",
               "tag": "div",
-              "text": "Sauce Labs OnesieRib snap infant onesie for the junior automation engineer in development. Reinforce"
+              "text": "Sauce Labs Backpackcarry.allTheThings() with the sleek, streamlined Sly Pack that melds uncompromisi"
             },
             {
               "checked": false,
@@ -2623,7 +2113,7 @@
               "selected": false,
               "selector": "div[data-test=\"inventory-list\"]",
               "tag": "div",
-              "text": "Sauce Labs OnesieRib snap infant onesie for the junior automation engineer in development. Reinforce"
+              "text": "Sauce Labs Backpackcarry.allTheThings() with the sleek, streamlined Sly Pack that melds uncompromisi"
             },
             {
               "checked": false,
@@ -2633,28 +2123,28 @@
               "selected": false,
               "selector": "div[data-test=\"inventory-item\"]",
               "tag": "div",
-              "text": "Sauce Labs OnesieRib snap infant onesie for the junior automation engineer in development. Reinforce"
+              "text": "Sauce Labs Backpackcarry.allTheThings() with the sleek, streamlined Sly Pack that melds uncompromisi"
             },
             {
               "checked": false,
-              "data-test": "item-2-img-link",
+              "data-test": "item-4-img-link",
               "disabled": false,
               "href": "#",
-              "id": "item_2_img_link",
+              "id": "item_4_img_link",
               "selected": false,
-              "selector": "#item_2_img_link",
+              "selector": "#item_4_img_link",
               "tag": "a",
               "text": ""
             },
             {
-              "alt": "Sauce Labs Onesie",
+              "alt": "Sauce Labs Backpack",
               "checked": false,
               "class": "inventory_item_img",
-              "data-test": "inventory-item-sauce-labs-onesie-img",
+              "data-test": "inventory-item-sauce-labs-backpack-img",
               "disabled": false,
               "selected": false,
-              "selector": "img[data-test=\"inventory-item-sauce-labs-onesie-img\"]",
-              "src": "/static/media/red-onesie-1200x1500.2ec615b271ef4c3bc430.jpg",
+              "selector": "img[data-test=\"inventory-item-sauce-labs-backpack-img\"]",
+              "src": "/static/media/sauce-backpack-1200x1500.0a0b85a385945026062b.jpg",
               "tag": "img",
               "text": ""
             },
@@ -2666,7 +2156,7 @@
               "selected": false,
               "selector": "div[data-test=\"inventory-item-description\"]",
               "tag": "div",
-              "text": "Sauce Labs OnesieRib snap infant onesie for the junior automation engineer in development. Reinforce"
+              "text": "Sauce Labs Backpackcarry.allTheThings() with the sleek, streamlined Sly Pack that melds uncompromisi"
             },
             {
               "checked": false,
@@ -2675,18 +2165,18 @@
               "selected": false,
               "selector": "div.inventory_item_label",
               "tag": "div",
-              "text": "Sauce Labs OnesieRib snap infant onesie for the junior automation engineer in development. Reinforce"
+              "text": "Sauce Labs Backpackcarry.allTheThings() with the sleek, streamlined Sly Pack that melds uncompromisi"
             },
             {
               "checked": false,
-              "data-test": "item-2-title-link",
+              "data-test": "item-4-title-link",
               "disabled": false,
               "href": "#",
-              "id": "item_2_title_link",
+              "id": "item_4_title_link",
               "selected": false,
-              "selector": "#item_2_title_link",
+              "selector": "#item_4_title_link",
               "tag": "a",
-              "text": "Sauce Labs Onesie"
+              "text": "Sauce Labs Backpack"
             },
             {
               "checked": false,
@@ -2696,7 +2186,7 @@
               "selected": false,
               "selector": "div[data-test=\"inventory-item-name\"]",
               "tag": "div",
-              "text": "Sauce Labs Onesie"
+              "text": "Sauce Labs Backpack"
             },
             {
               "checked": false,
@@ -2706,7 +2196,7 @@
               "selected": false,
               "selector": "div[data-test=\"inventory-item-desc\"]",
               "tag": "div",
-              "text": "Rib snap infant onesie for the junior automation engineer in development. Reinforced 3-snap bottom c"
+              "text": "carry.allTheThings() with the sleek, streamlined Sly Pack that melds uncompromising style with unequ"
             },
             {
               "checked": false,
@@ -2715,7 +2205,7 @@
               "selected": false,
               "selector": "div.pricebar",
               "tag": "div",
-              "text": "$7.99Remove"
+              "text": "$29.99Add to cart"
             },
             {
               "checked": false,
@@ -2725,19 +2215,19 @@
               "selected": false,
               "selector": "div[data-test=\"inventory-item-price\"]",
               "tag": "div",
-              "text": "$7.99"
+              "text": "$29.99"
             },
             {
               "checked": false,
-              "class": "btn btn_secondary btn_small btn_inventory ",
-              "data-test": "remove-sauce-labs-onesie",
+              "class": "btn btn_primary btn_small btn_inventory ",
+              "data-test": "add-to-cart-sauce-labs-backpack",
               "disabled": false,
-              "id": "remove-sauce-labs-onesie",
-              "name": "remove-sauce-labs-onesie",
+              "id": "add-to-cart-sauce-labs-backpack",
+              "name": "add-to-cart-sauce-labs-backpack",
               "selected": false,
-              "selector": "#remove-sauce-labs-onesie",
+              "selector": "#add-to-cart-sauce-labs-backpack",
               "tag": "button",
-              "text": "Remove"
+              "text": "Add to cart"
             },
             {
               "checked": false,
@@ -2909,6 +2399,530 @@
           "page_state": "loaded"
         },
         "source": "observe_ui"
+      },
+      "obs_17": {
+        "last_output": "\u003cdiv class=\"inventory_item\" data-test=\"inventory-item\"\u003e\u003cdiv class=\"inventory_item_img\"\u003e\u003ca href=\"#\" id=\"item_4_img_link\" data-test=\"item-4-img-link\"\u003e\u003cimg alt=\"Sauce Labs Backpack\" class=\"inventory_item_img\" src=\"/static/media/sauce-backpack-1200x1500.0a0b85a385945026062b.jpg\" data-test=\"inventory-item-sauce-labs-backpack-img\"\u003e\u003c/a\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item_description\" data-test=\"inventory-item-description\"\u003e\u003cdiv class=\"inventory_item_label\"\u003e\u003ca href=\"#\" id=\"item_4_title_link\" data-test=\"item-4-title-link\"\u003e\u003cdiv class=\"inventory_item_name \" data-test=\"inventory-item-name\"\u003eSauce Labs Backpack\u003c/div\u003e\u003c/a\u003e\u003cdiv class=\"inventory_item_desc\" data-test=\"inventory-item-desc\"\u003ecarry.allTheThings() with the sleek, streamlined Sly Pack that melds uncompromising style with unequaled laptop and tablet protection.\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"pricebar\"\u003e\u003cdiv class=\"inventory_item_price\" data-test=\"inventory-item-price\"\u003e$29.99\u003c/div\u003e\u003cbutton class=\"btn btn_primary btn_small btn_inventory \" data-test=\"add-to-cart-sauce-labs-backpack\" id=\"add-to-cart-sauce-labs-backpack\" name=\"add-to-cart-sauce-labs-backpack\"\u003eAdd to cart\u003c/button\u003e\u003c/div\u003e\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item\" data-test=\"inventory-item\"\u003e\u003cdiv class=\"inventory_item_img\"\u003e\u003ca href=\"#\" id=\"item_0_img_link\" data-test=\"item-0-img-link\"\u003e\u003cimg alt=\"Sauce Labs Bike Light\" class=\"inventory_item_img\" src=\"/static/media/bike-light-1200x1500.37c843b09a7d77409d63.jpg\" data-test=\"inventory-item-sauce-labs-bike-light-img\"\u003e\u003c/a\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item_description\" data-test=\"inventory-item-description\"\u003e\u003cdiv class=\"inventory_item_label\"\u003e\u003ca href=\"#\" id=\"item_0_title_link\" data-test=\"item-0-title-link\"\u003e\u003cdiv class=\"inventory_item_name \" data-test=\"inventory-item-name\"\u003eSauce Labs Bike Light\u003c/div\u003e\u003c/a\u003e\u003cdiv class=\"inventory_item_desc\" data-test=\"inventory-item-desc\"\u003eA red light isn't the desired state in testing but it sure helps when riding your bike at night. Water-resistant with 3 lighting modes, 1 AAA battery included.\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"pricebar\"\u003e\u003cdiv class=\"inventory_item_price\" data-test=\"inventory-item-price\"\u003e$9.99\u003c/div\u003e\u003cbutton class=\"btn btn_primary btn_small btn_inventory \" data-test=\"add-to-cart-sauce-labs-bike-light\" id=\"add-to-cart-sauce-labs-bike-light\" name=\"add-to-cart-sauce-labs-bike-light\"\u003eAdd to cart\u003c/button\u003e\u003c/div\u003e\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item\" data-test=\"inventory-item\"\u003e\u003cdiv class=\"inventory_item_img\"\u003e\u003ca href=\"#\" id=\"item_1_img_link\" data-test=\"item-1-img-link\"\u003e\u003cimg alt=\"Sauce Labs Bolt T-Shirt\" class=\"inventory_item_img\" src=\"/static/media/bolt-shirt-1200x1500.c2599ac5f0a35ed5931e.jpg\" data-test=\"inventory-item-sauce-labs-bolt-t-shirt-img\"\u003e\u003c/a\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item_description\" data-test=\"inventory-item-description\"\u003e\u003cdiv class=\"inventory_item_label\"\u003e\u003ca href=\"#\" id=\"item_1_title_link\" data-test=\"item-1-title-link\"\u003e\u003cdiv class=\"inventory_item_name \" data-test=\"inventory-item-name\"\u003eSauce Labs Bolt T-Shirt\u003c/div\u003e\u003c/a\u003e\u003cdiv class=\"inventory_item_desc\" data-test=\"inventory-item-desc\"\u003eGet your testing superhero on with the Sauce Labs bolt T-shirt. From American Apparel, 100% ringspun combed cotton, heather gray with red bolt.\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"pricebar\"\u003e\u003cdiv class=\"inventory_item_price\" data-test=\"inventory-item-price\"\u003e$15.99\u003c/div\u003e\u003cbutton class=\"btn btn_primary btn_small btn_inventory \" data-test=\"add-to-cart-sauce-labs-bolt-t-shirt\" id=\"add-to-cart-sauce-labs-bolt-t-shirt\" name=\"add-to-cart-sauce-labs-bolt-t-shirt\"\u003eAdd to cart\u003c/button\u003e\u003c/div\u003e\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item\" data-test=\"inventory-item\"\u003e\u003cdiv class=\"inventory_item_img\"\u003e\u003ca href=\"#\" id=\"item_5_img_link\" data-test=\"item-5-img-link\"\u003e\u003cimg alt=\"Sauce Labs Fleece Jacket\" class=\"inventory_item_img\" src=\"/static/media/sauce-pullover-1200x1500.51d7ffaf301e698772c8.jpg\" data-test=\"inventory-item-sauce-labs-fleece-jacket-img\"\u003e\u003c/a\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item_description\" data-test=\"inventory-item-description\"\u003e\u003cdiv class=\"inventory_item_label\"\u003e\u003ca href=\"#\" id=\"item_5_title_link\" data-test=\"item-5-title-link\"\u003e\u003cdiv class=\"inventory_item_name \" data-test=\"inventory-item-name\"\u003eSauce Labs Fleece Jacket\u003c/div\u003e\u003c/a\u003e\u003cdiv class=\"inventory_item_desc\" data-test=\"inventory-item-desc\"\u003eIt's not every day that you come across a midweight quarter-zip fleece jacket capable of handling everything from a relaxing day outdoors to a busy day at the office.\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"pricebar\"\u003e\u003cdiv class=\"inventory_item_price\" data-test=\"inventory-item-price\"\u003e$49.99\u003c/div\u003e\u003cbutton class=\"btn btn_primary btn_small btn_inventory \" data-test=\"add-to-cart-sauce-labs-fleece-jacket\" id=\"add-to-cart-sauce-labs-fleece-jacket\" name=\"add-to-cart-sauce-labs-fleece-jacket\"\u003eAdd to cart\u003c/button\u003e\u003c/div\u003e\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item\" data-test=\"inventory-item\"\u003e\u003cdiv class=\"inventory_item_img\"\u003e\u003ca href=\"#\" id=\"item_2_img_link\" data-test=\"item-2-img-link\"\u003e\u003cimg alt=\"Sauce Labs Onesie\" class=\"inventory_item_img\" src=\"/static/media/red-onesie-1200x1500.2ec615b271ef4c3bc430.jpg\" data-test=\"inventory-item-sauce-labs-onesie-img\"\u003e\u003c/a\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item_description\" data-test=\"inventory-item-description\"\u003e\u003cdiv class=\"inventory_item_label\"\u003e\u003ca href=\"#\" id=\"item_2_title_link\" data-test=\"item-2-title-link\"\u003e\u003cdiv class=\"inventory_item_name \" data-test=\"inventory-item-name\"\u003eSauce Labs Onesie\u003c/div\u003e\u003c/a\u003e\u003cdiv class=\"inventory_item_desc\" data-test=\"inventory-item-desc\"\u003eRib snap infant onesie for the junior automation engineer in development. Reinforced 3-snap bottom closure, two-needle hemmed sleeved and bottom won't unravel.\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"pricebar\"\u003e\u003cdiv class=\"inventory_item_price\" data-test=\"inventory-item-price\"\u003e$7.99\u003c/div\u003e\u003cbutton class=\"btn btn_secondary btn_small btn_inventory \" data-test=\"remove-sauce-labs-onesie\" id=\"remove-sauce-labs-onesie\" name=\"remove-sauce-labs-onesie\"\u003eRemove\u003c/button\u003e\u003c/div\u003e\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item\" data-test=\"inventory-item\"\u003e\u003cdiv class=\"inventory_item_img\"\u003e\u003ca href=\"#\" id=\"item_3_img_link\" data-test=\"item-3-img-link\"\u003e\u003cimg alt=\"Test.allTheThings() T-Shirt (Red)\" class=\"inventory_item_img\" src=\"/static/media/red-tatt-1200x1500.30dadef477804e54fc7b.jpg\" data-test=\"inventory-item-test.allthethings()-t-shirt-(red)-img\"\u003e\u003c/a\u003e\u003c/div\u003e\u003cdiv class=\"inventory_item_description\" data-test=\"inventory-item-description\"\u003e\u003cdiv class=\"inventory_item_label\"\u003e\u003ca href=\"#\" id=\"item_3_title_link\" data-test=\"item-3-title-link\"\u003e\u003cdiv class=\"inventory_item_name \" data-test=\"inventory-item-name\"\u003eTest.allTheThings() T-Shirt (Red)\u003c/div\u003e\u003c/a\u003e\u003cdiv class=\"inventory_item_desc\" data-test=\"inventory-item-desc\"\u003eThis classic Sauce Labs t-shirt is perfect to wear when cozying up to your keyboard to automate a few tests. Super-soft and comfy ringspun combed cotton.\u003c/div\u003e\u003c/div\u003e\u003cdiv class=\"pricebar\"\u003e\u003cdiv class=\"inventory_item_price\" data-test=\"inventory-item-price\"\u003e$15.99\u003c/div\u003e\u003cbutton class=\"btn btn_primary btn_small btn_inventory \" data-test=\"add-to-cart-test.allthethings()-t-shirt-(red)\" id=\"add-to-cart-test.allthethings()-t-shirt-(red)\" name=\"add-to-cart-test.allthethings()-t-shirt-(red)\"\u003eAdd to cart\u003c/button\u003e\u003c/div\u003e\u003c/div\u003e\u003c/div\u003e",
+        "last_step_id": "auto-step-9",
+        "last_step_success": true
+      },
+      "obs_18": {
+        "data": {
+          "interactive": [
+            {
+              "checked": false,
+              "disabled": false,
+              "id": "root",
+              "selected": false,
+              "selector": "#root",
+              "tag": "div",
+              "text": "Open MenuAll ItemsAboutLogoutReset App StateClose MenuSwag Labs1ProductsName (A to Z)Name (A to Z)Na"
+            },
+            {
+              "checked": false,
+              "class": "page_wrapper",
+              "disabled": false,
+              "id": "page_wrapper",
+              "selected": false,
+              "selector": "#page_wrapper",
+              "tag": "div",
+              "text": "Open MenuAll ItemsAboutLogoutReset App StateClose MenuSwag Labs1ProductsName (A to Z)Name (A to Z)Na"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "id": "contents_wrapper",
+              "selected": false,
+              "selector": "#contents_wrapper",
+              "tag": "div",
+              "text": "Open MenuAll ItemsAboutLogoutReset App StateClose MenuSwag Labs1ProductsName (A to Z)Name (A to Z)Na"
+            },
+            {
+              "checked": false,
+              "class": "header_container",
+              "data-test": "header-container",
+              "disabled": false,
+              "id": "header_container",
+              "selected": false,
+              "selector": "#header_container",
+              "tag": "div",
+              "text": "Open MenuAll ItemsAboutLogoutReset App StateClose MenuSwag Labs1ProductsName (A to Z)Name (A to Z)Na"
+            },
+            {
+              "checked": false,
+              "class": "primary_header",
+              "data-test": "primary-header",
+              "disabled": false,
+              "selected": false,
+              "selector": "div[data-test=\"primary-header\"]",
+              "tag": "div",
+              "text": "Open MenuAll ItemsAboutLogoutReset App StateClose MenuSwag Labs1"
+            },
+            {
+              "checked": false,
+              "class": "bm-burger-button",
+              "disabled": false,
+              "selected": false,
+              "selector": "div.bm-burger-button",
+              "tag": "div",
+              "text": "Open Menu"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "id": "react-burger-menu-btn",
+              "selected": false,
+              "selector": "#react-burger-menu-btn",
+              "tag": "button",
+              "text": "Open Menu",
+              "type": "button"
+            },
+            {
+              "alt": "Open Menu",
+              "checked": false,
+              "class": "bm-icon",
+              "data-test": "open-menu",
+              "disabled": false,
+              "selected": false,
+              "selector": "img[data-test=\"open-menu\"]",
+              "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyhpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUC",
+              "srcset": "/static/media/menu3x.52cc17a327296e6394f33e8c20abc62c.svg",
+              "tag": "img",
+              "text": ""
+            },
+            {
+              "checked": false,
+              "class": "header_label",
+              "disabled": false,
+              "selected": false,
+              "selector": "div.header_label",
+              "tag": "div",
+              "text": "Swag Labs"
+            },
+            {
+              "checked": false,
+              "class": "app_logo",
+              "disabled": false,
+              "selected": false,
+              "selector": "div.app_logo",
+              "tag": "div",
+              "text": "Swag Labs"
+            },
+            {
+              "checked": false,
+              "class": "shopping_cart_container",
+              "disabled": false,
+              "id": "shopping_cart_container",
+              "selected": false,
+              "selector": "#shopping_cart_container",
+              "tag": "div",
+              "text": "1"
+            },
+            {
+              "checked": false,
+              "class": "shopping_cart_link",
+              "data-test": "shopping-cart-link",
+              "disabled": false,
+              "selected": false,
+              "selector": "a[data-test=\"shopping-cart-link\"]",
+              "tag": "a",
+              "text": "1"
+            },
+            {
+              "checked": false,
+              "class": "shopping_cart_badge",
+              "data-test": "shopping-cart-badge",
+              "disabled": false,
+              "selected": false,
+              "selector": "span[data-test=\"shopping-cart-badge\"]",
+              "tag": "span",
+              "text": "1"
+            },
+            {
+              "checked": false,
+              "class": "header_secondary_container",
+              "data-test": "secondary-header",
+              "disabled": false,
+              "selected": false,
+              "selector": "div[data-test=\"secondary-header\"]",
+              "tag": "div",
+              "text": "ProductsName (A to Z)Name (A to Z)Name (Z to A)Price (low to high)Price (high to low)"
+            },
+            {
+              "checked": false,
+              "class": "title",
+              "data-test": "title",
+              "disabled": false,
+              "selected": false,
+              "selector": "span[data-test=\"title\"]",
+              "tag": "span",
+              "text": "Products"
+            },
+            {
+              "checked": false,
+              "class": "right_component",
+              "disabled": false,
+              "selected": false,
+              "selector": "div.right_component",
+              "tag": "div",
+              "text": "Name (A to Z)Name (A to Z)Name (Z to A)Price (low to high)Price (high to low)"
+            },
+            {
+              "checked": false,
+              "class": "select_container",
+              "disabled": false,
+              "selected": false,
+              "selector": "span.select_container",
+              "tag": "span",
+              "text": "Name (A to Z)Name (A to Z)Name (Z to A)Price (low to high)Price (high to low)"
+            },
+            {
+              "checked": false,
+              "class": "active_option",
+              "data-test": "active-option",
+              "disabled": false,
+              "selected": false,
+              "selector": "span[data-test=\"active-option\"]",
+              "tag": "span",
+              "text": "Name (A to Z)"
+            },
+            {
+              "checked": false,
+              "class": "product_sort_container",
+              "data-test": "product-sort-container",
+              "disabled": false,
+              "selected": false,
+              "selector": "select[data-test=\"product-sort-container\"]",
+              "tag": "select",
+              "text": "Name (A to Z)Name (Z to A)Price (low to high)Price (high to low)",
+              "value": "az"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "id": "inventory_container",
+              "selected": false,
+              "selector": "#inventory_container",
+              "tag": "div",
+              "text": "Sauce Labs Backpackcarry.allTheThings() with the sleek, streamlined Sly Pack that melds uncompromisi"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "selected": false,
+              "selector": "div:nth-of-type(1)",
+              "tag": "div",
+              "text": "Sauce Labs Backpackcarry.allTheThings() with the sleek, streamlined Sly Pack that melds uncompromisi"
+            },
+            {
+              "checked": false,
+              "class": "inventory_container",
+              "data-test": "inventory-container",
+              "disabled": false,
+              "id": "inventory_container",
+              "selected": false,
+              "selector": "#inventory_container",
+              "tag": "div",
+              "text": "Sauce Labs Backpackcarry.allTheThings() with the sleek, streamlined Sly Pack that melds uncompromisi"
+            },
+            {
+              "checked": false,
+              "class": "inventory_list",
+              "data-test": "inventory-list",
+              "disabled": false,
+              "selected": false,
+              "selector": "div[data-test=\"inventory-list\"]",
+              "tag": "div",
+              "text": "Sauce Labs Backpackcarry.allTheThings() with the sleek, streamlined Sly Pack that melds uncompromisi"
+            },
+            {
+              "checked": false,
+              "class": "inventory_item",
+              "data-test": "inventory-item",
+              "disabled": false,
+              "selected": false,
+              "selector": "div[data-test=\"inventory-item\"]",
+              "tag": "div",
+              "text": "Sauce Labs Backpackcarry.allTheThings() with the sleek, streamlined Sly Pack that melds uncompromisi"
+            },
+            {
+              "checked": false,
+              "data-test": "item-4-img-link",
+              "disabled": false,
+              "href": "#",
+              "id": "item_4_img_link",
+              "selected": false,
+              "selector": "#item_4_img_link",
+              "tag": "a",
+              "text": ""
+            },
+            {
+              "alt": "Sauce Labs Backpack",
+              "checked": false,
+              "class": "inventory_item_img",
+              "data-test": "inventory-item-sauce-labs-backpack-img",
+              "disabled": false,
+              "selected": false,
+              "selector": "img[data-test=\"inventory-item-sauce-labs-backpack-img\"]",
+              "src": "/static/media/sauce-backpack-1200x1500.0a0b85a385945026062b.jpg",
+              "tag": "img",
+              "text": ""
+            },
+            {
+              "checked": false,
+              "class": "inventory_item_description",
+              "data-test": "inventory-item-description",
+              "disabled": false,
+              "selected": false,
+              "selector": "div[data-test=\"inventory-item-description\"]",
+              "tag": "div",
+              "text": "Sauce Labs Backpackcarry.allTheThings() with the sleek, streamlined Sly Pack that melds uncompromisi"
+            },
+            {
+              "checked": false,
+              "class": "inventory_item_label",
+              "disabled": false,
+              "selected": false,
+              "selector": "div.inventory_item_label",
+              "tag": "div",
+              "text": "Sauce Labs Backpackcarry.allTheThings() with the sleek, streamlined Sly Pack that melds uncompromisi"
+            },
+            {
+              "checked": false,
+              "data-test": "item-4-title-link",
+              "disabled": false,
+              "href": "#",
+              "id": "item_4_title_link",
+              "selected": false,
+              "selector": "#item_4_title_link",
+              "tag": "a",
+              "text": "Sauce Labs Backpack"
+            },
+            {
+              "checked": false,
+              "class": "inventory_item_name ",
+              "data-test": "inventory-item-name",
+              "disabled": false,
+              "selected": false,
+              "selector": "div[data-test=\"inventory-item-name\"]",
+              "tag": "div",
+              "text": "Sauce Labs Backpack"
+            },
+            {
+              "checked": false,
+              "class": "inventory_item_desc",
+              "data-test": "inventory-item-desc",
+              "disabled": false,
+              "selected": false,
+              "selector": "div[data-test=\"inventory-item-desc\"]",
+              "tag": "div",
+              "text": "carry.allTheThings() with the sleek, streamlined Sly Pack that melds uncompromising style with unequ"
+            },
+            {
+              "checked": false,
+              "class": "pricebar",
+              "disabled": false,
+              "selected": false,
+              "selector": "div.pricebar",
+              "tag": "div",
+              "text": "$29.99Add to cart"
+            },
+            {
+              "checked": false,
+              "class": "inventory_item_price",
+              "data-test": "inventory-item-price",
+              "disabled": false,
+              "selected": false,
+              "selector": "div[data-test=\"inventory-item-price\"]",
+              "tag": "div",
+              "text": "$29.99"
+            },
+            {
+              "checked": false,
+              "class": "btn btn_primary btn_small btn_inventory ",
+              "data-test": "add-to-cart-sauce-labs-backpack",
+              "disabled": false,
+              "id": "add-to-cart-sauce-labs-backpack",
+              "name": "add-to-cart-sauce-labs-backpack",
+              "selected": false,
+              "selector": "#add-to-cart-sauce-labs-backpack",
+              "tag": "button",
+              "text": "Add to cart"
+            },
+            {
+              "checked": false,
+              "class": "inventory_item",
+              "data-test": "inventory-item",
+              "disabled": false,
+              "selected": false,
+              "selector": "div[data-test=\"inventory-item\"]",
+              "tag": "div",
+              "text": "Sauce Labs Bike LightA red light isn't the desired state in testing but it sure helps when riding yo"
+            },
+            {
+              "checked": false,
+              "data-test": "item-0-img-link",
+              "disabled": false,
+              "href": "#",
+              "id": "item_0_img_link",
+              "selected": false,
+              "selector": "#item_0_img_link",
+              "tag": "a",
+              "text": ""
+            },
+            {
+              "alt": "Sauce Labs Bike Light",
+              "checked": false,
+              "class": "inventory_item_img",
+              "data-test": "inventory-item-sauce-labs-bike-light-img",
+              "disabled": false,
+              "selected": false,
+              "selector": "img[data-test=\"inventory-item-sauce-labs-bike-light-img\"]",
+              "src": "/static/media/bike-light-1200x1500.37c843b09a7d77409d63.jpg",
+              "tag": "img",
+              "text": ""
+            },
+            {
+              "checked": false,
+              "class": "inventory_item_description",
+              "data-test": "inventory-item-description",
+              "disabled": false,
+              "selected": false,
+              "selector": "div[data-test=\"inventory-item-description\"]",
+              "tag": "div",
+              "text": "Sauce Labs Bike LightA red light isn't the desired state in testing but it sure helps when riding yo"
+            },
+            {
+              "checked": false,
+              "class": "inventory_item_label",
+              "disabled": false,
+              "selected": false,
+              "selector": "div.inventory_item_label",
+              "tag": "div",
+              "text": "Sauce Labs Bike LightA red light isn't the desired state in testing but it sure helps when riding yo"
+            },
+            {
+              "checked": false,
+              "data-test": "item-0-title-link",
+              "disabled": false,
+              "href": "#",
+              "id": "item_0_title_link",
+              "selected": false,
+              "selector": "#item_0_title_link",
+              "tag": "a",
+              "text": "Sauce Labs Bike Light"
+            },
+            {
+              "checked": false,
+              "class": "inventory_item_name ",
+              "data-test": "inventory-item-name",
+              "disabled": false,
+              "selected": false,
+              "selector": "div[data-test=\"inventory-item-name\"]",
+              "tag": "div",
+              "text": "Sauce Labs Bike Light"
+            },
+            {
+              "checked": false,
+              "class": "inventory_item_desc",
+              "data-test": "inventory-item-desc",
+              "disabled": false,
+              "selected": false,
+              "selector": "div[data-test=\"inventory-item-desc\"]",
+              "tag": "div",
+              "text": "A red light isn't the desired state in testing but it sure helps when riding your bike at night. Wat"
+            },
+            {
+              "checked": false,
+              "class": "pricebar",
+              "disabled": false,
+              "selected": false,
+              "selector": "div.pricebar",
+              "tag": "div",
+              "text": "$9.99Add to cart"
+            },
+            {
+              "checked": false,
+              "class": "inventory_item_price",
+              "data-test": "inventory-item-price",
+              "disabled": false,
+              "selected": false,
+              "selector": "div[data-test=\"inventory-item-price\"]",
+              "tag": "div",
+              "text": "$9.99"
+            },
+            {
+              "checked": false,
+              "class": "btn btn_primary btn_small btn_inventory ",
+              "data-test": "add-to-cart-sauce-labs-bike-light",
+              "disabled": false,
+              "id": "add-to-cart-sauce-labs-bike-light",
+              "name": "add-to-cart-sauce-labs-bike-light",
+              "selected": false,
+              "selector": "#add-to-cart-sauce-labs-bike-light",
+              "tag": "button",
+              "text": "Add to cart"
+            },
+            {
+              "checked": false,
+              "class": "inventory_item",
+              "data-test": "inventory-item",
+              "disabled": false,
+              "selected": false,
+              "selector": "div[data-test=\"inventory-item\"]",
+              "tag": "div",
+              "text": "Sauce Labs Bolt T-ShirtGet your testing superhero on with the Sauce Labs bolt T-shirt. From American"
+            },
+            {
+              "checked": false,
+              "data-test": "item-1-img-link",
+              "disabled": false,
+              "href": "#",
+              "id": "item_1_img_link",
+              "selected": false,
+              "selector": "#item_1_img_link",
+              "tag": "a",
+              "text": ""
+            },
+            {
+              "alt": "Sauce Labs Bolt T-Shirt",
+              "checked": false,
+              "class": "inventory_item_img",
+              "data-test": "inventory-item-sauce-labs-bolt-t-shirt-img",
+              "disabled": false,
+              "selected": false,
+              "selector": "img[data-test=\"inventory-item-sauce-labs-bolt-t-shirt-img\"]",
+              "src": "/static/media/bolt-shirt-1200x1500.c2599ac5f0a35ed5931e.jpg",
+              "tag": "img",
+              "text": ""
+            },
+            {
+              "checked": false,
+              "class": "inventory_item_description",
+              "data-test": "inventory-item-description",
+              "disabled": false,
+              "selected": false,
+              "selector": "div[data-test=\"inventory-item-description\"]",
+              "tag": "div",
+              "text": "Sauce Labs Bolt T-ShirtGet your testing superhero on with the Sauce Labs bolt T-shirt. From American"
+            },
+            {
+              "checked": false,
+              "class": "inventory_item_label",
+              "disabled": false,
+              "selected": false,
+              "selector": "div.inventory_item_label",
+              "tag": "div",
+              "text": "Sauce Labs Bolt T-ShirtGet your testing superhero on with the Sauce Labs bolt T-shirt. From American"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "obs_19": {
+        "last_output": "selected option label 'Price (low to high)' on select[data-test=\"product-sort-container\"]",
+        "last_step_id": "auto-step-10",
+        "last_step_success": true
       },
       "obs_2": {
         "data": {
@@ -3429,6 +3443,520 @@
         },
         "last_step_id": "auto-observe-1",
         "last_step_success": true
+      },
+      "obs_20": {
+        "data": {
+          "interactive": [
+            {
+              "checked": false,
+              "disabled": false,
+              "id": "root",
+              "selected": false,
+              "selector": "#root",
+              "tag": "div",
+              "text": "Open MenuAll ItemsAboutLogoutReset App StateClose MenuSwag Labs1ProductsPrice (low to high)Name (A t"
+            },
+            {
+              "checked": false,
+              "class": "page_wrapper",
+              "disabled": false,
+              "id": "page_wrapper",
+              "selected": false,
+              "selector": "#page_wrapper",
+              "tag": "div",
+              "text": "Open MenuAll ItemsAboutLogoutReset App StateClose MenuSwag Labs1ProductsPrice (low to high)Name (A t"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "id": "contents_wrapper",
+              "selected": false,
+              "selector": "#contents_wrapper",
+              "tag": "div",
+              "text": "Open MenuAll ItemsAboutLogoutReset App StateClose MenuSwag Labs1ProductsPrice (low to high)Name (A t"
+            },
+            {
+              "checked": false,
+              "class": "header_container",
+              "data-test": "header-container",
+              "disabled": false,
+              "id": "header_container",
+              "selected": false,
+              "selector": "#header_container",
+              "tag": "div",
+              "text": "Open MenuAll ItemsAboutLogoutReset App StateClose MenuSwag Labs1ProductsPrice (low to high)Name (A t"
+            },
+            {
+              "checked": false,
+              "class": "primary_header",
+              "data-test": "primary-header",
+              "disabled": false,
+              "selected": false,
+              "selector": "div[data-test=\"primary-header\"]",
+              "tag": "div",
+              "text": "Open MenuAll ItemsAboutLogoutReset App StateClose MenuSwag Labs1"
+            },
+            {
+              "checked": false,
+              "class": "bm-burger-button",
+              "disabled": false,
+              "selected": false,
+              "selector": "div.bm-burger-button",
+              "tag": "div",
+              "text": "Open Menu"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "id": "react-burger-menu-btn",
+              "selected": false,
+              "selector": "#react-burger-menu-btn",
+              "tag": "button",
+              "text": "Open Menu",
+              "type": "button"
+            },
+            {
+              "alt": "Open Menu",
+              "checked": false,
+              "class": "bm-icon",
+              "data-test": "open-menu",
+              "disabled": false,
+              "selected": false,
+              "selector": "img[data-test=\"open-menu\"]",
+              "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyhpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUC",
+              "srcset": "/static/media/menu3x.52cc17a327296e6394f33e8c20abc62c.svg",
+              "tag": "img",
+              "text": ""
+            },
+            {
+              "checked": false,
+              "class": "header_label",
+              "disabled": false,
+              "selected": false,
+              "selector": "div.header_label",
+              "tag": "div",
+              "text": "Swag Labs"
+            },
+            {
+              "checked": false,
+              "class": "app_logo",
+              "disabled": false,
+              "selected": false,
+              "selector": "div.app_logo",
+              "tag": "div",
+              "text": "Swag Labs"
+            },
+            {
+              "checked": false,
+              "class": "shopping_cart_container",
+              "disabled": false,
+              "id": "shopping_cart_container",
+              "selected": false,
+              "selector": "#shopping_cart_container",
+              "tag": "div",
+              "text": "1"
+            },
+            {
+              "checked": false,
+              "class": "shopping_cart_link",
+              "data-test": "shopping-cart-link",
+              "disabled": false,
+              "selected": false,
+              "selector": "a[data-test=\"shopping-cart-link\"]",
+              "tag": "a",
+              "text": "1"
+            },
+            {
+              "checked": false,
+              "class": "shopping_cart_badge",
+              "data-test": "shopping-cart-badge",
+              "disabled": false,
+              "selected": false,
+              "selector": "span[data-test=\"shopping-cart-badge\"]",
+              "tag": "span",
+              "text": "1"
+            },
+            {
+              "checked": false,
+              "class": "header_secondary_container",
+              "data-test": "secondary-header",
+              "disabled": false,
+              "selected": false,
+              "selector": "div[data-test=\"secondary-header\"]",
+              "tag": "div",
+              "text": "ProductsPrice (low to high)Name (A to Z)Name (Z to A)Price (low to high)Price (high to low)"
+            },
+            {
+              "checked": false,
+              "class": "title",
+              "data-test": "title",
+              "disabled": false,
+              "selected": false,
+              "selector": "span[data-test=\"title\"]",
+              "tag": "span",
+              "text": "Products"
+            },
+            {
+              "checked": false,
+              "class": "right_component",
+              "disabled": false,
+              "selected": false,
+              "selector": "div.right_component",
+              "tag": "div",
+              "text": "Price (low to high)Name (A to Z)Name (Z to A)Price (low to high)Price (high to low)"
+            },
+            {
+              "checked": false,
+              "class": "select_container",
+              "disabled": false,
+              "selected": false,
+              "selector": "span.select_container",
+              "tag": "span",
+              "text": "Price (low to high)Name (A to Z)Name (Z to A)Price (low to high)Price (high to low)"
+            },
+            {
+              "checked": false,
+              "class": "active_option",
+              "data-test": "active-option",
+              "disabled": false,
+              "selected": false,
+              "selector": "span[data-test=\"active-option\"]",
+              "tag": "span",
+              "text": "Price (low to high)"
+            },
+            {
+              "checked": false,
+              "class": "product_sort_container",
+              "data-test": "product-sort-container",
+              "disabled": false,
+              "selected": false,
+              "selector": "select[data-test=\"product-sort-container\"]",
+              "tag": "select",
+              "text": "Name (A to Z)Name (Z to A)Price (low to high)Price (high to low)",
+              "value": "lohi"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "id": "inventory_container",
+              "selected": false,
+              "selector": "#inventory_container",
+              "tag": "div",
+              "text": "Sauce Labs OnesieRib snap infant onesie for the junior automation engineer in development. Reinforce"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "selected": false,
+              "selector": "div:nth-of-type(1)",
+              "tag": "div",
+              "text": "Sauce Labs OnesieRib snap infant onesie for the junior automation engineer in development. Reinforce"
+            },
+            {
+              "checked": false,
+              "class": "inventory_container",
+              "data-test": "inventory-container",
+              "disabled": false,
+              "id": "inventory_container",
+              "selected": false,
+              "selector": "#inventory_container",
+              "tag": "div",
+              "text": "Sauce Labs OnesieRib snap infant onesie for the junior automation engineer in development. Reinforce"
+            },
+            {
+              "checked": false,
+              "class": "inventory_list",
+              "data-test": "inventory-list",
+              "disabled": false,
+              "selected": false,
+              "selector": "div[data-test=\"inventory-list\"]",
+              "tag": "div",
+              "text": "Sauce Labs OnesieRib snap infant onesie for the junior automation engineer in development. Reinforce"
+            },
+            {
+              "checked": false,
+              "class": "inventory_item",
+              "data-test": "inventory-item",
+              "disabled": false,
+              "selected": false,
+              "selector": "div[data-test=\"inventory-item\"]",
+              "tag": "div",
+              "text": "Sauce Labs OnesieRib snap infant onesie for the junior automation engineer in development. Reinforce"
+            },
+            {
+              "checked": false,
+              "data-test": "item-2-img-link",
+              "disabled": false,
+              "href": "#",
+              "id": "item_2_img_link",
+              "selected": false,
+              "selector": "#item_2_img_link",
+              "tag": "a",
+              "text": ""
+            },
+            {
+              "alt": "Sauce Labs Onesie",
+              "checked": false,
+              "class": "inventory_item_img",
+              "data-test": "inventory-item-sauce-labs-onesie-img",
+              "disabled": false,
+              "selected": false,
+              "selector": "img[data-test=\"inventory-item-sauce-labs-onesie-img\"]",
+              "src": "/static/media/red-onesie-1200x1500.2ec615b271ef4c3bc430.jpg",
+              "tag": "img",
+              "text": ""
+            },
+            {
+              "checked": false,
+              "class": "inventory_item_description",
+              "data-test": "inventory-item-description",
+              "disabled": false,
+              "selected": false,
+              "selector": "div[data-test=\"inventory-item-description\"]",
+              "tag": "div",
+              "text": "Sauce Labs OnesieRib snap infant onesie for the junior automation engineer in development. Reinforce"
+            },
+            {
+              "checked": false,
+              "class": "inventory_item_label",
+              "disabled": false,
+              "selected": false,
+              "selector": "div.inventory_item_label",
+              "tag": "div",
+              "text": "Sauce Labs OnesieRib snap infant onesie for the junior automation engineer in development. Reinforce"
+            },
+            {
+              "checked": false,
+              "data-test": "item-2-title-link",
+              "disabled": false,
+              "href": "#",
+              "id": "item_2_title_link",
+              "selected": false,
+              "selector": "#item_2_title_link",
+              "tag": "a",
+              "text": "Sauce Labs Onesie"
+            },
+            {
+              "checked": false,
+              "class": "inventory_item_name ",
+              "data-test": "inventory-item-name",
+              "disabled": false,
+              "selected": false,
+              "selector": "div[data-test=\"inventory-item-name\"]",
+              "tag": "div",
+              "text": "Sauce Labs Onesie"
+            },
+            {
+              "checked": false,
+              "class": "inventory_item_desc",
+              "data-test": "inventory-item-desc",
+              "disabled": false,
+              "selected": false,
+              "selector": "div[data-test=\"inventory-item-desc\"]",
+              "tag": "div",
+              "text": "Rib snap infant onesie for the junior automation engineer in development. Reinforced 3-snap bottom c"
+            },
+            {
+              "checked": false,
+              "class": "pricebar",
+              "disabled": false,
+              "selected": false,
+              "selector": "div.pricebar",
+              "tag": "div",
+              "text": "$7.99Remove"
+            },
+            {
+              "checked": false,
+              "class": "inventory_item_price",
+              "data-test": "inventory-item-price",
+              "disabled": false,
+              "selected": false,
+              "selector": "div[data-test=\"inventory-item-price\"]",
+              "tag": "div",
+              "text": "$7.99"
+            },
+            {
+              "checked": false,
+              "class": "btn btn_secondary btn_small btn_inventory ",
+              "data-test": "remove-sauce-labs-onesie",
+              "disabled": false,
+              "id": "remove-sauce-labs-onesie",
+              "name": "remove-sauce-labs-onesie",
+              "selected": false,
+              "selector": "#remove-sauce-labs-onesie",
+              "tag": "button",
+              "text": "Remove"
+            },
+            {
+              "checked": false,
+              "class": "inventory_item",
+              "data-test": "inventory-item",
+              "disabled": false,
+              "selected": false,
+              "selector": "div[data-test=\"inventory-item\"]",
+              "tag": "div",
+              "text": "Sauce Labs Bike LightA red light isn't the desired state in testing but it sure helps when riding yo"
+            },
+            {
+              "checked": false,
+              "data-test": "item-0-img-link",
+              "disabled": false,
+              "href": "#",
+              "id": "item_0_img_link",
+              "selected": false,
+              "selector": "#item_0_img_link",
+              "tag": "a",
+              "text": ""
+            },
+            {
+              "alt": "Sauce Labs Bike Light",
+              "checked": false,
+              "class": "inventory_item_img",
+              "data-test": "inventory-item-sauce-labs-bike-light-img",
+              "disabled": false,
+              "selected": false,
+              "selector": "img[data-test=\"inventory-item-sauce-labs-bike-light-img\"]",
+              "src": "/static/media/bike-light-1200x1500.37c843b09a7d77409d63.jpg",
+              "tag": "img",
+              "text": ""
+            },
+            {
+              "checked": false,
+              "class": "inventory_item_description",
+              "data-test": "inventory-item-description",
+              "disabled": false,
+              "selected": false,
+              "selector": "div[data-test=\"inventory-item-description\"]",
+              "tag": "div",
+              "text": "Sauce Labs Bike LightA red light isn't the desired state in testing but it sure helps when riding yo"
+            },
+            {
+              "checked": false,
+              "class": "inventory_item_label",
+              "disabled": false,
+              "selected": false,
+              "selector": "div.inventory_item_label",
+              "tag": "div",
+              "text": "Sauce Labs Bike LightA red light isn't the desired state in testing but it sure helps when riding yo"
+            },
+            {
+              "checked": false,
+              "data-test": "item-0-title-link",
+              "disabled": false,
+              "href": "#",
+              "id": "item_0_title_link",
+              "selected": false,
+              "selector": "#item_0_title_link",
+              "tag": "a",
+              "text": "Sauce Labs Bike Light"
+            },
+            {
+              "checked": false,
+              "class": "inventory_item_name ",
+              "data-test": "inventory-item-name",
+              "disabled": false,
+              "selected": false,
+              "selector": "div[data-test=\"inventory-item-name\"]",
+              "tag": "div",
+              "text": "Sauce Labs Bike Light"
+            },
+            {
+              "checked": false,
+              "class": "inventory_item_desc",
+              "data-test": "inventory-item-desc",
+              "disabled": false,
+              "selected": false,
+              "selector": "div[data-test=\"inventory-item-desc\"]",
+              "tag": "div",
+              "text": "A red light isn't the desired state in testing but it sure helps when riding your bike at night. Wat"
+            },
+            {
+              "checked": false,
+              "class": "pricebar",
+              "disabled": false,
+              "selected": false,
+              "selector": "div.pricebar",
+              "tag": "div",
+              "text": "$9.99Add to cart"
+            },
+            {
+              "checked": false,
+              "class": "inventory_item_price",
+              "data-test": "inventory-item-price",
+              "disabled": false,
+              "selected": false,
+              "selector": "div[data-test=\"inventory-item-price\"]",
+              "tag": "div",
+              "text": "$9.99"
+            },
+            {
+              "checked": false,
+              "class": "btn btn_primary btn_small btn_inventory ",
+              "data-test": "add-to-cart-sauce-labs-bike-light",
+              "disabled": false,
+              "id": "add-to-cart-sauce-labs-bike-light",
+              "name": "add-to-cart-sauce-labs-bike-light",
+              "selected": false,
+              "selector": "#add-to-cart-sauce-labs-bike-light",
+              "tag": "button",
+              "text": "Add to cart"
+            },
+            {
+              "checked": false,
+              "class": "inventory_item",
+              "data-test": "inventory-item",
+              "disabled": false,
+              "selected": false,
+              "selector": "div[data-test=\"inventory-item\"]",
+              "tag": "div",
+              "text": "Sauce Labs Bolt T-ShirtGet your testing superhero on with the Sauce Labs bolt T-shirt. From American"
+            },
+            {
+              "checked": false,
+              "data-test": "item-1-img-link",
+              "disabled": false,
+              "href": "#",
+              "id": "item_1_img_link",
+              "selected": false,
+              "selector": "#item_1_img_link",
+              "tag": "a",
+              "text": ""
+            },
+            {
+              "alt": "Sauce Labs Bolt T-Shirt",
+              "checked": false,
+              "class": "inventory_item_img",
+              "data-test": "inventory-item-sauce-labs-bolt-t-shirt-img",
+              "disabled": false,
+              "selected": false,
+              "selector": "img[data-test=\"inventory-item-sauce-labs-bolt-t-shirt-img\"]",
+              "src": "/static/media/bolt-shirt-1200x1500.c2599ac5f0a35ed5931e.jpg",
+              "tag": "img",
+              "text": ""
+            },
+            {
+              "checked": false,
+              "class": "inventory_item_description",
+              "data-test": "inventory-item-description",
+              "disabled": false,
+              "selected": false,
+              "selector": "div[data-test=\"inventory-item-description\"]",
+              "tag": "div",
+              "text": "Sauce Labs Bolt T-ShirtGet your testing superhero on with the Sauce Labs bolt T-shirt. From American"
+            },
+            {
+              "checked": false,
+              "class": "inventory_item_label",
+              "disabled": false,
+              "selected": false,
+              "selector": "div.inventory_item_label",
+              "tag": "div",
+              "text": "Sauce Labs Bolt T-ShirtGet your testing superhero on with the Sauce Labs bolt T-shirt. From American"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
       },
       "obs_3": {
         "last_output": "typed 'standard_user' into #user-name",
@@ -4497,11 +5025,11 @@
         "last_step_success": true
       },
       "repetition_blocked_success": false,
-      "step_index": 7,
+      "step_index": 9,
       "visited_urls": {
         "https://www.saucedemo.com/inventory.html": true
       }
     },
-    "timestamp": "2026-05-25T16:14:58.7117269Z"
+    "timestamp": "2026-05-25T17:00:34.0408423Z"
   }
 }

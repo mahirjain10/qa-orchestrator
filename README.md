@@ -200,6 +200,7 @@ While the system is robust, several areas are still in "experimental" or "evolvi
 
 | Issue | Description | The "Why" |
 |-------|-------------|-----------|
+| **TUI Stability** | The TUI can be "a bit buggy" with occasional rendering glitches or input lag. | Concurrent updates from multiple background workers can overwhelm the Bubble Tea event loop, leading to flickering or state desync in high-concurrency runs. |
 | **LLM Latency** | Autonomous planning steps can take 5–15 seconds. | Caused by high-token "Thinking" modes and network round-trips to providers like OpenRouter/Gemini. |
 | **Complex Iframes** | Interactions inside nested iframes may occasionally fail. | The `observe_ui` crawler currently prioritizes the top-level document; deep cross-origin iframe traversal is computationally expensive. |
 | **TUI Memory Pressure** | TUI may slow down during massive campaigns (50+ parallel flows). | Radical DOM payload streaming to the terminal puts pressure on the TUI's refresh loop despite clone optimizations. |
