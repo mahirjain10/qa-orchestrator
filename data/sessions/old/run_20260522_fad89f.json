@@ -1,0 +1,107 @@
+{
+  "run_id": "run_20260522_fad89f",
+  "session_id": "sess_ce1ac27f9a1d5a97d09fccc4",
+  "campaign_name": "Large Parallel Campaign",
+  "status": "FAILED",
+  "current_flow_id": "flow-zeta",
+  "current_agent": "",
+  "started_at": "2026-05-22T02:31:58.5646497Z",
+  "updated_at": "2026-05-22T02:32:27.3655387Z",
+  "flows": [
+    {
+      "flow_id": "flow-alpha",
+      "name": "Alpha - Login Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PASSED",
+      "started_at": "2026-05-22T02:32:17.7999887Z",
+      "finished_at": "2026-05-22T02:32:25.085419Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-beta",
+      "name": "Beta - Students Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-22T02:32:10.529336Z",
+      "finished_at": "2026-05-22T02:32:22.8581815Z",
+      "retry_count": 0,
+      "error": "LLM signaled that the goal is unachievable (e.g., missing elements)"
+    },
+    {
+      "flow_id": "flow-gamma",
+      "name": "Gamma - Exception Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PASSED",
+      "started_at": "2026-05-22T02:32:19.6673417Z",
+      "finished_at": "2026-05-22T02:32:27.2595537Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-delta",
+      "name": "Delta - Timeout Page",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "FAILED",
+      "started_at": "2026-05-22T02:32:10.541188Z",
+      "finished_at": "2026-05-22T02:32:17.6866599Z",
+      "retry_count": 0,
+      "error": "LLM signaled that the goal is unachievable (e.g., missing elements)"
+    },
+    {
+      "flow_id": "flow-epsilon",
+      "name": "Epsilon - File Upload Page",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "FAILED",
+      "started_at": "2026-05-22T02:32:10.562544Z",
+      "finished_at": "2026-05-22T02:32:19.5701433Z",
+      "retry_count": 0,
+      "error": "LLM signaled that the goal is unachievable (e.g., missing elements)"
+    },
+    {
+      "flow_id": "flow-zeta",
+      "name": "Zeta - Post-Login Validation",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-22T02:32:25.1795898Z",
+      "finished_at": "2026-05-22T02:32:27.3409896Z",
+      "retry_count": 0,
+      "error": "LLM signaled that the goal is unachievable (e.g., missing elements)"
+    },
+    {
+      "flow_id": "flow-eta",
+      "name": "Eta - Cross-Page Navigation",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-22T02:32:27.2876081Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    },
+    {
+      "flow_id": "flow-theta",
+      "name": "Theta - Final Summary",
+      "mode": "autonomous",
+      "priority": "low",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-22T02:32:27.3644363Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    }
+  ],
+  "retry_count": 0,
+  "checkpoint": {
+    "flow_id": "flow-zeta",
+    "step_index": 0,
+    "step_id": "auto-step-1",
+    "payload": {
+      "current_step": "auto-step-1",
+      "step_index": 0
+    },
+    "timestamp": "2026-05-22T02:32:26.3187599Z"
+  }
+}

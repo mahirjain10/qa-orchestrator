@@ -1,0 +1,643 @@
+{
+  "run_id": "run_20260525_f43778",
+  "session_id": "sess_11f89b8319a3196ef0dbdf63",
+  "campaign_name": "SauceDemo E-Commerce E2E Test",
+  "status": "RUNNING",
+  "current_flow_id": "login-flow",
+  "current_agent": "planner (step 3)",
+  "started_at": "2026-05-24T20:52:31.7720301Z",
+  "updated_at": "2026-05-24T20:54:32.4276233Z",
+  "flows": [
+    {
+      "flow_id": "login-flow",
+      "name": "User Authentication",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "RUNNING",
+      "started_at": "2026-05-24T20:52:38.9505081Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "browse-flow",
+      "name": "Product Browsing and Selection",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PENDING",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "cart-flow",
+      "name": "Cart Management",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PENDING",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "checkout-flow",
+      "name": "Checkout Process",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PENDING",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "confirmation-flow",
+      "name": "Order Confirmation and Validation",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "PENDING",
+      "retry_count": 0
+    }
+  ],
+  "retry_count": 0,
+  "checkpoint": {
+    "flow_id": "login-flow",
+    "step_index": 8,
+    "step_id": "auto-step-9",
+    "payload": {
+      "consecutive_observe_count": 3,
+      "current_step": "auto-step-9",
+      "current_url": "https://www.saucedemo.com/",
+      "last_step_signature": "",
+      "obs_0": {
+        "data": {
+          "interactive": [
+            {
+              "class": "",
+              "id": "root",
+              "name": "",
+              "placeholder": "",
+              "selector": "#root",
+              "tag": "div",
+              "text": "Swag LabsAccepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror"
+            },
+            {
+              "class": "login_container",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_container",
+              "tag": "div",
+              "text": "Swag LabsAccepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror"
+            },
+            {
+              "class": "login_logo",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_logo",
+              "tag": "div",
+              "text": "Swag Labs"
+            },
+            {
+              "class": "login_wrapper",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-container\"]",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "form:nth-of-type(1)",
+              "tag": "form",
+              "text": ""
+            },
+            {
+              "class": "input_error form_input",
+              "id": "user-name",
+              "name": "user-name",
+              "placeholder": "Username",
+              "selector": "#user-name",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "input_error form_input",
+              "id": "password",
+              "name": "password",
+              "placeholder": "Password",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "submit-button btn_action",
+              "id": "login-button",
+              "name": "login-button",
+              "placeholder": "",
+              "selector": "#login-button",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "login_credentials_wrap",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-credentials-container\"]",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "login_credentials_wrap-inner",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_credentials_wrap-inner",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "login_credentials",
+              "id": "login_credentials",
+              "name": "",
+              "placeholder": "",
+              "selector": "#login_credentials",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:nth-of-type(1)",
+              "tag": "h4",
+              "text": "Accepted usernames are:"
+            },
+            {
+              "class": "login_password",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-password\"]",
+              "tag": "div",
+              "text": "Password for all users:secret_sauce"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:nth-of-type(1)",
+              "tag": "h4",
+              "text": "Password for all users:"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "obs_1": {
+        "data": {
+          "interactive": [
+            {
+              "class": "",
+              "id": "root",
+              "name": "",
+              "placeholder": "",
+              "selector": "#root",
+              "tag": "div",
+              "text": "Swag LabsAccepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror"
+            },
+            {
+              "class": "login_container",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_container",
+              "tag": "div",
+              "text": "Swag LabsAccepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror"
+            },
+            {
+              "class": "login_logo",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_logo",
+              "tag": "div",
+              "text": "Swag Labs"
+            },
+            {
+              "class": "login_wrapper",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-container\"]",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "form:nth-of-type(1)",
+              "tag": "form",
+              "text": ""
+            },
+            {
+              "class": "input_error form_input",
+              "id": "user-name",
+              "name": "user-name",
+              "placeholder": "Username",
+              "selector": "#user-name",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "input_error form_input",
+              "id": "password",
+              "name": "password",
+              "placeholder": "Password",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "submit-button btn_action",
+              "id": "login-button",
+              "name": "login-button",
+              "placeholder": "",
+              "selector": "#login-button",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "login_credentials_wrap",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-credentials-container\"]",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "login_credentials_wrap-inner",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_credentials_wrap-inner",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "login_credentials",
+              "id": "login_credentials",
+              "name": "",
+              "placeholder": "",
+              "selector": "#login_credentials",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:nth-of-type(1)",
+              "tag": "h4",
+              "text": "Accepted usernames are:"
+            },
+            {
+              "class": "login_password",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-password\"]",
+              "tag": "div",
+              "text": "Password for all users:secret_sauce"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:nth-of-type(1)",
+              "tag": "h4",
+              "text": "Password for all users:"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "last_output": {
+          "interactive": [
+            {
+              "class": "",
+              "id": "root",
+              "name": "",
+              "placeholder": "",
+              "selector": "#root",
+              "tag": "div",
+              "text": "Swag LabsAccepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror"
+            },
+            {
+              "class": "login_container",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_container",
+              "tag": "div",
+              "text": "Swag LabsAccepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror"
+            },
+            {
+              "class": "login_logo",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_logo",
+              "tag": "div",
+              "text": "Swag Labs"
+            },
+            {
+              "class": "login_wrapper",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-container\"]",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "form:nth-of-type(1)",
+              "tag": "form",
+              "text": ""
+            },
+            {
+              "class": "input_error form_input",
+              "id": "user-name",
+              "name": "user-name",
+              "placeholder": "Username",
+              "selector": "#user-name",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "input_error form_input",
+              "id": "password",
+              "name": "password",
+              "placeholder": "Password",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "submit-button btn_action",
+              "id": "login-button",
+              "name": "login-button",
+              "placeholder": "",
+              "selector": "#login-button",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "login_credentials_wrap",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-credentials-container\"]",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "login_credentials_wrap-inner",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_credentials_wrap-inner",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "login_credentials",
+              "id": "login_credentials",
+              "name": "",
+              "placeholder": "",
+              "selector": "#login_credentials",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:nth-of-type(1)",
+              "tag": "h4",
+              "text": "Accepted usernames are:"
+            },
+            {
+              "class": "login_password",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-password\"]",
+              "tag": "div",
+              "text": "Password for all users:secret_sauce"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:nth-of-type(1)",
+              "tag": "h4",
+              "text": "Password for all users:"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "last_step_id": "auto-observe-1",
+        "last_step_success": true
+      },
+      "obs_2": {
+        "last_output": "typed 'standard_user' into #user-name",
+        "last_step_id": "auto-step-2",
+        "last_step_success": true
+      },
+      "obs_3": {
+        "data": {
+          "interactive": [
+            {
+              "class": "",
+              "id": "root",
+              "name": "",
+              "placeholder": "",
+              "selector": "#root",
+              "tag": "div",
+              "text": "Swag LabsAccepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror"
+            },
+            {
+              "class": "login_container",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_container",
+              "tag": "div",
+              "text": "Swag LabsAccepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror"
+            },
+            {
+              "class": "login_logo",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_logo",
+              "tag": "div",
+              "text": "Swag Labs"
+            },
+            {
+              "class": "login_wrapper",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-container\"]",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "form:nth-of-type(1)",
+              "tag": "form",
+              "text": ""
+            },
+            {
+              "class": "input_error form_input",
+              "id": "user-name",
+              "name": "user-name",
+              "placeholder": "Username",
+              "selector": "#user-name",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "input_error form_input",
+              "id": "password",
+              "name": "password",
+              "placeholder": "Password",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "submit-button btn_action",
+              "id": "login-button",
+              "name": "login-button",
+              "placeholder": "",
+              "selector": "#login-button",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "login_credentials_wrap",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-credentials-container\"]",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "login_credentials_wrap-inner",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_credentials_wrap-inner",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "login_credentials",
+              "id": "login_credentials",
+              "name": "",
+              "placeholder": "",
+              "selector": "#login_credentials",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:nth-of-type(1)",
+              "tag": "h4",
+              "text": "Accepted usernames are:"
+            },
+            {
+              "class": "login_password",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-password\"]",
+              "tag": "div",
+              "text": "Password for all users:secret_sauce"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:nth-of-type(1)",
+              "tag": "h4",
+              "text": "Password for all users:"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "obs_4": {
+        "last_output": null,
+        "last_step_id": "auto-step-3",
+        "last_step_success": false
+      },
+      "obs_5": {
+        "data": null,
+        "last_output": null,
+        "last_step_id": "auto-observe-4",
+        "last_step_success": false
+      },
+      "obs_6": {
+        "last_output": null,
+        "last_step_id": "auto-step-5",
+        "last_step_success": false
+      },
+      "obs_7": {
+        "data": null,
+        "last_output": null,
+        "last_step_id": "auto-observe-6",
+        "last_step_success": false
+      },
+      "obs_8": {
+        "last_output": null,
+        "last_step_id": "auto-step-7",
+        "last_step_success": false
+      },
+      "obs_9": {
+        "data": null,
+        "last_output": null,
+        "last_step_id": "auto-observe-8",
+        "last_step_success": false
+      },
+      "repetition_blocked_success": false,
+      "step_index": 8,
+      "visited_urls": {
+        "https://www.saucedemo.com/": true
+      }
+    },
+    "timestamp": "2026-05-24T20:54:32.4207653Z"
+  }
+}

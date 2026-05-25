@@ -1,0 +1,105 @@
+{
+  "run_id": "run_20260522_f44f23",
+  "session_id": "sess_c75152fd099bafccfdb8c8a7",
+  "campaign_name": "Failure Cascade Test",
+  "status": "FAILED",
+  "current_flow_id": "chain-depends-on-skip",
+  "current_agent": "",
+  "started_at": "2026-05-22T04:31:37.7014206Z",
+  "updated_at": "2026-05-22T04:31:59.5635119Z",
+  "flows": [
+    {
+      "flow_id": "will-fail-flow",
+      "name": "Intentional Failure",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-22T04:31:38.5791592Z",
+      "finished_at": "2026-05-22T04:31:49.3566454Z",
+      "retry_count": 0,
+      "error": "LLM signaled that the goal is unachievable (e.g., missing elements)"
+    },
+    {
+      "flow_id": "depends-on-fail-a",
+      "name": "Dependent Flow A",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-22T04:31:49.3682375Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    },
+    {
+      "flow_id": "depends-on-fail-b",
+      "name": "Dependent Flow B",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-22T04:31:49.3699143Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    },
+    {
+      "flow_id": "independent-flow",
+      "name": "Independent Flow",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PASSED",
+      "started_at": "2026-05-22T04:31:49.4166378Z",
+      "finished_at": "2026-05-22T04:31:54.4456926Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "chain-depends-on-skip",
+      "name": "Chain Dependency Test",
+      "mode": "autonomous",
+      "priority": "low",
+      "status": "FAILED",
+      "started_at": "2026-05-22T04:31:54.4949173Z",
+      "finished_at": "2026-05-22T04:31:59.5571588Z",
+      "retry_count": 0,
+      "error": "LLM signaled that the goal is unachievable (e.g., missing elements)"
+    }
+  ],
+  "retry_count": 0,
+  "checkpoint": {
+    "flow_id": "chain-depends-on-skip",
+    "step_index": 2,
+    "step_id": "auto-step-3",
+    "payload": {
+      "current_step": "auto-step-3",
+      "obs_0": {
+        "last_output": {
+          "interactive": [],
+          "page_state": "empty"
+        },
+        "last_step_id": "auto-step-1",
+        "last_step_success": true
+      },
+      "obs_1": {
+        "data": {
+          "interactive": [],
+          "page_state": "empty"
+        },
+        "source": "observe_ui"
+      },
+      "obs_2": {
+        "last_output": {
+          "interactive": [],
+          "page_state": "empty"
+        },
+        "last_step_id": "auto-step-2",
+        "last_step_success": true
+      },
+      "obs_3": {
+        "data": {
+          "interactive": [],
+          "page_state": "empty"
+        },
+        "source": "observe_ui"
+      },
+      "step_index": 2
+    },
+    "timestamp": "2026-05-22T04:31:58.6191022Z"
+  }
+}

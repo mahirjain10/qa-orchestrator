@@ -1,0 +1,90 @@
+{
+  "run_id": "run_20260522_bc91de",
+  "session_id": "sess_3d915850204f76309dfe1549",
+  "campaign_name": "Large Parallel Campaign",
+  "status": "RUNNING",
+  "current_flow_id": "flow-gamma",
+  "current_agent": "planner (step 2)",
+  "started_at": "2026-05-21T18:58:57.5902689Z",
+  "updated_at": "2026-05-21T18:59:03.1470271Z",
+  "flows": [
+    {
+      "flow_id": "flow-alpha",
+      "name": "Alpha - Login Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "RUNNING",
+      "started_at": "2026-05-21T18:58:58.6977936Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-beta",
+      "name": "Beta - Students Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "RUNNING",
+      "started_at": "2026-05-21T18:58:58.7068065Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-gamma",
+      "name": "Gamma - Exception Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "RUNNING",
+      "started_at": "2026-05-21T18:58:58.7291412Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-delta",
+      "name": "Delta - Timeout Page",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "PENDING",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-epsilon",
+      "name": "Epsilon - File Upload Page",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "PENDING",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-zeta",
+      "name": "Zeta - Post-Login Validation",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PENDING",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-eta",
+      "name": "Eta - Cross-Page Navigation",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "PENDING",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-theta",
+      "name": "Theta - Final Summary",
+      "mode": "autonomous",
+      "priority": "low",
+      "status": "PENDING",
+      "retry_count": 0
+    }
+  ],
+  "retry_count": 0,
+  "checkpoint": {
+    "flow_id": "flow-gamma",
+    "step_index": 0,
+    "step_id": "auto-step-1",
+    "payload": {
+      "current_step": "auto-step-1",
+      "step_index": 0
+    },
+    "timestamp": "2026-05-21T18:59:00.2985989Z"
+  }
+}

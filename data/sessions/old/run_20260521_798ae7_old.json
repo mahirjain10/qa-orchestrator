@@ -1,0 +1,126 @@
+{
+  "run_id": "run_20260521_798ae7",
+  "session_id": "sess_2815efba18c3203f5ec71038",
+  "campaign_name": "Large Parallel Campaign",
+  "status": "FAILED",
+  "current_flow_id": "flow-theta",
+  "current_agent": "",
+  "started_at": "2026-05-21T13:25:47.1490353Z",
+  "updated_at": "2026-05-21T13:26:43.2441483Z",
+  "flows": [
+    {
+      "flow_id": "flow-alpha",
+      "name": "Alpha - Login Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-21T13:25:54.0833107Z",
+      "finished_at": "2026-05-21T13:26:00.7899421Z",
+      "retry_count": 0,
+      "error": "max retries (3) exceeded"
+    },
+    {
+      "flow_id": "flow-beta",
+      "name": "Beta - Students Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-21T13:26:00.7925605Z",
+      "finished_at": "2026-05-21T13:26:10.1505702Z",
+      "retry_count": 0,
+      "error": "max retries (3) exceeded"
+    },
+    {
+      "flow_id": "flow-gamma",
+      "name": "Gamma - Exception Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-21T13:26:10.1536302Z",
+      "finished_at": "2026-05-21T13:26:14.1754491Z",
+      "retry_count": 0,
+      "error": "max retries (3) exceeded"
+    },
+    {
+      "flow_id": "flow-delta",
+      "name": "Delta - Timeout Page",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "FAILED",
+      "started_at": "2026-05-21T13:26:14.1796356Z",
+      "finished_at": "2026-05-21T13:26:24.6693748Z",
+      "retry_count": 0,
+      "error": "max retries (3) exceeded"
+    },
+    {
+      "flow_id": "flow-epsilon",
+      "name": "Epsilon - File Upload Page",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "FAILED",
+      "started_at": "2026-05-21T13:26:24.6760615Z",
+      "finished_at": "2026-05-21T13:26:28.6464862Z",
+      "retry_count": 0,
+      "error": "max retries (3) exceeded"
+    },
+    {
+      "flow_id": "flow-zeta",
+      "name": "Zeta - Post-Login Validation",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-21T13:26:28.6525607Z",
+      "finished_at": "2026-05-21T13:26:34.5638764Z",
+      "retry_count": 0,
+      "error": "max retries (3) exceeded"
+    },
+    {
+      "flow_id": "flow-eta",
+      "name": "Eta - Cross-Page Navigation",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "FAILED",
+      "started_at": "2026-05-21T13:26:34.5670216Z",
+      "finished_at": "2026-05-21T13:26:39.2727618Z",
+      "retry_count": 0,
+      "error": "max retries (3) exceeded"
+    },
+    {
+      "flow_id": "flow-theta",
+      "name": "Theta - Final Summary",
+      "mode": "autonomous",
+      "priority": "low",
+      "status": "FAILED",
+      "started_at": "2026-05-21T13:26:39.2779932Z",
+      "finished_at": "2026-05-21T13:26:43.2395531Z",
+      "retry_count": 0,
+      "error": "max retries (3) exceeded"
+    }
+  ],
+  "retry_count": 0,
+  "checkpoint": {
+    "flow_id": "flow-theta",
+    "step_index": 0,
+    "step_id": "auto-step-4",
+    "payload": {
+      "current_step": "auto-step-4",
+      "obs_0": {
+        "last_output": null,
+        "last_step_id": "auto-step-1",
+        "last_step_success": false
+      },
+      "obs_1": {
+        "last_output": null,
+        "last_step_id": "auto-step-2",
+        "last_step_success": false
+      },
+      "obs_2": {
+        "last_output": null,
+        "last_step_id": "auto-step-3",
+        "last_step_success": false
+      },
+      "step_index": 0
+    },
+    "timestamp": "2026-05-21T13:26:43.231111Z"
+  }
+}

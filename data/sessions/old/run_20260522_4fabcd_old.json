@@ -1,0 +1,639 @@
+{
+  "run_id": "run_20260522_4fabcd",
+  "session_id": "sess_d3fe98d5cf934327dab62a43",
+  "campaign_name": "Large Parallel Campaign",
+  "status": "FAILED",
+  "current_flow_id": "flow-eta",
+  "current_agent": "",
+  "started_at": "2026-05-21T19:35:24.3211187Z",
+  "updated_at": "2026-05-21T19:35:44.4761651Z",
+  "flows": [
+    {
+      "flow_id": "flow-alpha",
+      "name": "Alpha - Login Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PASSED",
+      "started_at": "2026-05-21T19:35:25.2406604Z",
+      "finished_at": "2026-05-21T19:35:32.185546Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-beta",
+      "name": "Beta - Students Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PASSED",
+      "started_at": "2026-05-21T19:35:32.2383833Z",
+      "finished_at": "2026-05-21T19:35:37.808889Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-gamma",
+      "name": "Gamma - Exception Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PASSED",
+      "started_at": "2026-05-21T19:35:25.2637916Z",
+      "finished_at": "2026-05-21T19:35:35.2704963Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-delta",
+      "name": "Delta - Timeout Page",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "FAILED",
+      "started_at": "2026-05-21T19:35:31.0093268Z",
+      "finished_at": "2026-05-21T19:35:35.8455804Z",
+      "retry_count": 0,
+      "error": "LLM signaled that the goal is unachievable (e.g., missing elements)"
+    },
+    {
+      "flow_id": "flow-epsilon",
+      "name": "Epsilon - File Upload Page",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "FAILED",
+      "started_at": "2026-05-21T19:35:25.2587905Z",
+      "finished_at": "2026-05-21T19:35:30.9580891Z",
+      "retry_count": 0,
+      "error": "LLM signaled that the goal is unachievable (e.g., missing elements)"
+    },
+    {
+      "flow_id": "flow-zeta",
+      "name": "Zeta - Post-Login Validation",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-21T19:35:35.3206386Z",
+      "finished_at": "2026-05-21T19:35:44.4634983Z",
+      "retry_count": 0,
+      "error": "LLM signaled that the goal is unachievable (e.g., missing elements)"
+    },
+    {
+      "flow_id": "flow-eta",
+      "name": "Eta - Cross-Page Navigation",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "FAILED",
+      "started_at": "2026-05-21T19:35:37.8645487Z",
+      "finished_at": "2026-05-21T19:35:40.1549187Z",
+      "retry_count": 0,
+      "error": "LLM signaled that the goal is unachievable (e.g., missing elements)"
+    },
+    {
+      "flow_id": "flow-theta",
+      "name": "Theta - Final Summary",
+      "mode": "autonomous",
+      "priority": "low",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-21T19:35:44.4745574Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    }
+  ],
+  "retry_count": 0,
+  "checkpoint": {
+    "flow_id": "flow-zeta",
+    "step_index": 3,
+    "step_id": "auto-observe-5",
+    "payload": {
+      "current_step": "auto-observe-5",
+      "obs_0": {
+        "last_output": "navigated to https://practicetestautomation.com/practice-test-login/",
+        "last_step_id": "auto-step-1",
+        "last_step_success": true
+      },
+      "obs_1": {
+        "data": {
+          "interactive": [
+            {
+              "id": "submit",
+              "name": "",
+              "placeholder": "",
+              "selector": "#submit",
+              "tag": "button",
+              "text": "Submit"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Press \\\"Enter\\\" to skip to content\")",
+              "tag": "a",
+              "text": "Press \"Enter\" to skip to content"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Home\")",
+              "tag": "a",
+              "text": "Home"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Practice\")",
+              "tag": "a",
+              "text": "Practice"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Courses\")",
+              "tag": "a",
+              "text": "Courses"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Blog\")",
+              "tag": "a",
+              "text": "Blog"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Contact\")",
+              "tag": "a",
+              "text": "Contact"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Practice Test Automation.\")",
+              "tag": "a",
+              "text": "Practice Test Automation."
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Privacy Policy\")",
+              "tag": "a",
+              "text": "Privacy Policy"
+            },
+            {
+              "id": "username",
+              "name": "username",
+              "placeholder": "",
+              "selector": "#username",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "password",
+              "name": "password",
+              "placeholder": "",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "obs_2": {
+        "last_output": {
+          "interactive": [
+            {
+              "id": "submit",
+              "name": "",
+              "placeholder": "",
+              "selector": "#submit",
+              "tag": "button",
+              "text": "Submit"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Press \\\"Enter\\\" to skip to content\")",
+              "tag": "a",
+              "text": "Press \"Enter\" to skip to content"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Home\")",
+              "tag": "a",
+              "text": "Home"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Practice\")",
+              "tag": "a",
+              "text": "Practice"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Courses\")",
+              "tag": "a",
+              "text": "Courses"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Blog\")",
+              "tag": "a",
+              "text": "Blog"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Contact\")",
+              "tag": "a",
+              "text": "Contact"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Practice Test Automation.\")",
+              "tag": "a",
+              "text": "Practice Test Automation."
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Privacy Policy\")",
+              "tag": "a",
+              "text": "Privacy Policy"
+            },
+            {
+              "id": "username",
+              "name": "username",
+              "placeholder": "",
+              "selector": "#username",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "password",
+              "name": "password",
+              "placeholder": "",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "last_step_id": "auto-observe-2",
+        "last_step_success": true
+      },
+      "obs_3": {
+        "last_output": {
+          "interactive": [
+            {
+              "id": "submit",
+              "name": "",
+              "placeholder": "",
+              "selector": "#submit",
+              "tag": "button",
+              "text": "Submit"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Press \\\"Enter\\\" to skip to content\")",
+              "tag": "a",
+              "text": "Press \"Enter\" to skip to content"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Home\")",
+              "tag": "a",
+              "text": "Home"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Practice\")",
+              "tag": "a",
+              "text": "Practice"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Courses\")",
+              "tag": "a",
+              "text": "Courses"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Blog\")",
+              "tag": "a",
+              "text": "Blog"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Contact\")",
+              "tag": "a",
+              "text": "Contact"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Practice Test Automation.\")",
+              "tag": "a",
+              "text": "Practice Test Automation."
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Privacy Policy\")",
+              "tag": "a",
+              "text": "Privacy Policy"
+            },
+            {
+              "id": "username",
+              "name": "username",
+              "placeholder": "",
+              "selector": "#username",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "password",
+              "name": "password",
+              "placeholder": "",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "last_step_id": "auto-step-3",
+        "last_step_success": true
+      },
+      "obs_4": {
+        "data": {
+          "interactive": [
+            {
+              "id": "submit",
+              "name": "",
+              "placeholder": "",
+              "selector": "#submit",
+              "tag": "button",
+              "text": "Submit"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Press \\\"Enter\\\" to skip to content\")",
+              "tag": "a",
+              "text": "Press \"Enter\" to skip to content"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Home\")",
+              "tag": "a",
+              "text": "Home"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Practice\")",
+              "tag": "a",
+              "text": "Practice"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Courses\")",
+              "tag": "a",
+              "text": "Courses"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Blog\")",
+              "tag": "a",
+              "text": "Blog"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Contact\")",
+              "tag": "a",
+              "text": "Contact"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Practice Test Automation.\")",
+              "tag": "a",
+              "text": "Practice Test Automation."
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Privacy Policy\")",
+              "tag": "a",
+              "text": "Privacy Policy"
+            },
+            {
+              "id": "username",
+              "name": "username",
+              "placeholder": "",
+              "selector": "#username",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "password",
+              "name": "password",
+              "placeholder": "",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "obs_5": {
+        "last_output": null,
+        "last_step_id": "auto-step-4",
+        "last_step_success": false
+      },
+      "obs_6": {
+        "data": {
+          "interactive": [
+            {
+              "id": "submit",
+              "name": "",
+              "placeholder": "",
+              "selector": "#submit",
+              "tag": "button",
+              "text": "Submit"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Press \\\"Enter\\\" to skip to content\")",
+              "tag": "a",
+              "text": "Press \"Enter\" to skip to content"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Home\")",
+              "tag": "a",
+              "text": "Home"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Practice\")",
+              "tag": "a",
+              "text": "Practice"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Courses\")",
+              "tag": "a",
+              "text": "Courses"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Blog\")",
+              "tag": "a",
+              "text": "Blog"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Contact\")",
+              "tag": "a",
+              "text": "Contact"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Practice Test Automation.\")",
+              "tag": "a",
+              "text": "Practice Test Automation."
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Privacy Policy\")",
+              "tag": "a",
+              "text": "Privacy Policy"
+            },
+            {
+              "id": "username",
+              "name": "username",
+              "placeholder": "",
+              "selector": "#username",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "password",
+              "name": "password",
+              "placeholder": "",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "step_index": 3
+    },
+    "timestamp": "2026-05-21T19:35:41.2688702Z"
+  }
+}

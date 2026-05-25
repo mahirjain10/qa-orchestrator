@@ -1,0 +1,86 @@
+{
+  "run_id": "run_20260523_72d727",
+  "session_id": "sess_887cc96340121b93bd1bb4a7",
+  "campaign_name": "Guided Parallel Test",
+  "status": "COMPLETED",
+  "current_flow_id": "flow-e",
+  "current_agent": "",
+  "started_at": "2026-05-23T10:37:04.9022589Z",
+  "updated_at": "2026-05-23T10:37:06.7598257Z",
+  "flows": [
+    {
+      "flow_id": "flow-a",
+      "name": "",
+      "mode": "guided",
+      "priority": "high",
+      "status": "PASSED",
+      "started_at": "2026-05-23T10:37:06.62213Z",
+      "finished_at": "2026-05-23T10:37:06.6444366Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-b",
+      "name": "",
+      "mode": "guided",
+      "priority": "high",
+      "status": "PASSED",
+      "started_at": "2026-05-23T10:37:06.5117054Z",
+      "finished_at": "2026-05-23T10:37:06.5387944Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-c",
+      "name": "",
+      "mode": "guided",
+      "priority": "high",
+      "status": "PASSED",
+      "started_at": "2026-05-23T10:37:06.475478Z",
+      "finished_at": "2026-05-23T10:37:06.5004596Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-d",
+      "name": "",
+      "mode": "guided",
+      "priority": "medium",
+      "status": "RUNNING",
+      "started_at": "2026-05-23T10:37:06.4900926Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-e",
+      "name": "",
+      "mode": "guided",
+      "priority": "high",
+      "status": "PASSED",
+      "started_at": "2026-05-23T10:37:06.7330139Z",
+      "finished_at": "2026-05-23T10:37:06.7406499Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-f",
+      "name": "",
+      "mode": "guided",
+      "priority": "medium",
+      "status": "PASSED",
+      "started_at": "2026-05-23T10:37:06.6367996Z",
+      "finished_at": "2026-05-23T10:37:06.6565004Z",
+      "retry_count": 0
+    }
+  ],
+  "retry_count": 0,
+  "checkpoint": {
+    "flow_id": "flow-e",
+    "step_index": 0,
+    "step_id": "step-1",
+    "payload": {
+      "consecutive_observe_count": 0,
+      "current_step": "step-1",
+      "current_url": "",
+      "last_step_signature": "",
+      "step_index": 0,
+      "visited_urls": null
+    },
+    "timestamp": "2026-05-23T10:37:06.7379816Z"
+  }
+}

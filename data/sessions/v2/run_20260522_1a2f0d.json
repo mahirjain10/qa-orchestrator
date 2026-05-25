@@ -1,0 +1,541 @@
+{
+  "run_id": "run_20260522_1a2f0d",
+  "session_id": "sess_205642b03c5880e4f3b5dc0e",
+  "campaign_name": "Failure Cascade Test",
+  "status": "FAILED",
+  "current_flow_id": "chain-depends-on-skip",
+  "current_agent": "",
+  "started_at": "2026-05-22T16:03:49.7208062Z",
+  "updated_at": "2026-05-22T16:08:37.3109295Z",
+  "flows": [
+    {
+      "flow_id": "will-fail-flow",
+      "name": "Intentional Failure",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-22T16:05:45.5712948Z",
+      "finished_at": "2026-05-22T16:06:14.8498569Z",
+      "retry_count": 0,
+      "error": "LLM signaled that the goal is unachievable: Page state is empty and observe_ui() was attempted multiple times; DNS name resolution failed, so page cannot load."
+    },
+    {
+      "flow_id": "depends-on-fail-a",
+      "name": "Dependent Flow A",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PASSED",
+      "started_at": "2026-05-22T16:06:14.9252656Z",
+      "finished_at": "2026-05-22T16:06:59.9219838Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "depends-on-fail-b",
+      "name": "Dependent Flow B",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "PASSED",
+      "started_at": "2026-05-22T16:06:59.9947483Z",
+      "finished_at": "2026-05-22T16:08:28.4864128Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "independent-flow",
+      "name": "Independent Flow",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PASSED",
+      "started_at": "2026-05-22T16:03:51.0041466Z",
+      "finished_at": "2026-05-22T16:05:45.2904722Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "chain-depends-on-skip",
+      "name": "Chain Dependency Test",
+      "mode": "autonomous",
+      "priority": "low",
+      "status": "PASSED",
+      "started_at": "2026-05-22T16:08:28.5671816Z",
+      "finished_at": "2026-05-22T16:08:37.2967654Z",
+      "retry_count": 0
+    }
+  ],
+  "retry_count": 0,
+  "checkpoint": {
+    "flow_id": "chain-depends-on-skip",
+    "step_index": 0,
+    "step_id": "auto-observe-1",
+    "payload": {
+      "consecutive_observe_count": 0,
+      "current_step": "auto-observe-1",
+      "current_url": "https://practicetestautomation.com/",
+      "last_step_signature": "",
+      "obs_0": {
+        "last_output": "navigated to https://practicetestautomation.com/",
+        "last_step_id": "auto-navigate",
+        "last_step_success": true
+      },
+      "obs_1": {
+        "data": {
+          "interactive": [
+            {
+              "class": "skip-content",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a.skip-content",
+              "tag": "a",
+              "text": "Press \"Enter\" to skip to content"
+            },
+            {
+              "class": "custom-logo-link",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a.custom-logo-link",
+              "tag": "a",
+              "text": ""
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Home"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Practice"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Courses"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Blog"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Contact"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "nine courses with over 70,000 students"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "BestSeller XPath course"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "HighestRated Selenium course"
+            },
+            {
+              "class": "overflow-container",
+              "id": "overflow-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#overflow-container",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu\n\t\t\t\t\t\t\t\n\t\t\t\t\t"
+            },
+            {
+              "class": "max-width",
+              "id": "max-width",
+              "name": "",
+              "placeholder": "",
+              "selector": "#max-width",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu\n\t\t\t\t\t\t\t\n\t\t\t\t\t"
+            },
+            {
+              "class": "site-header",
+              "id": "site-header",
+              "name": "",
+              "placeholder": "",
+              "selector": "#site-header",
+              "tag": "header",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu"
+            },
+            {
+              "class": "header-bottom",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.header-bottom",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu"
+            },
+            {
+              "class": "mobile-menu-container",
+              "id": "mobile-menu-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#mobile-menu-container",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "",
+              "id": "mobile-menu-container-inner",
+              "name": "",
+              "placeholder": "",
+              "selector": "#mobile-menu-container-inner",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu-primary-container",
+              "id": "menu-primary-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-primary-container",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu-container menu-primary",
+              "id": "menu-primary",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-primary",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "nav.menu",
+              "tag": "nav",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu-primary-items",
+              "id": "menu-primary-items",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-primary-items",
+              "tag": "ul",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-home current-menu-item page_item page-item-23 current_page_item menu-item-43",
+              "id": "menu-item-43",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-43",
+              "tag": "li",
+              "text": "Home"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-20",
+              "id": "menu-item-20",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-20",
+              "tag": "li",
+              "text": "Practice"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-21",
+              "id": "menu-item-21",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-21",
+              "tag": "li",
+              "text": "Courses"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-19",
+              "id": "menu-item-19",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-19",
+              "tag": "li",
+              "text": "Blog"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-18",
+              "id": "menu-item-18",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-18",
+              "tag": "li",
+              "text": "Contact"
+            },
+            {
+              "class": "main-container",
+              "id": "main-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#main-container",
+              "tag": "section",
+              "text": "Hello\n\t\t\n\t\t\t\t\n\t\t\t\n\n\n\n\nWelcome to Practice Test Automation!\n\n\n\nI’m Dmitry Shyshkin, your guide on the"
+            },
+            {
+              "class": "loop-container",
+              "id": "loop-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#loop-container",
+              "tag": "div",
+              "text": "Hello\n\t\t\n\t\t\t\t\n\t\t\t\n\n\n\n\nWelcome to Practice Test Automation!\n\n\n\nI’m Dmitry Shyshkin, your guide on the"
+            },
+            {
+              "class": "post-23 page type-page status-publish hentry entry",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.post-23.page.type-page.status-publish.hentry.entry",
+              "tag": "div",
+              "text": "Hello\n\t\t\n\t\t\t\t\n\t\t\t\n\n\n\n\nWelcome to Practice Test Automation!\n\n\n\nI’m Dmitry Shyshkin, your guide on the"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "article:nth-of-type(1)",
+              "tag": "article",
+              "text": "Hello\n\t\t\n\t\t\t\t\n\t\t\t\n\n\n\n\nWelcome to Practice Test Automation!\n\n\n\nI’m Dmitry Shyshkin, your guide on the"
+            },
+            {
+              "class": "post-header",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.post-header",
+              "tag": "div",
+              "text": "Hello"
+            },
+            {
+              "class": "post-title",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h1.post-title",
+              "tag": "h1",
+              "text": "Hello"
+            },
+            {
+              "class": "post-content",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.post-content",
+              "tag": "div",
+              "text": "Welcome to Practice Test Automation!\n\n\n\nI’m Dmitry Shyshkin, your guide on the path to a thriving QA"
+            },
+            {
+              "class": "wp-block-paragraph",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p.wp-block-paragraph",
+              "tag": "p",
+              "text": "Welcome to Practice Test Automation!"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "strong:nth-of-type(1)",
+              "tag": "strong",
+              "text": "Welcome to Practice Test Automation!"
+            },
+            {
+              "class": "wp-block-paragraph",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p.wp-block-paragraph",
+              "tag": "p",
+              "text": "I’m Dmitry Shyshkin, your guide on the path to a thriving QA career. Effortlessly master Selenium We"
+            },
+            {
+              "class": "wp-block-paragraph",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p.wp-block-paragraph",
+              "tag": "p",
+              "text": "Experience and Expertise"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "strong:nth-of-type(1)",
+              "tag": "strong",
+              "text": "Experience and Expertise"
+            },
+            {
+              "class": "wp-block-paragraph",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p.wp-block-paragraph",
+              "tag": "p",
+              "text": "As a Principal Software Development Engineer in Test, I bring over a decade of experience in automat"
+            },
+            {
+              "class": "wp-block-paragraph",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p.wp-block-paragraph",
+              "tag": "p",
+              "text": "Beyond Test Automation"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "strong:nth-of-type(1)",
+              "tag": "strong",
+              "text": "Beyond Test Automation"
+            },
+            {
+              "class": "wp-block-paragraph",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p.wp-block-paragraph",
+              "tag": "p",
+              "text": "Not only have I automated tests, but I’ve also applied automation to job searches and even finding c"
+            },
+            {
+              "class": "wp-block-paragraph",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p.wp-block-paragraph",
+              "tag": "p",
+              "text": "Courses and Achievements"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "strong:nth-of-type(1)",
+              "tag": "strong",
+              "text": "Courses and Achievements"
+            },
+            {
+              "class": "wp-block-paragraph",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p.wp-block-paragraph",
+              "tag": "p",
+              "text": "In 2017, I started sharing my test automation expertise through video courses, beginning with a Sele"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "strong:nth-of-type(1)",
+              "tag": "strong",
+              "text": "nine courses with over 70,000 students"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "strong:nth-of-type(2)",
+              "tag": "strong",
+              "text": "BestSeller XPath course"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "strong:nth-of-type(3)",
+              "tag": "strong",
+              "text": "HighestRated Selenium course"
+            },
+            {
+              "class": "wp-block-paragraph",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p.wp-block-paragraph",
+              "tag": "p",
+              "text": "A Resourceful Website"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "strong:nth-of-type(1)",
+              "tag": "strong",
+              "text": "A Resourceful Website"
+            },
+            {
+              "class": "wp-block-paragraph",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p.wp-block-paragraph",
+              "tag": "p",
+              "text": "This website was carefully crafted to host a diverse selection of articles, standalone lectures, tip"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "step_index": 0,
+      "visited_urls": null
+    },
+    "timestamp": "2026-05-22T16:08:31.4109101Z"
+  }
+}

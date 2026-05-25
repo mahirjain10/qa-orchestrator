@@ -1,0 +1,109 @@
+{
+  "run_id": "run_20260522_4849ae",
+  "session_id": "sess_fc8caca14941957c2080c483",
+  "campaign_name": "SauceDemo E-Commerce E2E Test",
+  "status": "FAILED",
+  "current_flow_id": "confirmation-flow",
+  "current_agent": "",
+  "started_at": "2026-05-22T13:12:54.7162042Z",
+  "updated_at": "2026-05-22T13:14:44.7249055Z",
+  "flows": [
+    {
+      "flow_id": "login-flow",
+      "name": "User Authentication",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-22T13:12:57.4579416Z",
+      "finished_at": "2026-05-22T13:13:26.9112473Z",
+      "retry_count": 0,
+      "error": "LLM signaled that the goal is unachievable: Page state is 'empty' after multiple observe_ui() attempts; the login page failed to load or is blank."
+    },
+    {
+      "flow_id": "browse-flow",
+      "name": "Product Browsing and Selection",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-22T13:13:26.9520612Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    },
+    {
+      "flow_id": "cart-flow",
+      "name": "Cart Management",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-22T13:13:27.0284338Z",
+      "finished_at": "2026-05-22T13:14:12.0520204Z",
+      "retry_count": 0,
+      "error": "LLM signaled that the goal is unachievable: page state is empty after multiple observe_ui() attempts; no interactive elements found to locate cart or proceed to checkout"
+    },
+    {
+      "flow_id": "checkout-flow",
+      "name": "Checkout Process",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-22T13:14:12.2192617Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    },
+    {
+      "flow_id": "confirmation-flow",
+      "name": "Order Confirmation and Validation",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "FAILED",
+      "started_at": "2026-05-22T13:14:12.6104643Z",
+      "finished_at": "2026-05-22T13:14:44.6940438Z",
+      "retry_count": 0,
+      "error": "LLM signaled that the goal is unachievable: Page state is empty after multiple observe_ui() attempts; confirmation page elements not found, cannot verify or proceed."
+    }
+  ],
+  "retry_count": 0,
+  "checkpoint": {
+    "flow_id": "confirmation-flow",
+    "step_index": 2,
+    "step_id": "auto-step-3",
+    "payload": {
+      "consecutive_observe_count": 3,
+      "current_step": "auto-step-3",
+      "current_url": "",
+      "last_step_signature": "",
+      "obs_0": {
+        "last_output": {
+          "interactive": [],
+          "page_state": "empty"
+        },
+        "last_step_id": "auto-step-1",
+        "last_step_success": true
+      },
+      "obs_1": {
+        "data": {
+          "interactive": [],
+          "page_state": "empty"
+        },
+        "source": "observe_ui"
+      },
+      "obs_2": {
+        "last_output": {
+          "interactive": [],
+          "page_state": "empty"
+        },
+        "last_step_id": "auto-step-2",
+        "last_step_success": true
+      },
+      "obs_3": {
+        "data": {
+          "interactive": [],
+          "page_state": "empty"
+        },
+        "source": "observe_ui"
+      },
+      "step_index": 2
+    },
+    "timestamp": "2026-05-22T13:14:37.1497396Z"
+  }
+}

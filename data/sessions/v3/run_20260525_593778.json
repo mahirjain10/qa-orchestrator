@@ -1,0 +1,216 @@
+{
+  "run_id": "run_20260525_593778",
+  "session_id": "sess_ed0c42e26de1f1dd5043c7b1",
+  "campaign_name": "Real URLs Parallel Campaign",
+  "status": "FAILED",
+  "current_flow_id": "flow-gamma",
+  "current_agent": "",
+  "started_at": "2026-05-24T20:52:54.698939Z",
+  "updated_at": "2026-05-24T21:00:19.972261Z",
+  "flows": [
+    {
+      "flow_id": "flow-alpha",
+      "name": "Alpha - Login Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PASSED",
+      "started_at": "2026-05-24T20:52:54.7010252Z",
+      "finished_at": "2026-05-24T20:53:10.6593738Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-beta",
+      "name": "Beta - Root Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-24T20:56:32.4531545Z",
+      "finished_at": "2026-05-24T21:00:19.9701869Z",
+      "retry_count": 0,
+      "error": "failed to generate step: LLM request failed: API error (status=403): Key limit exceeded (total limit). Manage it using https://openrouter.ai/workspaces/default/keys/071317ac986b71682dfd215cd63172e7fed11832f5b5d81205f62f2797a666f5"
+    },
+    {
+      "flow_id": "flow-gamma",
+      "name": "Gamma - Exception Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-24T20:52:54.7020863Z",
+      "finished_at": "2026-05-24T21:00:19.953697Z",
+      "retry_count": 0,
+      "error": "failed to generate step: LLM request failed: API error (status=403): Key limit exceeded (total limit). Manage it using https://openrouter.ai/workspaces/default/keys/071317ac986b71682dfd215cd63172e7fed11832f5b5d81205f62f2797a666f5"
+    },
+    {
+      "flow_id": "flow-delta",
+      "name": "Delta - Success Page",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "PASSED",
+      "started_at": "2026-05-24T20:53:10.6599126Z",
+      "finished_at": "2026-05-24T20:57:46.580314Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-epsilon",
+      "name": "Epsilon - Login Title Check",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "PASSED",
+      "finished_at": "2026-05-24T20:56:32.449312Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-zeta",
+      "name": "Zeta - Post-Login Validation",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PASSED",
+      "started_at": "2026-05-24T20:57:46.582432Z",
+      "finished_at": "2026-05-24T20:58:33.6658461Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-eta",
+      "name": "Eta - Cross-Page Navigation",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-24T21:00:19.9568465Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    },
+    {
+      "flow_id": "flow-theta",
+      "name": "Theta - Final Summary",
+      "mode": "autonomous",
+      "priority": "low",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-24T21:00:19.9584335Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    }
+  ],
+  "retry_count": 0,
+  "checkpoint": {
+    "flow_id": "flow-beta",
+    "step_index": 1,
+    "step_id": "auto-step-2",
+    "payload": {
+      "consecutive_observe_count": 2,
+      "current_step": "auto-step-2",
+      "current_url": "https://practicetestautomation.com/",
+      "last_step_signature": "",
+      "obs_0": {
+        "last_output": "simulated: navigated to https://practicetestautomation.com/",
+        "last_step_id": "auto-navigate",
+        "last_step_success": true
+      },
+      "obs_1": {
+        "data": {
+          "interactive": [
+            {
+              "selector": "#username",
+              "tag": "input",
+              "text": "Username"
+            },
+            {
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "selector": "#login-btn",
+              "tag": "button",
+              "text": "Login"
+            },
+            {
+              "selector": "a[href='/register']",
+              "tag": "a",
+              "text": "Register"
+            },
+            {
+              "selector": "h1",
+              "tag": "h1",
+              "text": "Welcome"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "obs_2": {
+        "last_output": {
+          "interactive": [
+            {
+              "selector": "#username",
+              "tag": "input",
+              "text": "Username"
+            },
+            {
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "selector": "#login-btn",
+              "tag": "button",
+              "text": "Login"
+            },
+            {
+              "selector": "a[href='/register']",
+              "tag": "a",
+              "text": "Register"
+            },
+            {
+              "selector": "h1",
+              "tag": "h1",
+              "text": "Welcome"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "last_step_id": "auto-step-1",
+        "last_step_success": true
+      },
+      "obs_3": {
+        "data": {
+          "interactive": [
+            {
+              "selector": "#username",
+              "tag": "input",
+              "text": "Username"
+            },
+            {
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "selector": "#login-btn",
+              "tag": "button",
+              "text": "Login"
+            },
+            {
+              "selector": "a[href='/register']",
+              "tag": "a",
+              "text": "Register"
+            },
+            {
+              "selector": "h1",
+              "tag": "h1",
+              "text": "Welcome"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "repetition_blocked_success": false,
+      "step_index": 1,
+      "visited_urls": {
+        "https://practicetestautomation.com/": true
+      }
+    },
+    "timestamp": "2026-05-24T20:59:32.0950546Z"
+  }
+}

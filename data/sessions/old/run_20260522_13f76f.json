@@ -1,0 +1,61 @@
+{
+  "run_id": "run_20260522_13f76f",
+  "session_id": "sess_728c82f54a9c2f3bf7a763c2",
+  "campaign_name": "Login E2E Test",
+  "status": "FAILED",
+  "current_flow_id": "auth-flow",
+  "current_agent": "",
+  "started_at": "2026-05-22T04:10:42.5962049Z",
+  "updated_at": "2026-05-22T04:10:49.1695602Z",
+  "flows": [
+    {
+      "flow_id": "auth-flow",
+      "name": "Login Flow",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-22T04:10:42.5983204Z",
+      "finished_at": "2026-05-22T04:10:49.1679713Z",
+      "retry_count": 0,
+      "error": "LLM signaled that the goal is unachievable (e.g., missing elements)"
+    }
+  ],
+  "retry_count": 0,
+  "checkpoint": {
+    "flow_id": "auth-flow",
+    "step_index": 2,
+    "step_id": "auto-step-3",
+    "payload": {
+      "current_step": "auto-step-3",
+      "obs_0": {
+        "last_output": "simulated: navigated to https://practicetestautomation.com/practice-test-login/",
+        "last_step_id": "auto-step-1",
+        "last_step_success": true
+      },
+      "obs_1": {
+        "data": {
+          "interactive": [],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "obs_2": {
+        "last_output": {
+          "interactive": [],
+          "page_state": "loaded"
+        },
+        "last_step_id": "auto-step-2",
+        "last_step_success": true
+      },
+      "obs_3": {
+        "data": {
+          "interactive": [],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "step_index": 2
+    },
+    "timestamp": "2026-05-22T04:10:48.155532Z"
+  }
+}

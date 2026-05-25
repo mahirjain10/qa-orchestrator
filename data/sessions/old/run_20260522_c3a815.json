@@ -1,0 +1,1373 @@
+{
+  "run_id": "run_20260522_c3a815",
+  "session_id": "sess_50496726f747a0a0eee3752a",
+  "campaign_name": "Large Parallel Campaign",
+  "status": "FAILED",
+  "current_flow_id": "flow-zeta",
+  "current_agent": "",
+  "started_at": "2026-05-22T08:14:29.4278354Z",
+  "updated_at": "2026-05-22T08:17:01.7630563Z",
+  "flows": [
+    {
+      "flow_id": "flow-alpha",
+      "name": "Alpha - Login Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PASSED",
+      "started_at": "2026-05-22T08:15:57.618774Z",
+      "finished_at": "2026-05-22T08:16:15.8123591Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-beta",
+      "name": "Beta - Students Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-22T08:14:31.0638274Z",
+      "finished_at": "2026-05-22T08:17:01.7366688Z",
+      "retry_count": 0,
+      "error": "max autonomous steps reached without finishing"
+    },
+    {
+      "flow_id": "flow-gamma",
+      "name": "Gamma - Exception Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PASSED",
+      "started_at": "2026-05-22T08:14:31.078654Z",
+      "finished_at": "2026-05-22T08:15:18.9512864Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-delta",
+      "name": "Delta - Timeout Page",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "FAILED",
+      "started_at": "2026-05-22T08:15:19.0221668Z",
+      "finished_at": "2026-05-22T08:16:36.5220659Z",
+      "retry_count": 0,
+      "error": "failed to generate step: LLM request failed: empty response from openai (model: gpt-5-mini)"
+    },
+    {
+      "flow_id": "flow-epsilon",
+      "name": "Epsilon - File Upload Page",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "FAILED",
+      "started_at": "2026-05-22T08:14:31.0438635Z",
+      "finished_at": "2026-05-22T08:15:57.5492868Z",
+      "retry_count": 0,
+      "error": "failed to generate step: LLM request failed: empty response from openai (model: gpt-5-mini)"
+    },
+    {
+      "flow_id": "flow-zeta",
+      "name": "Zeta - Post-Login Validation",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-22T08:16:15.8781336Z",
+      "finished_at": "2026-05-22T08:16:38.6387935Z",
+      "retry_count": 0,
+      "error": "failed to generate step: LLM request failed: empty response from openai (model: gpt-5-mini)"
+    },
+    {
+      "flow_id": "flow-eta",
+      "name": "Eta - Cross-Page Navigation",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-22T08:17:01.7561226Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    },
+    {
+      "flow_id": "flow-theta",
+      "name": "Theta - Final Summary",
+      "mode": "autonomous",
+      "priority": "low",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-22T08:17:01.7593292Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    }
+  ],
+  "retry_count": 0,
+  "checkpoint": {
+    "flow_id": "flow-beta",
+    "step_index": 19,
+    "step_id": "auto-observe-36",
+    "payload": {
+      "consecutive_observe_count": 0,
+      "current_step": "auto-observe-36",
+      "current_url": "https://practicetestautomation.com/",
+      "last_step_signature": "navigate|url=https://practicetestautomation.com/",
+      "obs_0": {
+        "data": {
+          "interactive": [
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Press \\\"Enter\\\" to skip to content\")",
+              "tag": "a",
+              "text": "Press \"Enter\" to skip to content"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Home\")",
+              "tag": "a",
+              "text": "Home"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Practice\")",
+              "tag": "a",
+              "text": "Practice"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Courses\")",
+              "tag": "a",
+              "text": "Courses"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Blog\")",
+              "tag": "a",
+              "text": "Blog"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Contact\")",
+              "tag": "a",
+              "text": "Contact"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Practice Test Automation.\")",
+              "tag": "a",
+              "text": "Practice Test Automation."
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Privacy Policy\")",
+              "tag": "a",
+              "text": "Privacy Policy"
+            },
+            {
+              "id": "search-field",
+              "name": "s",
+              "placeholder": " Search for...",
+              "selector": "#search-field",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "input:nth-of-type(2)",
+              "tag": "input",
+              "text": ""
+            }
+          ],
+          "page_state": "loaded",
+          "warning": "⚠️ WARNING: Page appears to be a 404 or error page."
+        },
+        "source": "observe_ui"
+      },
+      "obs_1": {
+        "data": {
+          "interactive": [
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Press \\\"Enter\\\" to skip to content\")",
+              "tag": "a",
+              "text": "Press \"Enter\" to skip to content"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Home\")",
+              "tag": "a",
+              "text": "Home"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Practice\")",
+              "tag": "a",
+              "text": "Practice"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Courses\")",
+              "tag": "a",
+              "text": "Courses"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Blog\")",
+              "tag": "a",
+              "text": "Blog"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Contact\")",
+              "tag": "a",
+              "text": "Contact"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Practice Test Automation.\")",
+              "tag": "a",
+              "text": "Practice Test Automation."
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Privacy Policy\")",
+              "tag": "a",
+              "text": "Privacy Policy"
+            },
+            {
+              "id": "search-field",
+              "name": "s",
+              "placeholder": " Search for...",
+              "selector": "#search-field",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "input:nth-of-type(2)",
+              "tag": "input",
+              "text": ""
+            }
+          ],
+          "page_state": "loaded",
+          "warning": "⚠️ WARNING: Page appears to be a 404 or error page."
+        },
+        "last_output": {
+          "interactive": [
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Press \\\"Enter\\\" to skip to content\")",
+              "tag": "a",
+              "text": "Press \"Enter\" to skip to content"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Home\")",
+              "tag": "a",
+              "text": "Home"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Practice\")",
+              "tag": "a",
+              "text": "Practice"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Courses\")",
+              "tag": "a",
+              "text": "Courses"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Blog\")",
+              "tag": "a",
+              "text": "Blog"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Contact\")",
+              "tag": "a",
+              "text": "Contact"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Practice Test Automation.\")",
+              "tag": "a",
+              "text": "Practice Test Automation."
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Privacy Policy\")",
+              "tag": "a",
+              "text": "Privacy Policy"
+            },
+            {
+              "id": "search-field",
+              "name": "s",
+              "placeholder": " Search for...",
+              "selector": "#search-field",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "input:nth-of-type(2)",
+              "tag": "input",
+              "text": ""
+            }
+          ],
+          "page_state": "loaded",
+          "warning": "⚠️ WARNING: Page appears to be a 404 or error page."
+        },
+        "last_step_id": "auto-observe-30",
+        "last_step_success": true
+      },
+      "obs_2": {
+        "last_output": "navigated to https://practicetestautomation.com/",
+        "last_step_id": "auto-step-31",
+        "last_step_success": true
+      },
+      "obs_3": {
+        "data": {
+          "interactive": [
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Press \\\"Enter\\\" to skip to content\")",
+              "tag": "a",
+              "text": "Press \"Enter\" to skip to content"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Home\")",
+              "tag": "a",
+              "text": "Home"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Practice\")",
+              "tag": "a",
+              "text": "Practice"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Courses\")",
+              "tag": "a",
+              "text": "Courses"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Blog\")",
+              "tag": "a",
+              "text": "Blog"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Contact\")",
+              "tag": "a",
+              "text": "Contact"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"nine courses with over 70,000 students\")",
+              "tag": "a",
+              "text": "nine courses with over 70,000 students"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"BestSeller XPath course\")",
+              "tag": "a",
+              "text": "BestSeller XPath course"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"HighestRated Selenium course\")",
+              "tag": "a",
+              "text": "HighestRated Selenium course"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"diverse selection of articles, standalone lectures\")",
+              "tag": "a",
+              "text": "diverse selection of articles, standalone lectures, tips, and examples"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"practical platform\")",
+              "tag": "a",
+              "text": "practical platform"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"BLOG\")",
+              "tag": "a",
+              "text": "BLOG"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"COURSES\")",
+              "tag": "a",
+              "text": "COURSES"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"privacy policy\")",
+              "tag": "a",
+              "text": "privacy policy"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Practice Test Automation.\")",
+              "tag": "a",
+              "text": "Practice Test Automation."
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Privacy Policy\")",
+              "tag": "a",
+              "text": "Privacy Policy"
+            },
+            {
+              "id": "form_first_name_7",
+              "name": "data[form_field_OTlkMTBlNjFjOGUwX2ZpcnN0X25hbWU=]",
+              "placeholder": "Name *",
+              "selector": "#form_first_name_7",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "form_email_7",
+              "name": "data[form_field_ODhhN2IwZjQ3NTMzX2VtYWls]",
+              "placeholder": "Email Address *",
+              "selector": "#form_email_7",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "input:nth-of-type(1)",
+              "tag": "input",
+              "text": ""
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "obs_4": {
+        "data": {
+          "interactive": [
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Press \\\"Enter\\\" to skip to content\")",
+              "tag": "a",
+              "text": "Press \"Enter\" to skip to content"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Home\")",
+              "tag": "a",
+              "text": "Home"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Practice\")",
+              "tag": "a",
+              "text": "Practice"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Courses\")",
+              "tag": "a",
+              "text": "Courses"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Blog\")",
+              "tag": "a",
+              "text": "Blog"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Contact\")",
+              "tag": "a",
+              "text": "Contact"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"nine courses with over 70,000 students\")",
+              "tag": "a",
+              "text": "nine courses with over 70,000 students"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"BestSeller XPath course\")",
+              "tag": "a",
+              "text": "BestSeller XPath course"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"HighestRated Selenium course\")",
+              "tag": "a",
+              "text": "HighestRated Selenium course"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"diverse selection of articles, standalone lectures\")",
+              "tag": "a",
+              "text": "diverse selection of articles, standalone lectures, tips, and examples"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"practical platform\")",
+              "tag": "a",
+              "text": "practical platform"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"BLOG\")",
+              "tag": "a",
+              "text": "BLOG"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"COURSES\")",
+              "tag": "a",
+              "text": "COURSES"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"privacy policy\")",
+              "tag": "a",
+              "text": "privacy policy"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Practice Test Automation.\")",
+              "tag": "a",
+              "text": "Practice Test Automation."
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Privacy Policy\")",
+              "tag": "a",
+              "text": "Privacy Policy"
+            },
+            {
+              "id": "form_first_name_7",
+              "name": "data[form_field_OTlkMTBlNjFjOGUwX2ZpcnN0X25hbWU=]",
+              "placeholder": "Name *",
+              "selector": "#form_first_name_7",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "form_email_7",
+              "name": "data[form_field_ODhhN2IwZjQ3NTMzX2VtYWls]",
+              "placeholder": "Email Address *",
+              "selector": "#form_email_7",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "input:nth-of-type(1)",
+              "tag": "input",
+              "text": ""
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "last_output": {
+          "interactive": [
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Press \\\"Enter\\\" to skip to content\")",
+              "tag": "a",
+              "text": "Press \"Enter\" to skip to content"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Home\")",
+              "tag": "a",
+              "text": "Home"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Practice\")",
+              "tag": "a",
+              "text": "Practice"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Courses\")",
+              "tag": "a",
+              "text": "Courses"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Blog\")",
+              "tag": "a",
+              "text": "Blog"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Contact\")",
+              "tag": "a",
+              "text": "Contact"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"nine courses with over 70,000 students\")",
+              "tag": "a",
+              "text": "nine courses with over 70,000 students"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"BestSeller XPath course\")",
+              "tag": "a",
+              "text": "BestSeller XPath course"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"HighestRated Selenium course\")",
+              "tag": "a",
+              "text": "HighestRated Selenium course"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"diverse selection of articles, standalone lectures\")",
+              "tag": "a",
+              "text": "diverse selection of articles, standalone lectures, tips, and examples"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"practical platform\")",
+              "tag": "a",
+              "text": "practical platform"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"BLOG\")",
+              "tag": "a",
+              "text": "BLOG"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"COURSES\")",
+              "tag": "a",
+              "text": "COURSES"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"privacy policy\")",
+              "tag": "a",
+              "text": "privacy policy"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Practice Test Automation.\")",
+              "tag": "a",
+              "text": "Practice Test Automation."
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Privacy Policy\")",
+              "tag": "a",
+              "text": "Privacy Policy"
+            },
+            {
+              "id": "form_first_name_7",
+              "name": "data[form_field_OTlkMTBlNjFjOGUwX2ZpcnN0X25hbWU=]",
+              "placeholder": "Name *",
+              "selector": "#form_first_name_7",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "form_email_7",
+              "name": "data[form_field_ODhhN2IwZjQ3NTMzX2VtYWls]",
+              "placeholder": "Email Address *",
+              "selector": "#form_email_7",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "input:nth-of-type(1)",
+              "tag": "input",
+              "text": ""
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "last_step_id": "auto-observe-32",
+        "last_step_success": true
+      },
+      "obs_5": {
+        "last_output": "navigated to https://practicetestautomation.com/practice-test-students/",
+        "last_step_id": "auto-step-33",
+        "last_step_success": true
+      },
+      "obs_6": {
+        "data": {
+          "interactive": [
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Press \\\"Enter\\\" to skip to content\")",
+              "tag": "a",
+              "text": "Press \"Enter\" to skip to content"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Home\")",
+              "tag": "a",
+              "text": "Home"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Practice\")",
+              "tag": "a",
+              "text": "Practice"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Courses\")",
+              "tag": "a",
+              "text": "Courses"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Blog\")",
+              "tag": "a",
+              "text": "Blog"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Contact\")",
+              "tag": "a",
+              "text": "Contact"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Practice Test Automation.\")",
+              "tag": "a",
+              "text": "Practice Test Automation."
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Privacy Policy\")",
+              "tag": "a",
+              "text": "Privacy Policy"
+            },
+            {
+              "id": "search-field",
+              "name": "s",
+              "placeholder": " Search for...",
+              "selector": "#search-field",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "input:nth-of-type(2)",
+              "tag": "input",
+              "text": ""
+            }
+          ],
+          "page_state": "loaded",
+          "warning": "⚠️ WARNING: Page appears to be a 404 or error page."
+        },
+        "source": "observe_ui"
+      },
+      "obs_7": {
+        "data": {
+          "interactive": [
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Press \\\"Enter\\\" to skip to content\")",
+              "tag": "a",
+              "text": "Press \"Enter\" to skip to content"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Home\")",
+              "tag": "a",
+              "text": "Home"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Practice\")",
+              "tag": "a",
+              "text": "Practice"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Courses\")",
+              "tag": "a",
+              "text": "Courses"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Blog\")",
+              "tag": "a",
+              "text": "Blog"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Contact\")",
+              "tag": "a",
+              "text": "Contact"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Practice Test Automation.\")",
+              "tag": "a",
+              "text": "Practice Test Automation."
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Privacy Policy\")",
+              "tag": "a",
+              "text": "Privacy Policy"
+            },
+            {
+              "id": "search-field",
+              "name": "s",
+              "placeholder": " Search for...",
+              "selector": "#search-field",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "input:nth-of-type(2)",
+              "tag": "input",
+              "text": ""
+            }
+          ],
+          "page_state": "loaded",
+          "warning": "⚠️ WARNING: Page appears to be a 404 or error page."
+        },
+        "last_output": {
+          "interactive": [
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Press \\\"Enter\\\" to skip to content\")",
+              "tag": "a",
+              "text": "Press \"Enter\" to skip to content"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Home\")",
+              "tag": "a",
+              "text": "Home"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Practice\")",
+              "tag": "a",
+              "text": "Practice"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Courses\")",
+              "tag": "a",
+              "text": "Courses"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Blog\")",
+              "tag": "a",
+              "text": "Blog"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Contact\")",
+              "tag": "a",
+              "text": "Contact"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Practice Test Automation.\")",
+              "tag": "a",
+              "text": "Practice Test Automation."
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Privacy Policy\")",
+              "tag": "a",
+              "text": "Privacy Policy"
+            },
+            {
+              "id": "search-field",
+              "name": "s",
+              "placeholder": " Search for...",
+              "selector": "#search-field",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "input:nth-of-type(2)",
+              "tag": "input",
+              "text": ""
+            }
+          ],
+          "page_state": "loaded",
+          "warning": "⚠️ WARNING: Page appears to be a 404 or error page."
+        },
+        "last_step_id": "auto-observe-34",
+        "last_step_success": true
+      },
+      "obs_8": {
+        "last_output": "navigated to https://practicetestautomation.com/",
+        "last_step_id": "auto-step-35",
+        "last_step_success": true
+      },
+      "obs_9": {
+        "data": {
+          "interactive": [
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Press \\\"Enter\\\" to skip to content\")",
+              "tag": "a",
+              "text": "Press \"Enter\" to skip to content"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Home\")",
+              "tag": "a",
+              "text": "Home"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Practice\")",
+              "tag": "a",
+              "text": "Practice"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Courses\")",
+              "tag": "a",
+              "text": "Courses"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Blog\")",
+              "tag": "a",
+              "text": "Blog"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Contact\")",
+              "tag": "a",
+              "text": "Contact"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"nine courses with over 70,000 students\")",
+              "tag": "a",
+              "text": "nine courses with over 70,000 students"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"BestSeller XPath course\")",
+              "tag": "a",
+              "text": "BestSeller XPath course"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"HighestRated Selenium course\")",
+              "tag": "a",
+              "text": "HighestRated Selenium course"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"diverse selection of articles, standalone lectures\")",
+              "tag": "a",
+              "text": "diverse selection of articles, standalone lectures, tips, and examples"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"practical platform\")",
+              "tag": "a",
+              "text": "practical platform"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"BLOG\")",
+              "tag": "a",
+              "text": "BLOG"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"COURSES\")",
+              "tag": "a",
+              "text": "COURSES"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"privacy policy\")",
+              "tag": "a",
+              "text": "privacy policy"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Practice Test Automation.\")",
+              "tag": "a",
+              "text": "Practice Test Automation."
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Privacy Policy\")",
+              "tag": "a",
+              "text": "Privacy Policy"
+            },
+            {
+              "id": "form_first_name_7",
+              "name": "data[form_field_OTlkMTBlNjFjOGUwX2ZpcnN0X25hbWU=]",
+              "placeholder": "Name *",
+              "selector": "#form_first_name_7",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "form_email_7",
+              "name": "data[form_field_ODhhN2IwZjQ3NTMzX2VtYWls]",
+              "placeholder": "Email Address *",
+              "selector": "#form_email_7",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "input:nth-of-type(1)",
+              "tag": "input",
+              "text": ""
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "step_index": 19
+    },
+    "timestamp": "2026-05-22T08:17:01.7159796Z"
+  }
+}

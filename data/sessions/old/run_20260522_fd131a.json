@@ -1,0 +1,137 @@
+{
+  "run_id": "run_20260522_fd131a",
+  "session_id": "sess_e23edf15cd6b3a2a5f442760",
+  "campaign_name": "Large Parallel Campaign",
+  "status": "FAILED",
+  "current_flow_id": "flow-theta",
+  "current_agent": "",
+  "started_at": "2026-05-22T09:33:28.4516099Z",
+  "updated_at": "2026-05-22T09:35:41.9327352Z",
+  "flows": [
+    {
+      "flow_id": "flow-alpha",
+      "name": "Alpha - Login Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-22T09:33:28.4549416Z",
+      "finished_at": "2026-05-22T09:34:04.6457137Z",
+      "retry_count": 0,
+      "error": "LLM signaled that the goal is unachievable: Page loaded but recent observations (multiple observe_ui calls) found no interactive elements; username, password, and submit controls not present."
+    },
+    {
+      "flow_id": "flow-beta",
+      "name": "Beta - Students Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-22T09:34:48.6149557Z",
+      "finished_at": "2026-05-22T09:35:14.5759648Z",
+      "retry_count": 0,
+      "error": "LLM signaled that the goal is unachievable: No interactive selectors or student table were found in recent observe_ui() results after multiple observations; the required table element appears missing or the page failed to render."
+    },
+    {
+      "flow_id": "flow-gamma",
+      "name": "Gamma - Exception Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "finished_at": "2026-05-22T09:35:09.3625164Z",
+      "retry_count": 0,
+      "error": "LLM signaled that the goal is unachievable: No interactive selectors or target elements were found after multiple observe_ui() attempts; cannot verify the page content or buttons."
+    },
+    {
+      "flow_id": "flow-delta",
+      "name": "Delta - Timeout Page",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "FAILED",
+      "started_at": "2026-05-22T09:34:04.650295Z",
+      "finished_at": "2026-05-22T09:34:52.3642532Z",
+      "retry_count": 0,
+      "error": "LLM signaled that the goal is unachievable: Page loaded but no interactive elements or selectors were discovered after multiple observe_ui() attempts; cannot verify expected content/buttons."
+    },
+    {
+      "flow_id": "flow-epsilon",
+      "name": "Epsilon - File Upload Page",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "FAILED",
+      "finished_at": "2026-05-22T09:34:48.6117436Z",
+      "retry_count": 0,
+      "error": "LLM signaled that the goal is unachievable: After multiple observe_ui() attempts the page shows no interactive elements; file input and upload button not found."
+    },
+    {
+      "flow_id": "flow-zeta",
+      "name": "Zeta - Post-Login Validation",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-22T09:34:04.6490958Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    },
+    {
+      "flow_id": "flow-eta",
+      "name": "Eta - Cross-Page Navigation",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-22T09:35:14.5807664Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    },
+    {
+      "flow_id": "flow-theta",
+      "name": "Theta - Final Summary",
+      "mode": "autonomous",
+      "priority": "low",
+      "status": "FAILED",
+      "started_at": "2026-05-22T09:35:14.5887704Z",
+      "finished_at": "2026-05-22T09:35:41.9287848Z",
+      "retry_count": 0,
+      "error": "LLM signaled that the goal is unachievable: No interactive elements or navigation links found in the latest observe_ui() results after multiple observations; cannot verify site structure."
+    }
+  ],
+  "retry_count": 0,
+  "checkpoint": {
+    "flow_id": "flow-theta",
+    "step_index": 1,
+    "step_id": "auto-step-2",
+    "payload": {
+      "consecutive_observe_count": 2,
+      "current_step": "auto-step-2",
+      "current_url": "https://practicetestautomation.com/",
+      "last_step_signature": "",
+      "obs_0": {
+        "last_output": "simulated: navigated to https://practicetestautomation.com/",
+        "last_step_id": "auto-navigate",
+        "last_step_success": true
+      },
+      "obs_1": {
+        "data": {
+          "interactive": [],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "obs_2": {
+        "last_output": {
+          "interactive": [],
+          "page_state": "loaded"
+        },
+        "last_step_id": "auto-step-1",
+        "last_step_success": true
+      },
+      "obs_3": {
+        "data": {
+          "interactive": [],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "step_index": 1
+    },
+    "timestamp": "2026-05-22T09:35:29.3270158Z"
+  }
+}

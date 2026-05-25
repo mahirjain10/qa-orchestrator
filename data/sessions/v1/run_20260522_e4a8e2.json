@@ -1,0 +1,2239 @@
+{
+  "run_id": "run_20260522_e4a8e2",
+  "session_id": "sess_f7a6b416b621f813166447c8",
+  "campaign_name": "SauceDemo E-Commerce E2E Test",
+  "status": "FAILED",
+  "current_flow_id": "confirmation-flow",
+  "current_agent": "",
+  "started_at": "2026-05-22T15:05:06.9612099Z",
+  "updated_at": "2026-05-22T15:13:56.509094Z",
+  "flows": [
+    {
+      "flow_id": "login-flow",
+      "name": "User Authentication",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-22T15:05:15.8001334Z",
+      "finished_at": "2026-05-22T15:06:21.6036165Z",
+      "retry_count": 0,
+      "error": "LLM stuck in loop — repeated same step 3+ times despite steering"
+    },
+    {
+      "flow_id": "browse-flow",
+      "name": "Product Browsing and Selection",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-22T15:06:21.9131508Z",
+      "finished_at": "2026-05-22T15:08:33.2986474Z",
+      "retry_count": 0,
+      "error": "max autonomous steps reached without finishing"
+    },
+    {
+      "flow_id": "cart-flow",
+      "name": "Cart Management",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-22T15:08:33.5534113Z",
+      "finished_at": "2026-05-22T15:10:23.5442788Z",
+      "retry_count": 0,
+      "error": "max autonomous steps reached without finishing"
+    },
+    {
+      "flow_id": "checkout-flow",
+      "name": "Checkout Process",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-22T15:10:23.9711321Z",
+      "finished_at": "2026-05-22T15:12:01.8471916Z",
+      "retry_count": 0,
+      "error": "max autonomous steps reached without finishing"
+    },
+    {
+      "flow_id": "confirmation-flow",
+      "name": "Order Confirmation and Validation",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "FAILED",
+      "started_at": "2026-05-22T15:12:02.2611087Z",
+      "finished_at": "2026-05-22T15:13:56.4663428Z",
+      "retry_count": 0,
+      "error": "max autonomous steps reached without finishing"
+    }
+  ],
+  "retry_count": 0,
+  "checkpoint": {
+    "flow_id": "confirmation-flow",
+    "step_index": 14,
+    "step_id": "auto-step-16",
+    "payload": {
+      "consecutive_observe_count": 3,
+      "current_step": "auto-step-16",
+      "current_url": "https://www.saucedemo.com/checkout-complete.html",
+      "last_step_signature": "",
+      "obs_0": {
+        "last_output": {
+          "interactive": [
+            {
+              "class": "error-button",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "button[data-test=\"error-button\"]",
+              "tag": "button",
+              "text": ""
+            },
+            {
+              "class": "",
+              "id": "root",
+              "name": "",
+              "placeholder": "",
+              "selector": "#root",
+              "tag": "div",
+              "text": "Swag LabsEpic sadface: You can only access '/checkout-complete.html' when you are logged in.Accepted"
+            },
+            {
+              "class": "login_container",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_container",
+              "tag": "div",
+              "text": "Swag LabsEpic sadface: You can only access '/checkout-complete.html' when you are logged in.Accepted"
+            },
+            {
+              "class": "login_logo",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_logo",
+              "tag": "div",
+              "text": "Swag Labs"
+            },
+            {
+              "class": "login_wrapper",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-container\"]",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in.Accepted username"
+            },
+            {
+              "class": "login_wrapper-inner",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_wrapper-inner",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "form_column",
+              "id": "login_button_container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#login_button_container",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "login-box",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login-box",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "form:nth-of-type(1)",
+              "tag": "form",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "input_error form_input error",
+              "id": "user-name",
+              "name": "user-name",
+              "placeholder": "Username",
+              "selector": "#user-name",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "svg-inline--fa fa-times-circle fa-w-16 error_icon",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "svg.svg-inline--fa.fa-times-circle.fa-w-16.error_icon",
+              "tag": "svg",
+              "text": ""
+            },
+            {
+              "class": "input_error form_input error",
+              "id": "password",
+              "name": "password",
+              "placeholder": "Password",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "svg-inline--fa fa-times-circle fa-w-16 error_icon",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "svg.svg-inline--fa.fa-times-circle.fa-w-16.error_icon",
+              "tag": "svg",
+              "text": ""
+            },
+            {
+              "class": "error-message-container error",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.error-message-container.error",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h3[data-test=\"error\"]",
+              "tag": "h3",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "svg-inline--fa fa-times fa-w-11 ",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "svg.svg-inline--fa.fa-times.fa-w-11",
+              "tag": "svg",
+              "text": ""
+            },
+            {
+              "class": "submit-button btn_action",
+              "id": "login-button",
+              "name": "login-button",
+              "placeholder": "",
+              "selector": "#login-button",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "login_credentials_wrap",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-credentials-container\"]",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "login_credentials_wrap-inner",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_credentials_wrap-inner",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "login_credentials",
+              "id": "login_credentials",
+              "name": "",
+              "placeholder": "",
+              "selector": "#login_credentials",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:nth-of-type(1)",
+              "tag": "h4",
+              "text": "Accepted usernames are:"
+            },
+            {
+              "class": "login_password",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-password\"]",
+              "tag": "div",
+              "text": "Password for all users:secret_sauce"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:nth-of-type(1)",
+              "tag": "h4",
+              "text": "Password for all users:"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "last_step_id": "auto-step-11",
+        "last_step_success": true
+      },
+      "obs_1": {
+        "data": {
+          "interactive": [
+            {
+              "class": "error-button",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "button[data-test=\"error-button\"]",
+              "tag": "button",
+              "text": ""
+            },
+            {
+              "class": "",
+              "id": "root",
+              "name": "",
+              "placeholder": "",
+              "selector": "#root",
+              "tag": "div",
+              "text": "Swag LabsEpic sadface: You can only access '/checkout-complete.html' when you are logged in.Accepted"
+            },
+            {
+              "class": "login_container",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_container",
+              "tag": "div",
+              "text": "Swag LabsEpic sadface: You can only access '/checkout-complete.html' when you are logged in.Accepted"
+            },
+            {
+              "class": "login_logo",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_logo",
+              "tag": "div",
+              "text": "Swag Labs"
+            },
+            {
+              "class": "login_wrapper",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-container\"]",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in.Accepted username"
+            },
+            {
+              "class": "login_wrapper-inner",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_wrapper-inner",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "form_column",
+              "id": "login_button_container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#login_button_container",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "login-box",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login-box",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "form:nth-of-type(1)",
+              "tag": "form",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "input_error form_input error",
+              "id": "user-name",
+              "name": "user-name",
+              "placeholder": "Username",
+              "selector": "#user-name",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "svg-inline--fa fa-times-circle fa-w-16 error_icon",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "svg.svg-inline--fa.fa-times-circle.fa-w-16.error_icon",
+              "tag": "svg",
+              "text": ""
+            },
+            {
+              "class": "input_error form_input error",
+              "id": "password",
+              "name": "password",
+              "placeholder": "Password",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "svg-inline--fa fa-times-circle fa-w-16 error_icon",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "svg.svg-inline--fa.fa-times-circle.fa-w-16.error_icon",
+              "tag": "svg",
+              "text": ""
+            },
+            {
+              "class": "error-message-container error",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.error-message-container.error",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h3[data-test=\"error\"]",
+              "tag": "h3",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "svg-inline--fa fa-times fa-w-11 ",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "svg.svg-inline--fa.fa-times.fa-w-11",
+              "tag": "svg",
+              "text": ""
+            },
+            {
+              "class": "submit-button btn_action",
+              "id": "login-button",
+              "name": "login-button",
+              "placeholder": "",
+              "selector": "#login-button",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "login_credentials_wrap",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-credentials-container\"]",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "login_credentials_wrap-inner",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_credentials_wrap-inner",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "login_credentials",
+              "id": "login_credentials",
+              "name": "",
+              "placeholder": "",
+              "selector": "#login_credentials",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:nth-of-type(1)",
+              "tag": "h4",
+              "text": "Accepted usernames are:"
+            },
+            {
+              "class": "login_password",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-password\"]",
+              "tag": "div",
+              "text": "Password for all users:secret_sauce"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:nth-of-type(1)",
+              "tag": "h4",
+              "text": "Password for all users:"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "obs_2": {
+        "last_output": {
+          "interactive": [
+            {
+              "class": "error-button",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "button[data-test=\"error-button\"]",
+              "tag": "button",
+              "text": ""
+            },
+            {
+              "class": "",
+              "id": "root",
+              "name": "",
+              "placeholder": "",
+              "selector": "#root",
+              "tag": "div",
+              "text": "Swag LabsEpic sadface: You can only access '/checkout-complete.html' when you are logged in.Accepted"
+            },
+            {
+              "class": "login_container",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_container",
+              "tag": "div",
+              "text": "Swag LabsEpic sadface: You can only access '/checkout-complete.html' when you are logged in.Accepted"
+            },
+            {
+              "class": "login_logo",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_logo",
+              "tag": "div",
+              "text": "Swag Labs"
+            },
+            {
+              "class": "login_wrapper",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-container\"]",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in.Accepted username"
+            },
+            {
+              "class": "login_wrapper-inner",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_wrapper-inner",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "form_column",
+              "id": "login_button_container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#login_button_container",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "login-box",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login-box",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "form:nth-of-type(1)",
+              "tag": "form",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "input_error form_input error",
+              "id": "user-name",
+              "name": "user-name",
+              "placeholder": "Username",
+              "selector": "#user-name",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "svg-inline--fa fa-times-circle fa-w-16 error_icon",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "svg.svg-inline--fa.fa-times-circle.fa-w-16.error_icon",
+              "tag": "svg",
+              "text": ""
+            },
+            {
+              "class": "input_error form_input error",
+              "id": "password",
+              "name": "password",
+              "placeholder": "Password",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "svg-inline--fa fa-times-circle fa-w-16 error_icon",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "svg.svg-inline--fa.fa-times-circle.fa-w-16.error_icon",
+              "tag": "svg",
+              "text": ""
+            },
+            {
+              "class": "error-message-container error",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.error-message-container.error",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h3[data-test=\"error\"]",
+              "tag": "h3",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "svg-inline--fa fa-times fa-w-11 ",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "svg.svg-inline--fa.fa-times.fa-w-11",
+              "tag": "svg",
+              "text": ""
+            },
+            {
+              "class": "submit-button btn_action",
+              "id": "login-button",
+              "name": "login-button",
+              "placeholder": "",
+              "selector": "#login-button",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "login_credentials_wrap",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-credentials-container\"]",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "login_credentials_wrap-inner",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_credentials_wrap-inner",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "login_credentials",
+              "id": "login_credentials",
+              "name": "",
+              "placeholder": "",
+              "selector": "#login_credentials",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:nth-of-type(1)",
+              "tag": "h4",
+              "text": "Accepted usernames are:"
+            },
+            {
+              "class": "login_password",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-password\"]",
+              "tag": "div",
+              "text": "Password for all users:secret_sauce"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:nth-of-type(1)",
+              "tag": "h4",
+              "text": "Password for all users:"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "last_step_id": "auto-step-12",
+        "last_step_success": true
+      },
+      "obs_3": {
+        "data": {
+          "interactive": [
+            {
+              "class": "error-button",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "button[data-test=\"error-button\"]",
+              "tag": "button",
+              "text": ""
+            },
+            {
+              "class": "",
+              "id": "root",
+              "name": "",
+              "placeholder": "",
+              "selector": "#root",
+              "tag": "div",
+              "text": "Swag LabsEpic sadface: You can only access '/checkout-complete.html' when you are logged in.Accepted"
+            },
+            {
+              "class": "login_container",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_container",
+              "tag": "div",
+              "text": "Swag LabsEpic sadface: You can only access '/checkout-complete.html' when you are logged in.Accepted"
+            },
+            {
+              "class": "login_logo",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_logo",
+              "tag": "div",
+              "text": "Swag Labs"
+            },
+            {
+              "class": "login_wrapper",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-container\"]",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in.Accepted username"
+            },
+            {
+              "class": "login_wrapper-inner",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_wrapper-inner",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "form_column",
+              "id": "login_button_container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#login_button_container",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "login-box",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login-box",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "form:nth-of-type(1)",
+              "tag": "form",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "input_error form_input error",
+              "id": "user-name",
+              "name": "user-name",
+              "placeholder": "Username",
+              "selector": "#user-name",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "svg-inline--fa fa-times-circle fa-w-16 error_icon",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "svg.svg-inline--fa.fa-times-circle.fa-w-16.error_icon",
+              "tag": "svg",
+              "text": ""
+            },
+            {
+              "class": "input_error form_input error",
+              "id": "password",
+              "name": "password",
+              "placeholder": "Password",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "svg-inline--fa fa-times-circle fa-w-16 error_icon",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "svg.svg-inline--fa.fa-times-circle.fa-w-16.error_icon",
+              "tag": "svg",
+              "text": ""
+            },
+            {
+              "class": "error-message-container error",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.error-message-container.error",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h3[data-test=\"error\"]",
+              "tag": "h3",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "svg-inline--fa fa-times fa-w-11 ",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "svg.svg-inline--fa.fa-times.fa-w-11",
+              "tag": "svg",
+              "text": ""
+            },
+            {
+              "class": "submit-button btn_action",
+              "id": "login-button",
+              "name": "login-button",
+              "placeholder": "",
+              "selector": "#login-button",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "login_credentials_wrap",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-credentials-container\"]",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "login_credentials_wrap-inner",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_credentials_wrap-inner",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "login_credentials",
+              "id": "login_credentials",
+              "name": "",
+              "placeholder": "",
+              "selector": "#login_credentials",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:nth-of-type(1)",
+              "tag": "h4",
+              "text": "Accepted usernames are:"
+            },
+            {
+              "class": "login_password",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-password\"]",
+              "tag": "div",
+              "text": "Password for all users:secret_sauce"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:nth-of-type(1)",
+              "tag": "h4",
+              "text": "Password for all users:"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "obs_4": {
+        "last_output": {
+          "interactive": [
+            {
+              "class": "error-button",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "button[data-test=\"error-button\"]",
+              "tag": "button",
+              "text": ""
+            },
+            {
+              "class": "",
+              "id": "root",
+              "name": "",
+              "placeholder": "",
+              "selector": "#root",
+              "tag": "div",
+              "text": "Swag LabsEpic sadface: You can only access '/checkout-complete.html' when you are logged in.Accepted"
+            },
+            {
+              "class": "login_container",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_container",
+              "tag": "div",
+              "text": "Swag LabsEpic sadface: You can only access '/checkout-complete.html' when you are logged in.Accepted"
+            },
+            {
+              "class": "login_logo",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_logo",
+              "tag": "div",
+              "text": "Swag Labs"
+            },
+            {
+              "class": "login_wrapper",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-container\"]",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in.Accepted username"
+            },
+            {
+              "class": "login_wrapper-inner",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_wrapper-inner",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "form_column",
+              "id": "login_button_container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#login_button_container",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "login-box",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login-box",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "form:nth-of-type(1)",
+              "tag": "form",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "input_error form_input error",
+              "id": "user-name",
+              "name": "user-name",
+              "placeholder": "Username",
+              "selector": "#user-name",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "svg-inline--fa fa-times-circle fa-w-16 error_icon",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "svg.svg-inline--fa.fa-times-circle.fa-w-16.error_icon",
+              "tag": "svg",
+              "text": ""
+            },
+            {
+              "class": "input_error form_input error",
+              "id": "password",
+              "name": "password",
+              "placeholder": "Password",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "svg-inline--fa fa-times-circle fa-w-16 error_icon",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "svg.svg-inline--fa.fa-times-circle.fa-w-16.error_icon",
+              "tag": "svg",
+              "text": ""
+            },
+            {
+              "class": "error-message-container error",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.error-message-container.error",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h3[data-test=\"error\"]",
+              "tag": "h3",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "svg-inline--fa fa-times fa-w-11 ",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "svg.svg-inline--fa.fa-times.fa-w-11",
+              "tag": "svg",
+              "text": ""
+            },
+            {
+              "class": "submit-button btn_action",
+              "id": "login-button",
+              "name": "login-button",
+              "placeholder": "",
+              "selector": "#login-button",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "login_credentials_wrap",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-credentials-container\"]",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "login_credentials_wrap-inner",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_credentials_wrap-inner",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "login_credentials",
+              "id": "login_credentials",
+              "name": "",
+              "placeholder": "",
+              "selector": "#login_credentials",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:nth-of-type(1)",
+              "tag": "h4",
+              "text": "Accepted usernames are:"
+            },
+            {
+              "class": "login_password",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-password\"]",
+              "tag": "div",
+              "text": "Password for all users:secret_sauce"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:nth-of-type(1)",
+              "tag": "h4",
+              "text": "Password for all users:"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "last_step_id": "auto-step-13",
+        "last_step_success": true
+      },
+      "obs_5": {
+        "data": {
+          "interactive": [
+            {
+              "class": "error-button",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "button[data-test=\"error-button\"]",
+              "tag": "button",
+              "text": ""
+            },
+            {
+              "class": "",
+              "id": "root",
+              "name": "",
+              "placeholder": "",
+              "selector": "#root",
+              "tag": "div",
+              "text": "Swag LabsEpic sadface: You can only access '/checkout-complete.html' when you are logged in.Accepted"
+            },
+            {
+              "class": "login_container",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_container",
+              "tag": "div",
+              "text": "Swag LabsEpic sadface: You can only access '/checkout-complete.html' when you are logged in.Accepted"
+            },
+            {
+              "class": "login_logo",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_logo",
+              "tag": "div",
+              "text": "Swag Labs"
+            },
+            {
+              "class": "login_wrapper",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-container\"]",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in.Accepted username"
+            },
+            {
+              "class": "login_wrapper-inner",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_wrapper-inner",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "form_column",
+              "id": "login_button_container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#login_button_container",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "login-box",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login-box",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "form:nth-of-type(1)",
+              "tag": "form",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "input_error form_input error",
+              "id": "user-name",
+              "name": "user-name",
+              "placeholder": "Username",
+              "selector": "#user-name",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "svg-inline--fa fa-times-circle fa-w-16 error_icon",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "svg.svg-inline--fa.fa-times-circle.fa-w-16.error_icon",
+              "tag": "svg",
+              "text": ""
+            },
+            {
+              "class": "input_error form_input error",
+              "id": "password",
+              "name": "password",
+              "placeholder": "Password",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "svg-inline--fa fa-times-circle fa-w-16 error_icon",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "svg.svg-inline--fa.fa-times-circle.fa-w-16.error_icon",
+              "tag": "svg",
+              "text": ""
+            },
+            {
+              "class": "error-message-container error",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.error-message-container.error",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h3[data-test=\"error\"]",
+              "tag": "h3",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "svg-inline--fa fa-times fa-w-11 ",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "svg.svg-inline--fa.fa-times.fa-w-11",
+              "tag": "svg",
+              "text": ""
+            },
+            {
+              "class": "submit-button btn_action",
+              "id": "login-button",
+              "name": "login-button",
+              "placeholder": "",
+              "selector": "#login-button",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "login_credentials_wrap",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-credentials-container\"]",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "login_credentials_wrap-inner",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_credentials_wrap-inner",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "login_credentials",
+              "id": "login_credentials",
+              "name": "",
+              "placeholder": "",
+              "selector": "#login_credentials",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:nth-of-type(1)",
+              "tag": "h4",
+              "text": "Accepted usernames are:"
+            },
+            {
+              "class": "login_password",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-password\"]",
+              "tag": "div",
+              "text": "Password for all users:secret_sauce"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:nth-of-type(1)",
+              "tag": "h4",
+              "text": "Password for all users:"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "obs_6": {
+        "last_output": {
+          "interactive": [
+            {
+              "class": "error-button",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "button[data-test=\"error-button\"]",
+              "tag": "button",
+              "text": ""
+            },
+            {
+              "class": "",
+              "id": "root",
+              "name": "",
+              "placeholder": "",
+              "selector": "#root",
+              "tag": "div",
+              "text": "Swag LabsEpic sadface: You can only access '/checkout-complete.html' when you are logged in.Accepted"
+            },
+            {
+              "class": "login_container",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_container",
+              "tag": "div",
+              "text": "Swag LabsEpic sadface: You can only access '/checkout-complete.html' when you are logged in.Accepted"
+            },
+            {
+              "class": "login_logo",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_logo",
+              "tag": "div",
+              "text": "Swag Labs"
+            },
+            {
+              "class": "login_wrapper",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-container\"]",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in.Accepted username"
+            },
+            {
+              "class": "login_wrapper-inner",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_wrapper-inner",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "form_column",
+              "id": "login_button_container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#login_button_container",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "login-box",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login-box",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "form:nth-of-type(1)",
+              "tag": "form",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "input_error form_input error",
+              "id": "user-name",
+              "name": "user-name",
+              "placeholder": "Username",
+              "selector": "#user-name",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "svg-inline--fa fa-times-circle fa-w-16 error_icon",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "svg.svg-inline--fa.fa-times-circle.fa-w-16.error_icon",
+              "tag": "svg",
+              "text": ""
+            },
+            {
+              "class": "input_error form_input error",
+              "id": "password",
+              "name": "password",
+              "placeholder": "Password",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "svg-inline--fa fa-times-circle fa-w-16 error_icon",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "svg.svg-inline--fa.fa-times-circle.fa-w-16.error_icon",
+              "tag": "svg",
+              "text": ""
+            },
+            {
+              "class": "error-message-container error",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.error-message-container.error",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h3[data-test=\"error\"]",
+              "tag": "h3",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "svg-inline--fa fa-times fa-w-11 ",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "svg.svg-inline--fa.fa-times.fa-w-11",
+              "tag": "svg",
+              "text": ""
+            },
+            {
+              "class": "submit-button btn_action",
+              "id": "login-button",
+              "name": "login-button",
+              "placeholder": "",
+              "selector": "#login-button",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "login_credentials_wrap",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-credentials-container\"]",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "login_credentials_wrap-inner",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_credentials_wrap-inner",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "login_credentials",
+              "id": "login_credentials",
+              "name": "",
+              "placeholder": "",
+              "selector": "#login_credentials",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:nth-of-type(1)",
+              "tag": "h4",
+              "text": "Accepted usernames are:"
+            },
+            {
+              "class": "login_password",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-password\"]",
+              "tag": "div",
+              "text": "Password for all users:secret_sauce"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:nth-of-type(1)",
+              "tag": "h4",
+              "text": "Password for all users:"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "last_step_id": "auto-step-14",
+        "last_step_success": true
+      },
+      "obs_7": {
+        "data": {
+          "interactive": [
+            {
+              "class": "error-button",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "button[data-test=\"error-button\"]",
+              "tag": "button",
+              "text": ""
+            },
+            {
+              "class": "",
+              "id": "root",
+              "name": "",
+              "placeholder": "",
+              "selector": "#root",
+              "tag": "div",
+              "text": "Swag LabsEpic sadface: You can only access '/checkout-complete.html' when you are logged in.Accepted"
+            },
+            {
+              "class": "login_container",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_container",
+              "tag": "div",
+              "text": "Swag LabsEpic sadface: You can only access '/checkout-complete.html' when you are logged in.Accepted"
+            },
+            {
+              "class": "login_logo",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_logo",
+              "tag": "div",
+              "text": "Swag Labs"
+            },
+            {
+              "class": "login_wrapper",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-container\"]",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in.Accepted username"
+            },
+            {
+              "class": "login_wrapper-inner",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_wrapper-inner",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "form_column",
+              "id": "login_button_container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#login_button_container",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "login-box",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login-box",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "form:nth-of-type(1)",
+              "tag": "form",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "input_error form_input error",
+              "id": "user-name",
+              "name": "user-name",
+              "placeholder": "Username",
+              "selector": "#user-name",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "svg-inline--fa fa-times-circle fa-w-16 error_icon",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "svg.svg-inline--fa.fa-times-circle.fa-w-16.error_icon",
+              "tag": "svg",
+              "text": ""
+            },
+            {
+              "class": "input_error form_input error",
+              "id": "password",
+              "name": "password",
+              "placeholder": "Password",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "svg-inline--fa fa-times-circle fa-w-16 error_icon",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "svg.svg-inline--fa.fa-times-circle.fa-w-16.error_icon",
+              "tag": "svg",
+              "text": ""
+            },
+            {
+              "class": "error-message-container error",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.error-message-container.error",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h3[data-test=\"error\"]",
+              "tag": "h3",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "svg-inline--fa fa-times fa-w-11 ",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "svg.svg-inline--fa.fa-times.fa-w-11",
+              "tag": "svg",
+              "text": ""
+            },
+            {
+              "class": "submit-button btn_action",
+              "id": "login-button",
+              "name": "login-button",
+              "placeholder": "",
+              "selector": "#login-button",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "login_credentials_wrap",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-credentials-container\"]",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "login_credentials_wrap-inner",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_credentials_wrap-inner",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "login_credentials",
+              "id": "login_credentials",
+              "name": "",
+              "placeholder": "",
+              "selector": "#login_credentials",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:nth-of-type(1)",
+              "tag": "h4",
+              "text": "Accepted usernames are:"
+            },
+            {
+              "class": "login_password",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-password\"]",
+              "tag": "div",
+              "text": "Password for all users:secret_sauce"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:nth-of-type(1)",
+              "tag": "h4",
+              "text": "Password for all users:"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "obs_8": {
+        "last_output": {
+          "interactive": [
+            {
+              "class": "error-button",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "button[data-test=\"error-button\"]",
+              "tag": "button",
+              "text": ""
+            },
+            {
+              "class": "",
+              "id": "root",
+              "name": "",
+              "placeholder": "",
+              "selector": "#root",
+              "tag": "div",
+              "text": "Swag LabsEpic sadface: You can only access '/checkout-complete.html' when you are logged in.Accepted"
+            },
+            {
+              "class": "login_container",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_container",
+              "tag": "div",
+              "text": "Swag LabsEpic sadface: You can only access '/checkout-complete.html' when you are logged in.Accepted"
+            },
+            {
+              "class": "login_logo",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_logo",
+              "tag": "div",
+              "text": "Swag Labs"
+            },
+            {
+              "class": "login_wrapper",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-container\"]",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in.Accepted username"
+            },
+            {
+              "class": "login_wrapper-inner",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_wrapper-inner",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "form_column",
+              "id": "login_button_container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#login_button_container",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "login-box",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login-box",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "form:nth-of-type(1)",
+              "tag": "form",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "input_error form_input error",
+              "id": "user-name",
+              "name": "user-name",
+              "placeholder": "Username",
+              "selector": "#user-name",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "svg-inline--fa fa-times-circle fa-w-16 error_icon",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "svg.svg-inline--fa.fa-times-circle.fa-w-16.error_icon",
+              "tag": "svg",
+              "text": ""
+            },
+            {
+              "class": "input_error form_input error",
+              "id": "password",
+              "name": "password",
+              "placeholder": "Password",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "svg-inline--fa fa-times-circle fa-w-16 error_icon",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "svg.svg-inline--fa.fa-times-circle.fa-w-16.error_icon",
+              "tag": "svg",
+              "text": ""
+            },
+            {
+              "class": "error-message-container error",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.error-message-container.error",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h3[data-test=\"error\"]",
+              "tag": "h3",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "svg-inline--fa fa-times fa-w-11 ",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "svg.svg-inline--fa.fa-times.fa-w-11",
+              "tag": "svg",
+              "text": ""
+            },
+            {
+              "class": "submit-button btn_action",
+              "id": "login-button",
+              "name": "login-button",
+              "placeholder": "",
+              "selector": "#login-button",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "login_credentials_wrap",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-credentials-container\"]",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "login_credentials_wrap-inner",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_credentials_wrap-inner",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "login_credentials",
+              "id": "login_credentials",
+              "name": "",
+              "placeholder": "",
+              "selector": "#login_credentials",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:nth-of-type(1)",
+              "tag": "h4",
+              "text": "Accepted usernames are:"
+            },
+            {
+              "class": "login_password",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-password\"]",
+              "tag": "div",
+              "text": "Password for all users:secret_sauce"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:nth-of-type(1)",
+              "tag": "h4",
+              "text": "Password for all users:"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "last_step_id": "auto-step-15",
+        "last_step_success": true
+      },
+      "obs_9": {
+        "data": {
+          "interactive": [
+            {
+              "class": "error-button",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "button[data-test=\"error-button\"]",
+              "tag": "button",
+              "text": ""
+            },
+            {
+              "class": "",
+              "id": "root",
+              "name": "",
+              "placeholder": "",
+              "selector": "#root",
+              "tag": "div",
+              "text": "Swag LabsEpic sadface: You can only access '/checkout-complete.html' when you are logged in.Accepted"
+            },
+            {
+              "class": "login_container",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_container",
+              "tag": "div",
+              "text": "Swag LabsEpic sadface: You can only access '/checkout-complete.html' when you are logged in.Accepted"
+            },
+            {
+              "class": "login_logo",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_logo",
+              "tag": "div",
+              "text": "Swag Labs"
+            },
+            {
+              "class": "login_wrapper",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-container\"]",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in.Accepted username"
+            },
+            {
+              "class": "login_wrapper-inner",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_wrapper-inner",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "form_column",
+              "id": "login_button_container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#login_button_container",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "login-box",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login-box",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "form:nth-of-type(1)",
+              "tag": "form",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "input_error form_input error",
+              "id": "user-name",
+              "name": "user-name",
+              "placeholder": "Username",
+              "selector": "#user-name",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "svg-inline--fa fa-times-circle fa-w-16 error_icon",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "svg.svg-inline--fa.fa-times-circle.fa-w-16.error_icon",
+              "tag": "svg",
+              "text": ""
+            },
+            {
+              "class": "input_error form_input error",
+              "id": "password",
+              "name": "password",
+              "placeholder": "Password",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "svg-inline--fa fa-times-circle fa-w-16 error_icon",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "svg.svg-inline--fa.fa-times-circle.fa-w-16.error_icon",
+              "tag": "svg",
+              "text": ""
+            },
+            {
+              "class": "error-message-container error",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.error-message-container.error",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h3[data-test=\"error\"]",
+              "tag": "h3",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "class": "svg-inline--fa fa-times fa-w-11 ",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "svg.svg-inline--fa.fa-times.fa-w-11",
+              "tag": "svg",
+              "text": ""
+            },
+            {
+              "class": "submit-button btn_action",
+              "id": "login-button",
+              "name": "login-button",
+              "placeholder": "",
+              "selector": "#login-button",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "login_credentials_wrap",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-credentials-container\"]",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "login_credentials_wrap-inner",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_credentials_wrap-inner",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "login_credentials",
+              "id": "login_credentials",
+              "name": "",
+              "placeholder": "",
+              "selector": "#login_credentials",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:nth-of-type(1)",
+              "tag": "h4",
+              "text": "Accepted usernames are:"
+            },
+            {
+              "class": "login_password",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-password\"]",
+              "tag": "div",
+              "text": "Password for all users:secret_sauce"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:nth-of-type(1)",
+              "tag": "h4",
+              "text": "Password for all users:"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "step_index": 14,
+      "visited_urls": {
+        "https://www.saucedemo.com/checkout-complete.html": true
+      }
+    },
+    "timestamp": "2026-05-22T15:13:52.098223Z"
+  }
+}

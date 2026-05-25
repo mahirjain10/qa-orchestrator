@@ -1,0 +1,93 @@
+{
+  "run_id": "run_20260523_b5bfb1",
+  "session_id": "sess_22c37620223af96e31f78fef",
+  "campaign_name": "Mixed Mode Campaign",
+  "status": "FAILED",
+  "current_flow_id": "guided-dashboard",
+  "current_agent": "",
+  "started_at": "2026-05-23T10:55:23.7775386Z",
+  "updated_at": "2026-05-23T10:57:28.9741337Z",
+  "flows": [
+    {
+      "flow_id": "guided-login",
+      "name": "Guided Login",
+      "mode": "guided",
+      "priority": "high",
+      "status": "PASSED",
+      "started_at": "2026-05-23T10:55:25.3098438Z",
+      "finished_at": "2026-05-23T10:55:28.7905159Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "guided-dashboard",
+      "name": "Guided Dashboard Check",
+      "mode": "guided",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-23T10:55:28.880388Z",
+      "finished_at": "2026-05-23T10:57:28.9506544Z",
+      "retry_count": 0,
+      "error": "max retries (3) exceeded"
+    },
+    {
+      "flow_id": "autonomous-explore",
+      "name": "Autonomous Explore",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-23T10:57:28.9719239Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    },
+    {
+      "flow_id": "guided-logout",
+      "name": "Guided Logout",
+      "mode": "guided",
+      "priority": "medium",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-23T10:57:28.9729902Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    },
+    {
+      "flow_id": "autonomous-validate",
+      "name": "Autonomous Validation",
+      "mode": "autonomous",
+      "priority": "low",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-23T10:57:28.9735284Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    }
+  ],
+  "retry_count": 0,
+  "checkpoint": {
+    "flow_id": "guided-dashboard",
+    "step_index": 0,
+    "step_id": "check-header",
+    "payload": {
+      "consecutive_observe_count": 0,
+      "current_step": "check-header",
+      "current_url": "",
+      "last_step_signature": "",
+      "obs_0": {
+        "last_output": null,
+        "last_step_id": "check-header",
+        "last_step_success": false
+      },
+      "obs_1": {
+        "last_output": null,
+        "last_step_id": "check-header",
+        "last_step_success": false
+      },
+      "obs_2": {
+        "last_output": null,
+        "last_step_id": "check-header",
+        "last_step_success": false
+      },
+      "step_index": 0,
+      "visited_urls": null
+    },
+    "timestamp": "2026-05-23T10:56:58.941464Z"
+  }
+}

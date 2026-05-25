@@ -1,0 +1,87 @@
+{
+  "run_id": "run_20260522_7d1cb8",
+  "session_id": "sess_d5b55fee43a9407e814a3a9a",
+  "campaign_name": "Large Parallel Campaign",
+  "status": "COMPLETED",
+  "current_flow_id": "flow-theta",
+  "current_agent": "",
+  "started_at": "2026-05-22T02:40:56.2871265Z",
+  "updated_at": "2026-05-22T02:40:58.3140161Z",
+  "flows": [
+    {
+      "flow_id": "flow-alpha",
+      "name": "Alpha - Login Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "RUNNING",
+      "started_at": "2026-05-22T02:40:58.1851742Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-beta",
+      "name": "Beta - Students Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "RUNNING",
+      "started_at": "2026-05-22T02:40:58.0982072Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-gamma",
+      "name": "Gamma - Exception Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "RUNNING",
+      "started_at": "2026-05-22T02:40:58.2074385Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-delta",
+      "name": "Delta - Timeout Page",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "RUNNING",
+      "started_at": "2026-05-22T02:40:58.0922872Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-epsilon",
+      "name": "Epsilon - File Upload Page",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "RUNNING",
+      "started_at": "2026-05-22T02:40:58.0667771Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-zeta",
+      "name": "Zeta - Post-Login Validation",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-22T02:40:58.2130536Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    },
+    {
+      "flow_id": "flow-eta",
+      "name": "Eta - Cross-Page Navigation",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-22T02:40:58.230596Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    },
+    {
+      "flow_id": "flow-theta",
+      "name": "Theta - Final Summary",
+      "mode": "autonomous",
+      "priority": "low",
+      "status": "RUNNING",
+      "started_at": "2026-05-22T02:40:58.3021492Z",
+      "retry_count": 0
+    }
+  ],
+  "retry_count": 0
+}

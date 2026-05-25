@@ -1,0 +1,137 @@
+{
+  "run_id": "run_20260521_aee229",
+  "session_id": "sess_d2106ffe35fa8393974da424",
+  "campaign_name": "Large Parallel Campaign",
+  "status": "FAILED",
+  "current_flow_id": "flow-zeta",
+  "current_agent": "",
+  "started_at": "2026-05-21T16:17:59.0331597Z",
+  "updated_at": "2026-05-21T16:28:10.7721413Z",
+  "flows": [
+    {
+      "flow_id": "flow-alpha",
+      "name": "Alpha - Login Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PASSED",
+      "started_at": "2026-05-21T16:18:01.7864913Z",
+      "finished_at": "2026-05-21T16:18:47.3290805Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-beta",
+      "name": "Beta - Students Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-21T16:21:15.2075881Z",
+      "finished_at": "2026-05-21T16:23:33.2261974Z",
+      "retry_count": 0,
+      "error": "max retries (3) exceeded"
+    },
+    {
+      "flow_id": "flow-gamma",
+      "name": "Gamma - Exception Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-21T16:18:47.4778921Z",
+      "finished_at": "2026-05-21T16:21:14.7158953Z",
+      "retry_count": 0,
+      "error": "max retries (3) exceeded"
+    },
+    {
+      "flow_id": "flow-delta",
+      "name": "Delta - Timeout Page",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "PASSED",
+      "started_at": "2026-05-21T16:25:44.7781804Z",
+      "finished_at": "2026-05-21T16:25:52.8250621Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-epsilon",
+      "name": "Epsilon - File Upload Page",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "FAILED",
+      "started_at": "2026-05-21T16:23:33.9796624Z",
+      "finished_at": "2026-05-21T16:25:44.4421433Z",
+      "retry_count": 0,
+      "error": "max retries (3) exceeded"
+    },
+    {
+      "flow_id": "flow-zeta",
+      "name": "Zeta - Post-Login Validation",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-21T16:25:53.0055199Z",
+      "finished_at": "2026-05-21T16:28:10.6838097Z",
+      "retry_count": 0,
+      "error": "max retries (3) exceeded"
+    },
+    {
+      "flow_id": "flow-eta",
+      "name": "Eta - Cross-Page Navigation",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-21T16:23:33.4484572Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    },
+    {
+      "flow_id": "flow-theta",
+      "name": "Theta - Final Summary",
+      "mode": "autonomous",
+      "priority": "low",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-21T16:28:10.7692154Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    }
+  ],
+  "retry_count": 0,
+  "checkpoint": {
+    "flow_id": "flow-zeta",
+    "step_index": 3,
+    "step_id": "auto-step-7",
+    "payload": {
+      "current_step": "auto-step-7",
+      "obs_0": {
+        "last_output": "navigated to https://practicetestautomation.com/practice-test-login/",
+        "last_step_id": "auto-step-1",
+        "last_step_success": true
+      },
+      "obs_1": {
+        "last_output": null,
+        "last_step_id": "auto-step-2",
+        "last_step_success": false
+      },
+      "obs_2": {
+        "last_output": "navigated to https://practicetestautomation.com/practice-test-login/",
+        "last_step_id": "auto-step-3",
+        "last_step_success": true
+      },
+      "obs_3": {
+        "last_output": null,
+        "last_step_id": "auto-step-4",
+        "last_step_success": false
+      },
+      "obs_4": {
+        "last_output": "navigated to https://practicetestautomation.com/practice-test-login/",
+        "last_step_id": "auto-step-5",
+        "last_step_success": true
+      },
+      "obs_5": {
+        "last_output": null,
+        "last_step_id": "auto-step-6",
+        "last_step_success": false
+      },
+      "step_index": 3
+    },
+    "timestamp": "2026-05-21T16:27:40.6349965Z"
+  }
+}

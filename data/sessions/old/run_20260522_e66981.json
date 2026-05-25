@@ -1,0 +1,37 @@
+{
+  "run_id": "run_20260522_e66981",
+  "session_id": "sess_eadf57c63256a98d7145c1ca",
+  "campaign_name": "Autonomous E2E Test Campaign",
+  "status": "PENDING",
+  "current_flow_id": "",
+  "current_agent": "",
+  "started_at": "2026-05-22T09:28:41.8697608Z",
+  "updated_at": "2026-05-22T09:28:41.8702853Z",
+  "flows": [
+    {
+      "flow_id": "auth-flow",
+      "name": "Authentication Test",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PENDING",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "navigation-flow",
+      "name": "Navigation Test",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "PENDING",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "search-flow",
+      "name": "Search Functionality Test",
+      "mode": "autonomous",
+      "priority": "low",
+      "status": "PENDING",
+      "retry_count": 0
+    }
+  ],
+  "retry_count": 0
+}

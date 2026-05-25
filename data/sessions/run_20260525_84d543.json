@@ -1,0 +1,338 @@
+{
+  "run_id": "run_20260525_84d543",
+  "session_id": "sess_ebeaca29b55184c5e2ec34f7",
+  "campaign_name": "SauceDemo E-Commerce E2E Test",
+  "status": "RUNNING",
+  "current_flow_id": "browse-flow",
+  "current_agent": "planner (step 1)",
+  "started_at": "2026-05-25T11:10:14.9863714Z",
+  "updated_at": "2026-05-25T11:34:01.4816689Z",
+  "flows": [
+    {
+      "flow_id": "login-flow",
+      "name": "User Authentication",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PASSED",
+      "started_at": "2026-05-25T11:10:21.8878424Z",
+      "finished_at": "2026-05-25T11:11:23.6504435Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "browse-flow",
+      "name": "Product Browsing and Selection",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "RUNNING",
+      "started_at": "2026-05-25T11:11:23.7840173Z",
+      "finished_at": "2026-05-25T11:34:00.4700737Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "cart-flow",
+      "name": "Cart Management",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PENDING",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "checkout-flow",
+      "name": "Checkout Process",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PENDING",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "confirmation-flow",
+      "name": "Order Confirmation and Validation",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "PENDING",
+      "retry_count": 0
+    }
+  ],
+  "retry_count": 0,
+  "checkpoint": {
+    "flow_id": "browse-flow",
+    "step_index": 0,
+    "step_id": "auto-observe-1",
+    "payload": {
+      "consecutive_observe_count": 0,
+      "current_step": "auto-observe-1",
+      "current_url": "https://www.saucedemo.com/inventory.html",
+      "last_step_signature": "",
+      "obs_0": {
+        "last_output": "navigated to https://www.saucedemo.com/inventory.html",
+        "last_step_id": "auto-navigate",
+        "last_step_success": true
+      },
+      "obs_1": {
+        "data": {
+          "interactive": [
+            {
+              "checked": false,
+              "disabled": false,
+              "id": "root",
+              "selected": false,
+              "selector": "#root",
+              "tag": "div",
+              "text": "Swag LabsEpic sadface: You can only access '/inventory.html' when you are logged in.Accepted usernam"
+            },
+            {
+              "checked": false,
+              "class": "login_container",
+              "disabled": false,
+              "selected": false,
+              "selector": "div.login_container",
+              "tag": "div",
+              "text": "Swag LabsEpic sadface: You can only access '/inventory.html' when you are logged in.Accepted usernam"
+            },
+            {
+              "checked": false,
+              "class": "login_logo",
+              "disabled": false,
+              "selected": false,
+              "selector": "div.login_logo",
+              "tag": "div",
+              "text": "Swag Labs"
+            },
+            {
+              "checked": false,
+              "class": "login_wrapper",
+              "data-test": "login-container",
+              "disabled": false,
+              "selected": false,
+              "selector": "div[data-test=\"login-container\"]",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/inventory.html' when you are logged in.Accepted usernames are:st"
+            },
+            {
+              "checked": false,
+              "class": "login_wrapper-inner",
+              "disabled": false,
+              "selected": false,
+              "selector": "div.login_wrapper-inner",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/inventory.html' when you are logged in."
+            },
+            {
+              "checked": false,
+              "class": "form_column",
+              "disabled": false,
+              "id": "login_button_container",
+              "selected": false,
+              "selector": "#login_button_container",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/inventory.html' when you are logged in."
+            },
+            {
+              "checked": false,
+              "class": "login-box",
+              "disabled": false,
+              "selected": false,
+              "selector": "div.login-box",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/inventory.html' when you are logged in."
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "selected": false,
+              "selector": "form:nth-of-type(1)",
+              "tag": "form",
+              "text": "Epic sadface: You can only access '/inventory.html' when you are logged in."
+            },
+            {
+              "autocapitalize": "none",
+              "autocorrect": "off",
+              "checked": false,
+              "class": "input_error form_input error",
+              "data-test": "username",
+              "disabled": false,
+              "id": "user-name",
+              "name": "user-name",
+              "placeholder": "Username",
+              "selected": false,
+              "selector": "#user-name",
+              "tag": "input",
+              "text": "",
+              "type": "text",
+              "value": ""
+            },
+            {
+              "aria-hidden": "true",
+              "checked": false,
+              "class": "svg-inline--fa fa-times-circle fa-w-16 error_icon",
+              "data-icon": "times-circle",
+              "data-prefix": "fas",
+              "disabled": false,
+              "focusable": "false",
+              "role": "img",
+              "selected": false,
+              "selector": "svg.svg-inline--fa.fa-times-circle.fa-w-16.error_icon",
+              "tag": "svg",
+              "text": "",
+              "viewBox": "0 0 512 512",
+              "xmlns": "http://www.w3.org/2000/svg"
+            },
+            {
+              "autocapitalize": "none",
+              "autocorrect": "off",
+              "checked": false,
+              "class": "input_error form_input error",
+              "data-test": "password",
+              "disabled": false,
+              "id": "password",
+              "name": "password",
+              "placeholder": "Password",
+              "selected": false,
+              "selector": "#password",
+              "tag": "input",
+              "text": "",
+              "type": "password",
+              "value": ""
+            },
+            {
+              "aria-hidden": "true",
+              "checked": false,
+              "class": "svg-inline--fa fa-times-circle fa-w-16 error_icon",
+              "data-icon": "times-circle",
+              "data-prefix": "fas",
+              "disabled": false,
+              "focusable": "false",
+              "role": "img",
+              "selected": false,
+              "selector": "svg.svg-inline--fa.fa-times-circle.fa-w-16.error_icon",
+              "tag": "svg",
+              "text": "",
+              "viewBox": "0 0 512 512",
+              "xmlns": "http://www.w3.org/2000/svg"
+            },
+            {
+              "checked": false,
+              "class": "error-message-container error",
+              "disabled": false,
+              "selected": false,
+              "selector": "div.error-message-container.error",
+              "tag": "div",
+              "text": "Epic sadface: You can only access '/inventory.html' when you are logged in."
+            },
+            {
+              "checked": false,
+              "data-test": "error",
+              "disabled": false,
+              "selected": false,
+              "selector": "h3[data-test=\"error\"]",
+              "tag": "h3",
+              "text": "Epic sadface: You can only access '/inventory.html' when you are logged in."
+            },
+            {
+              "checked": false,
+              "class": "error-button",
+              "data-test": "error-button",
+              "disabled": false,
+              "selected": false,
+              "selector": "button[data-test=\"error-button\"]",
+              "tag": "button",
+              "text": ""
+            },
+            {
+              "aria-hidden": "true",
+              "checked": false,
+              "class": "svg-inline--fa fa-times fa-w-11 ",
+              "data-icon": "times",
+              "data-prefix": "fas",
+              "disabled": false,
+              "focusable": "false",
+              "role": "img",
+              "selected": false,
+              "selector": "svg.svg-inline--fa.fa-times.fa-w-11",
+              "tag": "svg",
+              "text": "",
+              "viewBox": "0 0 352 512",
+              "xmlns": "http://www.w3.org/2000/svg"
+            },
+            {
+              "checked": false,
+              "class": "submit-button btn_action",
+              "data-test": "login-button",
+              "disabled": false,
+              "id": "login-button",
+              "name": "login-button",
+              "selected": false,
+              "selector": "#login-button",
+              "tag": "input",
+              "text": "",
+              "type": "submit",
+              "value": "Login"
+            },
+            {
+              "checked": false,
+              "class": "login_credentials_wrap",
+              "data-test": "login-credentials-container",
+              "disabled": false,
+              "selected": false,
+              "selector": "div[data-test=\"login-credentials-container\"]",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "checked": false,
+              "class": "login_credentials_wrap-inner",
+              "disabled": false,
+              "selected": false,
+              "selector": "div.login_credentials_wrap-inner",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "checked": false,
+              "class": "login_credentials",
+              "data-test": "login-credentials",
+              "disabled": false,
+              "id": "login_credentials",
+              "selected": false,
+              "selector": "#login_credentials",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "selected": false,
+              "selector": "h4:nth-of-type(1)",
+              "tag": "h4",
+              "text": "Accepted usernames are:"
+            },
+            {
+              "checked": false,
+              "class": "login_password",
+              "data-test": "login-password",
+              "disabled": false,
+              "selected": false,
+              "selector": "div[data-test=\"login-password\"]",
+              "tag": "div",
+              "text": "Password for all users:secret_sauce"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "selected": false,
+              "selector": "h4:nth-of-type(1)",
+              "tag": "h4",
+              "text": "Password for all users:"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "repetition_blocked_success": false,
+      "step_index": 0,
+      "visited_urls": {}
+    },
+    "timestamp": "2026-05-25T11:34:01.4736894Z"
+  }
+}

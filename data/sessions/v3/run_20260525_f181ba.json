@@ -1,0 +1,218 @@
+{
+  "run_id": "run_20260525_f181ba",
+  "session_id": "sess_afea9c30f10d36b671caeeaa",
+  "campaign_name": "SauceDemo E-Commerce E2E Test",
+  "status": "FAILED",
+  "current_flow_id": "login-flow",
+  "current_agent": "",
+  "started_at": "2026-05-24T20:56:15.7417133Z",
+  "updated_at": "2026-05-24T21:00:09.7981842Z",
+  "flows": [
+    {
+      "flow_id": "login-flow",
+      "name": "User Authentication",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-24T20:56:17.05299Z",
+      "finished_at": "2026-05-24T21:00:09.767788Z",
+      "retry_count": 0,
+      "error": "failed to generate step: LLM request failed: API error (status=403): Key limit exceeded (total limit). Manage it using https://openrouter.ai/workspaces/default/keys/071317ac986b71682dfd215cd63172e7fed11832f5b5d81205f62f2797a666f5"
+    },
+    {
+      "flow_id": "browse-flow",
+      "name": "Product Browsing and Selection",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-24T21:00:09.7955636Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    },
+    {
+      "flow_id": "cart-flow",
+      "name": "Cart Management",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-24T21:00:09.7960775Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    },
+    {
+      "flow_id": "checkout-flow",
+      "name": "Checkout Process",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-24T21:00:09.7966092Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    },
+    {
+      "flow_id": "confirmation-flow",
+      "name": "Order Confirmation and Validation",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-24T21:00:09.7971333Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    }
+  ],
+  "retry_count": 0,
+  "checkpoint": {
+    "flow_id": "login-flow",
+    "step_index": 0,
+    "step_id": "auto-observe-1",
+    "payload": {
+      "consecutive_observe_count": 0,
+      "current_step": "auto-observe-1",
+      "current_url": "https://www.saucedemo.com/",
+      "last_step_signature": "",
+      "obs_0": {
+        "last_output": "navigated to https://www.saucedemo.com/",
+        "last_step_id": "auto-navigate",
+        "last_step_success": true
+      },
+      "obs_1": {
+        "data": {
+          "interactive": [
+            {
+              "class": "",
+              "id": "root",
+              "name": "",
+              "placeholder": "",
+              "selector": "#root",
+              "tag": "div",
+              "text": "Swag LabsAccepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror"
+            },
+            {
+              "class": "login_container",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_container",
+              "tag": "div",
+              "text": "Swag LabsAccepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror"
+            },
+            {
+              "class": "login_logo",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_logo",
+              "tag": "div",
+              "text": "Swag Labs"
+            },
+            {
+              "class": "login_wrapper",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-container\"]",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "form:nth-of-type(1)",
+              "tag": "form",
+              "text": ""
+            },
+            {
+              "class": "input_error form_input",
+              "id": "user-name",
+              "name": "user-name",
+              "placeholder": "Username",
+              "selector": "#user-name",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "input_error form_input",
+              "id": "password",
+              "name": "password",
+              "placeholder": "Password",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "submit-button btn_action",
+              "id": "login-button",
+              "name": "login-button",
+              "placeholder": "",
+              "selector": "#login-button",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "login_credentials_wrap",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-credentials-container\"]",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "login_credentials_wrap-inner",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.login_credentials_wrap-inner",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "login_credentials",
+              "id": "login_credentials",
+              "name": "",
+              "placeholder": "",
+              "selector": "#login_credentials",
+              "tag": "div",
+              "text": "Accepted usernames are:standard_userlocked_out_userproblem_userperformance_glitch_usererror_uservisu"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:nth-of-type(1)",
+              "tag": "h4",
+              "text": "Accepted usernames are:"
+            },
+            {
+              "class": "login_password",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div[data-test=\"login-password\"]",
+              "tag": "div",
+              "text": "Password for all users:secret_sauce"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:nth-of-type(1)",
+              "tag": "h4",
+              "text": "Password for all users:"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "repetition_blocked_success": false,
+      "step_index": 0,
+      "visited_urls": {}
+    },
+    "timestamp": "2026-05-24T21:00:08.7422258Z"
+  }
+}

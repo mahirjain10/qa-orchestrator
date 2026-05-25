@@ -1,0 +1,93 @@
+{
+  "run_id": "run_20260522_4924fe",
+  "session_id": "sess_c6ca0a3115353cb05488512d",
+  "campaign_name": "Guided Parallel Test",
+  "status": "FAILED",
+  "current_flow_id": "flow-f",
+  "current_agent": "",
+  "started_at": "2026-05-22T16:09:10.0098405Z",
+  "updated_at": "2026-05-22T16:09:11.7116128Z",
+  "flows": [
+    {
+      "flow_id": "flow-a",
+      "name": "",
+      "mode": "guided",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-22T16:09:11.4555223Z",
+      "finished_at": "2026-05-22T16:09:11.4829417Z",
+      "retry_count": 0,
+      "error": "configuration error"
+    },
+    {
+      "flow_id": "flow-b",
+      "name": "",
+      "mode": "guided",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-22T16:09:11.4354923Z",
+      "finished_at": "2026-05-22T16:09:11.4585675Z",
+      "retry_count": 0,
+      "error": "configuration error"
+    },
+    {
+      "flow_id": "flow-c",
+      "name": "",
+      "mode": "guided",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-22T16:09:11.5770781Z",
+      "finished_at": "2026-05-22T16:09:11.61039Z",
+      "retry_count": 0,
+      "error": "configuration error"
+    },
+    {
+      "flow_id": "flow-d",
+      "name": "",
+      "mode": "guided",
+      "priority": "medium",
+      "status": "FAILED",
+      "started_at": "2026-05-22T16:09:11.4788439Z",
+      "finished_at": "2026-05-22T16:09:11.5165139Z",
+      "retry_count": 0,
+      "error": "configuration error"
+    },
+    {
+      "flow_id": "flow-e",
+      "name": "",
+      "mode": "guided",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-22T16:09:11.5899897Z",
+      "finished_at": "2026-05-22T16:09:11.6169512Z",
+      "retry_count": 0,
+      "error": "configuration error"
+    },
+    {
+      "flow_id": "flow-f",
+      "name": "",
+      "mode": "guided",
+      "priority": "medium",
+      "status": "FAILED",
+      "started_at": "2026-05-22T16:09:11.6819927Z",
+      "finished_at": "2026-05-22T16:09:11.6978548Z",
+      "retry_count": 0,
+      "error": "configuration error"
+    }
+  ],
+  "retry_count": 0,
+  "checkpoint": {
+    "flow_id": "flow-f",
+    "step_index": 0,
+    "step_id": "step-1",
+    "payload": {
+      "consecutive_observe_count": 0,
+      "current_step": "step-1",
+      "current_url": "",
+      "last_step_signature": "",
+      "step_index": 0,
+      "visited_urls": null
+    },
+    "timestamp": "2026-05-22T16:09:11.6887912Z"
+  }
+}

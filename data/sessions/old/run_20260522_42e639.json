@@ -1,0 +1,58 @@
+{
+  "run_id": "run_20260522_42e639",
+  "session_id": "sess_a3caa215cb9cb509a129dc26",
+  "campaign_name": "Sample Web App Campaign",
+  "status": "COMPLETED",
+  "current_flow_id": "logout-flow",
+  "current_agent": "",
+  "started_at": "2026-05-22T04:09:25.4027537Z",
+  "updated_at": "2026-05-22T04:09:25.4804194Z",
+  "flows": [
+    {
+      "flow_id": "login-flow",
+      "name": "Login Test",
+      "mode": "guided",
+      "priority": "high",
+      "status": "PASSED",
+      "started_at": "2026-05-22T04:09:25.409025Z",
+      "finished_at": "2026-05-22T04:09:25.4359659Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "dashboard-flow",
+      "name": "Dashboard Test",
+      "mode": "guided",
+      "priority": "medium",
+      "status": "PASSED",
+      "started_at": "2026-05-22T04:09:25.4427639Z",
+      "finished_at": "2026-05-22T04:09:25.4562925Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "logout-flow",
+      "name": "Logout Test",
+      "mode": "guided",
+      "priority": "low",
+      "status": "PASSED",
+      "started_at": "2026-05-22T04:09:25.4617221Z",
+      "finished_at": "2026-05-22T04:09:25.4772959Z",
+      "retry_count": 0
+    }
+  ],
+  "retry_count": 0,
+  "checkpoint": {
+    "flow_id": "logout-flow",
+    "step_index": 1,
+    "step_id": "verify-logout",
+    "payload": {
+      "current_step": "verify-logout",
+      "obs_0": {
+        "last_output": "simulated: clicked #logout-btn",
+        "last_step_id": "click-logout",
+        "last_step_success": true
+      },
+      "step_index": 1
+    },
+    "timestamp": "2026-05-22T04:09:25.4745524Z"
+  }
+}

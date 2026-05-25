@@ -1,0 +1,285 @@
+{
+  "run_id": "run_20260522_1618ec",
+  "session_id": "sess_1fe87a025612b324b97f0fa1",
+  "campaign_name": "Large Parallel Campaign",
+  "status": "FAILED",
+  "current_flow_id": "flow-theta",
+  "current_agent": "",
+  "started_at": "2026-05-22T06:56:11.8739282Z",
+  "updated_at": "2026-05-22T06:56:17.3768499Z",
+  "flows": [
+    {
+      "flow_id": "flow-alpha",
+      "name": "Alpha - Login Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-22T06:56:13.2478049Z",
+      "finished_at": "2026-05-22T06:56:13.7209581Z",
+      "retry_count": 0,
+      "error": "failed to generate step: LLM request failed: API error (status=400): Unsupported value: 'temperature' does not support 0.7 with this model. Only the default (1) value is supported."
+    },
+    {
+      "flow_id": "flow-beta",
+      "name": "Beta - Students Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-22T06:56:13.2711959Z",
+      "finished_at": "2026-05-22T06:56:13.7157677Z",
+      "retry_count": 0,
+      "error": "failed to generate step: LLM request failed: API error (status=400): Unsupported value: 'temperature' does not support 0.7 with this model. Only the default (1) value is supported."
+    },
+    {
+      "flow_id": "flow-gamma",
+      "name": "Gamma - Exception Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-22T06:56:13.8208264Z",
+      "finished_at": "2026-05-22T06:56:14.1290801Z",
+      "retry_count": 0,
+      "error": "failed to generate step: LLM request failed: API error (status=400): Unsupported value: 'temperature' does not support 0.7 with this model. Only the default (1) value is supported."
+    },
+    {
+      "flow_id": "flow-delta",
+      "name": "Delta - Timeout Page",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "FAILED",
+      "started_at": "2026-05-22T06:56:13.8088067Z",
+      "finished_at": "2026-05-22T06:56:14.1534057Z",
+      "retry_count": 0,
+      "error": "failed to generate step: LLM request failed: API error (status=400): Unsupported value: 'temperature' does not support 0.7 with this model. Only the default (1) value is supported."
+    },
+    {
+      "flow_id": "flow-epsilon",
+      "name": "Epsilon - File Upload Page",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "FAILED",
+      "started_at": "2026-05-22T06:56:13.2313821Z",
+      "finished_at": "2026-05-22T06:56:13.7411665Z",
+      "retry_count": 0,
+      "error": "failed to generate step: LLM request failed: API error (status=400): Unsupported value: 'temperature' does not support 0.7 with this model. Only the default (1) value is supported."
+    },
+    {
+      "flow_id": "flow-zeta",
+      "name": "Zeta - Post-Login Validation",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-22T06:56:13.7453234Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    },
+    {
+      "flow_id": "flow-eta",
+      "name": "Eta - Cross-Page Navigation",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-22T06:56:14.1367027Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    },
+    {
+      "flow_id": "flow-theta",
+      "name": "Theta - Final Summary",
+      "mode": "autonomous",
+      "priority": "low",
+      "status": "FAILED",
+      "started_at": "2026-05-22T06:56:14.1850275Z",
+      "finished_at": "2026-05-22T06:56:17.3684182Z",
+      "retry_count": 0,
+      "error": "failed to generate step: LLM request failed: API error (status=400): Unsupported value: 'temperature' does not support 0.7 with this model. Only the default (1) value is supported."
+    }
+  ],
+  "retry_count": 0,
+  "checkpoint": {
+    "flow_id": "flow-theta",
+    "step_index": 0,
+    "step_id": "auto-observe-1",
+    "payload": {
+      "consecutive_observe_count": 0,
+      "current_step": "auto-observe-1",
+      "current_url": "https://practicetestautomation.com/",
+      "last_step_signature": "",
+      "obs_0": {
+        "last_output": "navigated to https://practicetestautomation.com/",
+        "last_step_id": "auto-navigate",
+        "last_step_success": true
+      },
+      "obs_1": {
+        "data": {
+          "interactive": [
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Press \\\"Enter\\\" to skip to content\")",
+              "tag": "a",
+              "text": "Press \"Enter\" to skip to content"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Home\")",
+              "tag": "a",
+              "text": "Home"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Practice\")",
+              "tag": "a",
+              "text": "Practice"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Courses\")",
+              "tag": "a",
+              "text": "Courses"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Blog\")",
+              "tag": "a",
+              "text": "Blog"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Contact\")",
+              "tag": "a",
+              "text": "Contact"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"nine courses with over 70,000 students\")",
+              "tag": "a",
+              "text": "nine courses with over 70,000 students"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"BestSeller XPath course\")",
+              "tag": "a",
+              "text": "BestSeller XPath course"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"HighestRated Selenium course\")",
+              "tag": "a",
+              "text": "HighestRated Selenium course"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"diverse selection of articles, standalone lectures\")",
+              "tag": "a",
+              "text": "diverse selection of articles, standalone lectures, tips, and examples"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"practical platform\")",
+              "tag": "a",
+              "text": "practical platform"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"BLOG\")",
+              "tag": "a",
+              "text": "BLOG"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"COURSES\")",
+              "tag": "a",
+              "text": "COURSES"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"privacy policy\")",
+              "tag": "a",
+              "text": "privacy policy"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Practice Test Automation.\")",
+              "tag": "a",
+              "text": "Practice Test Automation."
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Privacy Policy\")",
+              "tag": "a",
+              "text": "Privacy Policy"
+            },
+            {
+              "id": "form_first_name_7",
+              "name": "data[form_field_OTlkMTBlNjFjOGUwX2ZpcnN0X25hbWU=]",
+              "placeholder": "Name *",
+              "selector": "#form_first_name_7",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "form_email_7",
+              "name": "data[form_field_ODhhN2IwZjQ3NTMzX2VtYWls]",
+              "placeholder": "Email Address *",
+              "selector": "#form_email_7",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "input:nth-of-type(1)",
+              "tag": "input",
+              "text": ""
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "step_index": 0
+    },
+    "timestamp": "2026-05-22T06:56:16.9859238Z"
+  }
+}

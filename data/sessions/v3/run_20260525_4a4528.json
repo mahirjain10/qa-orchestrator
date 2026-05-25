@@ -1,0 +1,127 @@
+{
+  "run_id": "run_20260525_4a4528",
+  "session_id": "sess_779a2f7972b17f563c2377d4",
+  "campaign_name": "SauceDemo E-Commerce E2E Test",
+  "status": "FAILED",
+  "current_flow_id": "login-flow",
+  "current_agent": "",
+  "started_at": "2026-05-24T20:53:31.2283583Z",
+  "updated_at": "2026-05-24T21:00:06.8604351Z",
+  "flows": [
+    {
+      "flow_id": "login-flow",
+      "name": "User Authentication",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-24T20:53:32.1370565Z",
+      "finished_at": "2026-05-24T21:00:06.8508847Z",
+      "retry_count": 0,
+      "error": "failed to generate step: LLM request failed: API error (status=403): Key limit exceeded (total limit). Manage it using https://openrouter.ai/workspaces/default/keys/071317ac986b71682dfd215cd63172e7fed11832f5b5d81205f62f2797a666f5"
+    },
+    {
+      "flow_id": "browse-flow",
+      "name": "Product Browsing and Selection",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-24T21:00:06.8546509Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    },
+    {
+      "flow_id": "cart-flow",
+      "name": "Cart Management",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-24T21:00:06.85668Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    },
+    {
+      "flow_id": "checkout-flow",
+      "name": "Checkout Process",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-24T21:00:06.8583343Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    },
+    {
+      "flow_id": "confirmation-flow",
+      "name": "Order Confirmation and Validation",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-24T21:00:06.8593898Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    }
+  ],
+  "retry_count": 0,
+  "checkpoint": {
+    "flow_id": "login-flow",
+    "step_index": 8,
+    "step_id": "auto-step-9",
+    "payload": {
+      "consecutive_observe_count": 3,
+      "current_step": "auto-step-9",
+      "current_url": "",
+      "last_step_signature": "",
+      "obs_0": {
+        "last_output": null,
+        "last_step_id": "auto-navigate",
+        "last_step_success": false
+      },
+      "obs_1": {
+        "last_output": null,
+        "last_step_id": "auto-step-1",
+        "last_step_success": false
+      },
+      "obs_2": {
+        "data": null,
+        "last_output": null,
+        "last_step_id": "auto-observe-2",
+        "last_step_success": false
+      },
+      "obs_3": {
+        "last_output": null,
+        "last_step_id": "auto-step-3",
+        "last_step_success": false
+      },
+      "obs_4": {
+        "data": null,
+        "last_output": null,
+        "last_step_id": "auto-observe-4",
+        "last_step_success": false
+      },
+      "obs_5": {
+        "last_output": null,
+        "last_step_id": "auto-step-5",
+        "last_step_success": false
+      },
+      "obs_6": {
+        "data": null,
+        "last_output": null,
+        "last_step_id": "auto-observe-6",
+        "last_step_success": false
+      },
+      "obs_7": {
+        "last_output": null,
+        "last_step_id": "auto-step-7",
+        "last_step_success": false
+      },
+      "obs_8": {
+        "last_output": null,
+        "last_step_id": "auto-step-8",
+        "last_step_success": false
+      },
+      "repetition_blocked_success": false,
+      "step_index": 8,
+      "visited_urls": {}
+    },
+    "timestamp": "2026-05-24T20:59:49.4404223Z"
+  }
+}

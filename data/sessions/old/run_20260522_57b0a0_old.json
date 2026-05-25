@@ -1,0 +1,270 @@
+{
+  "run_id": "run_20260522_57b0a0",
+  "session_id": "sess_b5014d53453d6c88fa24edaa",
+  "campaign_name": "Large Parallel Campaign",
+  "status": "FAILED",
+  "current_flow_id": "flow-theta",
+  "current_agent": "",
+  "started_at": "2026-05-21T19:09:08.852927Z",
+  "updated_at": "2026-05-21T19:12:25.5144604Z",
+  "flows": [
+    {
+      "flow_id": "flow-alpha",
+      "name": "Alpha - Login Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PASSED",
+      "started_at": "2026-05-21T19:09:10.00942Z",
+      "finished_at": "2026-05-21T19:09:20.0185673Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-beta",
+      "name": "Beta - Students Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-21T19:09:10.0443454Z",
+      "finished_at": "2026-05-21T19:09:38.1774401Z",
+      "retry_count": 0,
+      "error": "failed to generate step: LLM request failed: rate limited by openai (model: gpt-4o)"
+    },
+    {
+      "flow_id": "flow-gamma",
+      "name": "Gamma - Exception Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PASSED",
+      "started_at": "2026-05-21T19:09:18.8629247Z",
+      "finished_at": "2026-05-21T19:10:20.0505936Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-delta",
+      "name": "Delta - Timeout Page",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "PASSED",
+      "started_at": "2026-05-21T19:09:10.0287917Z",
+      "finished_at": "2026-05-21T19:09:18.7847401Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-epsilon",
+      "name": "Epsilon - File Upload Page",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "FAILED",
+      "started_at": "2026-05-21T19:09:20.0751702Z",
+      "finished_at": "2026-05-21T19:10:03.3141705Z",
+      "retry_count": 0,
+      "error": "failed to generate step: LLM request failed: rate limited by openai (model: gpt-4o)"
+    },
+    {
+      "flow_id": "flow-zeta",
+      "name": "Zeta - Post-Login Validation",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PASSED",
+      "started_at": "2026-05-21T19:09:38.2310015Z",
+      "finished_at": "2026-05-21T19:11:17.9087923Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-eta",
+      "name": "Eta - Cross-Page Navigation",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-21T19:10:20.0605656Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    },
+    {
+      "flow_id": "flow-theta",
+      "name": "Theta - Final Summary",
+      "mode": "autonomous",
+      "priority": "low",
+      "status": "PASSED",
+      "started_at": "2026-05-21T19:11:17.964512Z",
+      "finished_at": "2026-05-21T19:12:25.4994421Z",
+      "retry_count": 0
+    }
+  ],
+  "retry_count": 0,
+  "checkpoint": {
+    "flow_id": "flow-theta",
+    "step_index": 19,
+    "step_id": "auto-step-24",
+    "payload": {
+      "current_step": "auto-step-24",
+      "obs_0": {
+        "last_output": {
+          "interactive": [
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Learn more\")",
+              "tag": "a",
+              "text": "Learn more"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "last_step_id": "auto-step-19",
+        "last_step_success": true
+      },
+      "obs_1": {
+        "data": {
+          "interactive": [
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Learn more\")",
+              "tag": "a",
+              "text": "Learn more"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "obs_2": {
+        "last_output": {
+          "interactive": [
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Learn more\")",
+              "tag": "a",
+              "text": "Learn more"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "last_step_id": "auto-step-20",
+        "last_step_success": true
+      },
+      "obs_3": {
+        "data": {
+          "interactive": [
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Learn more\")",
+              "tag": "a",
+              "text": "Learn more"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "obs_4": {
+        "last_output": {
+          "interactive": [
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Learn more\")",
+              "tag": "a",
+              "text": "Learn more"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "last_step_id": "auto-step-21",
+        "last_step_success": true
+      },
+      "obs_5": {
+        "data": {
+          "interactive": [
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Learn more\")",
+              "tag": "a",
+              "text": "Learn more"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "obs_6": {
+        "last_output": {
+          "interactive": [
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Learn more\")",
+              "tag": "a",
+              "text": "Learn more"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "last_step_id": "auto-step-22",
+        "last_step_success": true
+      },
+      "obs_7": {
+        "data": {
+          "interactive": [
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Learn more\")",
+              "tag": "a",
+              "text": "Learn more"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "obs_8": {
+        "last_output": {
+          "interactive": [
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Learn more\")",
+              "tag": "a",
+              "text": "Learn more"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "last_step_id": "auto-step-23",
+        "last_step_success": true
+      },
+      "obs_9": {
+        "data": {
+          "interactive": [
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Learn more\")",
+              "tag": "a",
+              "text": "Learn more"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "step_index": 19
+    },
+    "timestamp": "2026-05-21T19:12:25.4796164Z"
+  }
+}

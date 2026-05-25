@@ -1,0 +1,1902 @@
+{
+  "run_id": "run_20260522_1bd7f4",
+  "session_id": "sess_5e82d38827dd27c065beb011",
+  "campaign_name": "HITL Wait Input Test",
+  "status": "FAILED",
+  "current_flow_id": "post-approval-flow",
+  "current_agent": "",
+  "started_at": "2026-05-22T16:09:24.8943472Z",
+  "updated_at": "2026-05-22T16:16:39.6586472Z",
+  "flows": [
+    {
+      "flow_id": "pre-input-flow",
+      "name": "Pre-Input Setup",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-22T16:09:25.857553Z",
+      "finished_at": "2026-05-22T16:11:05.8583931Z",
+      "retry_count": 0,
+      "error": "failed to generate step: LLM request failed: API error (status=400): invalid model ID"
+    },
+    {
+      "flow_id": "wait-for-approval",
+      "name": "Wait for Human Approval",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-22T16:11:05.9650243Z",
+      "finished_at": "2026-05-22T16:15:56.1659864Z",
+      "retry_count": 0,
+      "error": "max autonomous steps reached without finishing"
+    },
+    {
+      "flow_id": "post-approval-flow",
+      "name": "Post-Approval Execution",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-22T16:15:56.257276Z",
+      "finished_at": "2026-05-22T16:16:39.6403792Z",
+      "retry_count": 0,
+      "error": "LLM stuck in loop — repeated same step 3+ times despite steering"
+    }
+  ],
+  "retry_count": 0,
+  "checkpoint": {
+    "flow_id": "post-approval-flow",
+    "step_index": 1,
+    "step_id": "auto-step-3",
+    "payload": {
+      "consecutive_observe_count": 0,
+      "current_step": "auto-step-3",
+      "current_url": "https://practicetestautomation.com/practice-test-login/",
+      "last_step_signature": "type_text|selector=#password|value=Password123",
+      "obs_0": {
+        "last_output": "navigated to https://practicetestautomation.com/practice-test-login/",
+        "last_step_id": "auto-navigate",
+        "last_step_success": true
+      },
+      "obs_1": {
+        "data": {
+          "interactive": [
+            {
+              "class": "btn",
+              "id": "submit",
+              "name": "",
+              "placeholder": "",
+              "selector": "#submit",
+              "tag": "button",
+              "text": "Submit"
+            },
+            {
+              "class": "skip-content",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a.skip-content",
+              "tag": "a",
+              "text": "Press \"Enter\" to skip to content"
+            },
+            {
+              "class": "custom-logo-link",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a.custom-logo-link",
+              "tag": "a",
+              "text": ""
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Home"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Practice"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Courses"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Blog"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Contact"
+            },
+            {
+              "class": "overflow-container",
+              "id": "overflow-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#overflow-container",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu\n\t\t\t\t\t\t\t\n\t\t\t\t\t"
+            },
+            {
+              "class": "max-width",
+              "id": "max-width",
+              "name": "",
+              "placeholder": "",
+              "selector": "#max-width",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu\n\t\t\t\t\t\t\t\n\t\t\t\t\t"
+            },
+            {
+              "class": "site-header",
+              "id": "site-header",
+              "name": "",
+              "placeholder": "",
+              "selector": "#site-header",
+              "tag": "header",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu"
+            },
+            {
+              "class": "header-bottom",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.header-bottom",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu"
+            },
+            {
+              "class": "mobile-menu-container",
+              "id": "mobile-menu-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#mobile-menu-container",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "",
+              "id": "mobile-menu-container-inner",
+              "name": "",
+              "placeholder": "",
+              "selector": "#mobile-menu-container-inner",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu-primary-container",
+              "id": "menu-primary-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-primary-container",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu-container menu-primary",
+              "id": "menu-primary",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-primary",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "nav.menu",
+              "tag": "nav",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu-primary-items",
+              "id": "menu-primary-items",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-primary-items",
+              "tag": "ul",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-home menu-item-43",
+              "id": "menu-item-43",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-43",
+              "tag": "li",
+              "text": "Home"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-20",
+              "id": "menu-item-20",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-20",
+              "tag": "li",
+              "text": "Practice"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-21",
+              "id": "menu-item-21",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-21",
+              "tag": "li",
+              "text": "Courses"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-19",
+              "id": "menu-item-19",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-19",
+              "tag": "li",
+              "text": "Blog"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-18",
+              "id": "menu-item-18",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-18",
+              "tag": "li",
+              "text": "Contact"
+            },
+            {
+              "class": "main-container",
+              "id": "main-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#main-container",
+              "tag": "section",
+              "text": "Test login\n\t\n\t\tThis is a simple Login page. Students can use this page to practice writing simple po"
+            },
+            {
+              "class": "",
+              "id": "login",
+              "name": "",
+              "placeholder": "",
+              "selector": "#login",
+              "tag": "section",
+              "text": "Test login\n\t\n\t\tThis is a simple Login page. Students can use this page to practice writing simple po"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h2:nth-of-type(1)",
+              "tag": "h2",
+              "text": "Test login"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "ul:nth-of-type(1)",
+              "tag": "ul",
+              "text": "This is a simple Login page. Students can use this page to practice writing simple positive and nega"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "li:nth-of-type(1)",
+              "tag": "li",
+              "text": "This is a simple Login page. Students can use this page to practice writing simple positive and nega"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "li:nth-of-type(2)",
+              "tag": "li",
+              "text": "Use next credentials to execute Login:\n\t\tUsername: student\n\t\tPassword: Password123"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "b:nth-of-type(1)",
+              "tag": "b",
+              "text": "student"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "b:nth-of-type(2)",
+              "tag": "b",
+              "text": "Password123"
+            },
+            {
+              "class": "",
+              "id": "form",
+              "name": "",
+              "placeholder": "",
+              "selector": "#form",
+              "tag": "div",
+              "text": "Username\n\t\t\t\n\t\t\n\t\t\n\t\t\tPassword\n\t\t\t\n\t\t\n\t\tSubmit"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div:nth-of-type(1)",
+              "tag": "div",
+              "text": "Username"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "label:nth-of-type(1)",
+              "tag": "label",
+              "text": "Username"
+            },
+            {
+              "class": "",
+              "id": "username",
+              "name": "username",
+              "placeholder": "",
+              "selector": "#username",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div:nth-of-type(2)",
+              "tag": "div",
+              "text": "Password"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "label:nth-of-type(1)",
+              "tag": "label",
+              "text": "Password"
+            },
+            {
+              "class": "",
+              "id": "password",
+              "name": "password",
+              "placeholder": "",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h5:nth-of-type(1)",
+              "tag": "h5",
+              "text": "Test case 1: Positive LogIn test"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "ol:nth-of-type(1)",
+              "tag": "ol",
+              "text": "Open page\n\t\t\tType username student into Username field\n\t\t\tType password Password123 into Password fi"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "li:nth-of-type(1)",
+              "tag": "li",
+              "text": "Open page"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "li:nth-of-type(2)",
+              "tag": "li",
+              "text": "Type username student into Username field"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "b:nth-of-type(1)",
+              "tag": "b",
+              "text": "student"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "li:nth-of-type(3)",
+              "tag": "li",
+              "text": "Type password Password123 into Password field"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "b:nth-of-type(1)",
+              "tag": "b",
+              "text": "Password123"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "li:nth-of-type(4)",
+              "tag": "li",
+              "text": "Push Submit button"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "b:nth-of-type(1)",
+              "tag": "b",
+              "text": "Submit"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "li:nth-of-type(5)",
+              "tag": "li",
+              "text": "Verify new page URL contains practicetestautomation.com/logged-in-successfully/"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "b:nth-of-type(1)",
+              "tag": "b",
+              "text": "practicetestautomation.com/logged-in-successfully/"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "li:nth-of-type(6)",
+              "tag": "li",
+              "text": "Verify new page contains expected text ('Congratulations' or 'successfully logged in')"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "obs_2": {
+        "data": {
+          "interactive": [
+            {
+              "class": "btn",
+              "id": "submit",
+              "name": "",
+              "placeholder": "",
+              "selector": "#submit",
+              "tag": "button",
+              "text": "Submit"
+            },
+            {
+              "class": "skip-content",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a.skip-content",
+              "tag": "a",
+              "text": "Press \"Enter\" to skip to content"
+            },
+            {
+              "class": "custom-logo-link",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a.custom-logo-link",
+              "tag": "a",
+              "text": ""
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Home"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Practice"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Courses"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Blog"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Contact"
+            },
+            {
+              "class": "overflow-container",
+              "id": "overflow-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#overflow-container",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu\n\t\t\t\t\t\t\t\n\t\t\t\t\t"
+            },
+            {
+              "class": "max-width",
+              "id": "max-width",
+              "name": "",
+              "placeholder": "",
+              "selector": "#max-width",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu\n\t\t\t\t\t\t\t\n\t\t\t\t\t"
+            },
+            {
+              "class": "site-header",
+              "id": "site-header",
+              "name": "",
+              "placeholder": "",
+              "selector": "#site-header",
+              "tag": "header",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu"
+            },
+            {
+              "class": "header-bottom",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.header-bottom",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu"
+            },
+            {
+              "class": "mobile-menu-container",
+              "id": "mobile-menu-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#mobile-menu-container",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "",
+              "id": "mobile-menu-container-inner",
+              "name": "",
+              "placeholder": "",
+              "selector": "#mobile-menu-container-inner",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu-primary-container",
+              "id": "menu-primary-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-primary-container",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu-container menu-primary",
+              "id": "menu-primary",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-primary",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "nav.menu",
+              "tag": "nav",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu-primary-items",
+              "id": "menu-primary-items",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-primary-items",
+              "tag": "ul",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-home menu-item-43",
+              "id": "menu-item-43",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-43",
+              "tag": "li",
+              "text": "Home"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-20",
+              "id": "menu-item-20",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-20",
+              "tag": "li",
+              "text": "Practice"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-21",
+              "id": "menu-item-21",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-21",
+              "tag": "li",
+              "text": "Courses"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-19",
+              "id": "menu-item-19",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-19",
+              "tag": "li",
+              "text": "Blog"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-18",
+              "id": "menu-item-18",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-18",
+              "tag": "li",
+              "text": "Contact"
+            },
+            {
+              "class": "main-container",
+              "id": "main-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#main-container",
+              "tag": "section",
+              "text": "Test login\n\t\n\t\tThis is a simple Login page. Students can use this page to practice writing simple po"
+            },
+            {
+              "class": "",
+              "id": "login",
+              "name": "",
+              "placeholder": "",
+              "selector": "#login",
+              "tag": "section",
+              "text": "Test login\n\t\n\t\tThis is a simple Login page. Students can use this page to practice writing simple po"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h2:nth-of-type(1)",
+              "tag": "h2",
+              "text": "Test login"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "ul:nth-of-type(1)",
+              "tag": "ul",
+              "text": "This is a simple Login page. Students can use this page to practice writing simple positive and nega"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "li:nth-of-type(1)",
+              "tag": "li",
+              "text": "This is a simple Login page. Students can use this page to practice writing simple positive and nega"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "li:nth-of-type(2)",
+              "tag": "li",
+              "text": "Use next credentials to execute Login:\n\t\tUsername: student\n\t\tPassword: Password123"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "b:nth-of-type(1)",
+              "tag": "b",
+              "text": "student"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "b:nth-of-type(2)",
+              "tag": "b",
+              "text": "Password123"
+            },
+            {
+              "class": "",
+              "id": "form",
+              "name": "",
+              "placeholder": "",
+              "selector": "#form",
+              "tag": "div",
+              "text": "Username\n\t\t\t\n\t\t\n\t\t\n\t\t\tPassword\n\t\t\t\n\t\t\n\t\tSubmit"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div:nth-of-type(1)",
+              "tag": "div",
+              "text": "Username"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "label:nth-of-type(1)",
+              "tag": "label",
+              "text": "Username"
+            },
+            {
+              "class": "",
+              "id": "username",
+              "name": "username",
+              "placeholder": "",
+              "selector": "#username",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div:nth-of-type(2)",
+              "tag": "div",
+              "text": "Password"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "label:nth-of-type(1)",
+              "tag": "label",
+              "text": "Password"
+            },
+            {
+              "class": "",
+              "id": "password",
+              "name": "password",
+              "placeholder": "",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h5:nth-of-type(1)",
+              "tag": "h5",
+              "text": "Test case 1: Positive LogIn test"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "ol:nth-of-type(1)",
+              "tag": "ol",
+              "text": "Open page\n\t\t\tType username student into Username field\n\t\t\tType password Password123 into Password fi"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "li:nth-of-type(1)",
+              "tag": "li",
+              "text": "Open page"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "li:nth-of-type(2)",
+              "tag": "li",
+              "text": "Type username student into Username field"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "b:nth-of-type(1)",
+              "tag": "b",
+              "text": "student"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "li:nth-of-type(3)",
+              "tag": "li",
+              "text": "Type password Password123 into Password field"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "b:nth-of-type(1)",
+              "tag": "b",
+              "text": "Password123"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "li:nth-of-type(4)",
+              "tag": "li",
+              "text": "Push Submit button"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "b:nth-of-type(1)",
+              "tag": "b",
+              "text": "Submit"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "li:nth-of-type(5)",
+              "tag": "li",
+              "text": "Verify new page URL contains practicetestautomation.com/logged-in-successfully/"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "b:nth-of-type(1)",
+              "tag": "b",
+              "text": "practicetestautomation.com/logged-in-successfully/"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "li:nth-of-type(6)",
+              "tag": "li",
+              "text": "Verify new page contains expected text ('Congratulations' or 'successfully logged in')"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "last_output": {
+          "interactive": [
+            {
+              "class": "btn",
+              "id": "submit",
+              "name": "",
+              "placeholder": "",
+              "selector": "#submit",
+              "tag": "button",
+              "text": "Submit"
+            },
+            {
+              "class": "skip-content",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a.skip-content",
+              "tag": "a",
+              "text": "Press \"Enter\" to skip to content"
+            },
+            {
+              "class": "custom-logo-link",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a.custom-logo-link",
+              "tag": "a",
+              "text": ""
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Home"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Practice"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Courses"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Blog"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Contact"
+            },
+            {
+              "class": "overflow-container",
+              "id": "overflow-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#overflow-container",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu\n\t\t\t\t\t\t\t\n\t\t\t\t\t"
+            },
+            {
+              "class": "max-width",
+              "id": "max-width",
+              "name": "",
+              "placeholder": "",
+              "selector": "#max-width",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu\n\t\t\t\t\t\t\t\n\t\t\t\t\t"
+            },
+            {
+              "class": "site-header",
+              "id": "site-header",
+              "name": "",
+              "placeholder": "",
+              "selector": "#site-header",
+              "tag": "header",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu"
+            },
+            {
+              "class": "header-bottom",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.header-bottom",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu"
+            },
+            {
+              "class": "mobile-menu-container",
+              "id": "mobile-menu-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#mobile-menu-container",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "",
+              "id": "mobile-menu-container-inner",
+              "name": "",
+              "placeholder": "",
+              "selector": "#mobile-menu-container-inner",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu-primary-container",
+              "id": "menu-primary-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-primary-container",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu-container menu-primary",
+              "id": "menu-primary",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-primary",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "nav.menu",
+              "tag": "nav",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu-primary-items",
+              "id": "menu-primary-items",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-primary-items",
+              "tag": "ul",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-home menu-item-43",
+              "id": "menu-item-43",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-43",
+              "tag": "li",
+              "text": "Home"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-20",
+              "id": "menu-item-20",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-20",
+              "tag": "li",
+              "text": "Practice"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-21",
+              "id": "menu-item-21",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-21",
+              "tag": "li",
+              "text": "Courses"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-19",
+              "id": "menu-item-19",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-19",
+              "tag": "li",
+              "text": "Blog"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-18",
+              "id": "menu-item-18",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-18",
+              "tag": "li",
+              "text": "Contact"
+            },
+            {
+              "class": "main-container",
+              "id": "main-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#main-container",
+              "tag": "section",
+              "text": "Test login\n\t\n\t\tThis is a simple Login page. Students can use this page to practice writing simple po"
+            },
+            {
+              "class": "",
+              "id": "login",
+              "name": "",
+              "placeholder": "",
+              "selector": "#login",
+              "tag": "section",
+              "text": "Test login\n\t\n\t\tThis is a simple Login page. Students can use this page to practice writing simple po"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h2:nth-of-type(1)",
+              "tag": "h2",
+              "text": "Test login"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "ul:nth-of-type(1)",
+              "tag": "ul",
+              "text": "This is a simple Login page. Students can use this page to practice writing simple positive and nega"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "li:nth-of-type(1)",
+              "tag": "li",
+              "text": "This is a simple Login page. Students can use this page to practice writing simple positive and nega"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "li:nth-of-type(2)",
+              "tag": "li",
+              "text": "Use next credentials to execute Login:\n\t\tUsername: student\n\t\tPassword: Password123"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "b:nth-of-type(1)",
+              "tag": "b",
+              "text": "student"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "b:nth-of-type(2)",
+              "tag": "b",
+              "text": "Password123"
+            },
+            {
+              "class": "",
+              "id": "form",
+              "name": "",
+              "placeholder": "",
+              "selector": "#form",
+              "tag": "div",
+              "text": "Username\n\t\t\t\n\t\t\n\t\t\n\t\t\tPassword\n\t\t\t\n\t\t\n\t\tSubmit"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div:nth-of-type(1)",
+              "tag": "div",
+              "text": "Username"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "label:nth-of-type(1)",
+              "tag": "label",
+              "text": "Username"
+            },
+            {
+              "class": "",
+              "id": "username",
+              "name": "username",
+              "placeholder": "",
+              "selector": "#username",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div:nth-of-type(2)",
+              "tag": "div",
+              "text": "Password"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "label:nth-of-type(1)",
+              "tag": "label",
+              "text": "Password"
+            },
+            {
+              "class": "",
+              "id": "password",
+              "name": "password",
+              "placeholder": "",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h5:nth-of-type(1)",
+              "tag": "h5",
+              "text": "Test case 1: Positive LogIn test"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "ol:nth-of-type(1)",
+              "tag": "ol",
+              "text": "Open page\n\t\t\tType username student into Username field\n\t\t\tType password Password123 into Password fi"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "li:nth-of-type(1)",
+              "tag": "li",
+              "text": "Open page"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "li:nth-of-type(2)",
+              "tag": "li",
+              "text": "Type username student into Username field"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "b:nth-of-type(1)",
+              "tag": "b",
+              "text": "student"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "li:nth-of-type(3)",
+              "tag": "li",
+              "text": "Type password Password123 into Password field"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "b:nth-of-type(1)",
+              "tag": "b",
+              "text": "Password123"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "li:nth-of-type(4)",
+              "tag": "li",
+              "text": "Push Submit button"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "b:nth-of-type(1)",
+              "tag": "b",
+              "text": "Submit"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "li:nth-of-type(5)",
+              "tag": "li",
+              "text": "Verify new page URL contains practicetestautomation.com/logged-in-successfully/"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "b:nth-of-type(1)",
+              "tag": "b",
+              "text": "practicetestautomation.com/logged-in-successfully/"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "li:nth-of-type(6)",
+              "tag": "li",
+              "text": "Verify new page contains expected text ('Congratulations' or 'successfully logged in')"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "last_step_id": "auto-observe-1",
+        "last_step_success": true
+      },
+      "obs_3": {
+        "last_output": "typed 'student' into #username",
+        "last_step_id": "auto-step-2",
+        "last_step_success": true
+      },
+      "obs_4": {
+        "data": {
+          "interactive": [
+            {
+              "class": "btn",
+              "id": "submit",
+              "name": "",
+              "placeholder": "",
+              "selector": "#submit",
+              "tag": "button",
+              "text": "Submit"
+            },
+            {
+              "class": "skip-content",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a.skip-content",
+              "tag": "a",
+              "text": "Press \"Enter\" to skip to content"
+            },
+            {
+              "class": "custom-logo-link",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a.custom-logo-link",
+              "tag": "a",
+              "text": ""
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Home"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Practice"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Courses"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Blog"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Contact"
+            },
+            {
+              "class": "overflow-container",
+              "id": "overflow-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#overflow-container",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu\n\t\t\t\t\t\t\t\n\t\t\t\t\t"
+            },
+            {
+              "class": "max-width",
+              "id": "max-width",
+              "name": "",
+              "placeholder": "",
+              "selector": "#max-width",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu\n\t\t\t\t\t\t\t\n\t\t\t\t\t"
+            },
+            {
+              "class": "site-header",
+              "id": "site-header",
+              "name": "",
+              "placeholder": "",
+              "selector": "#site-header",
+              "tag": "header",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu"
+            },
+            {
+              "class": "header-bottom",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.header-bottom",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu"
+            },
+            {
+              "class": "mobile-menu-container",
+              "id": "mobile-menu-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#mobile-menu-container",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "",
+              "id": "mobile-menu-container-inner",
+              "name": "",
+              "placeholder": "",
+              "selector": "#mobile-menu-container-inner",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu-primary-container",
+              "id": "menu-primary-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-primary-container",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu-container menu-primary",
+              "id": "menu-primary",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-primary",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "nav.menu",
+              "tag": "nav",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu-primary-items",
+              "id": "menu-primary-items",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-primary-items",
+              "tag": "ul",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-home menu-item-43",
+              "id": "menu-item-43",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-43",
+              "tag": "li",
+              "text": "Home"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-20",
+              "id": "menu-item-20",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-20",
+              "tag": "li",
+              "text": "Practice"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-21",
+              "id": "menu-item-21",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-21",
+              "tag": "li",
+              "text": "Courses"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-19",
+              "id": "menu-item-19",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-19",
+              "tag": "li",
+              "text": "Blog"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-18",
+              "id": "menu-item-18",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-18",
+              "tag": "li",
+              "text": "Contact"
+            },
+            {
+              "class": "main-container",
+              "id": "main-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#main-container",
+              "tag": "section",
+              "text": "Test login\n\t\n\t\tThis is a simple Login page. Students can use this page to practice writing simple po"
+            },
+            {
+              "class": "",
+              "id": "login",
+              "name": "",
+              "placeholder": "",
+              "selector": "#login",
+              "tag": "section",
+              "text": "Test login\n\t\n\t\tThis is a simple Login page. Students can use this page to practice writing simple po"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h2:nth-of-type(1)",
+              "tag": "h2",
+              "text": "Test login"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "ul:nth-of-type(1)",
+              "tag": "ul",
+              "text": "This is a simple Login page. Students can use this page to practice writing simple positive and nega"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "li:nth-of-type(1)",
+              "tag": "li",
+              "text": "This is a simple Login page. Students can use this page to practice writing simple positive and nega"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "li:nth-of-type(2)",
+              "tag": "li",
+              "text": "Use next credentials to execute Login:\n\t\tUsername: student\n\t\tPassword: Password123"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "b:nth-of-type(1)",
+              "tag": "b",
+              "text": "student"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "b:nth-of-type(2)",
+              "tag": "b",
+              "text": "Password123"
+            },
+            {
+              "class": "",
+              "id": "form",
+              "name": "",
+              "placeholder": "",
+              "selector": "#form",
+              "tag": "div",
+              "text": "Username\n\t\t\t\n\t\t\n\t\t\n\t\t\tPassword\n\t\t\t\n\t\t\n\t\tSubmit"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div:nth-of-type(1)",
+              "tag": "div",
+              "text": "Username"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "label:nth-of-type(1)",
+              "tag": "label",
+              "text": "Username"
+            },
+            {
+              "class": "",
+              "id": "username",
+              "name": "username",
+              "placeholder": "",
+              "selector": "#username",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div:nth-of-type(2)",
+              "tag": "div",
+              "text": "Password"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "label:nth-of-type(1)",
+              "tag": "label",
+              "text": "Password"
+            },
+            {
+              "class": "",
+              "id": "password",
+              "name": "password",
+              "placeholder": "",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h5:nth-of-type(1)",
+              "tag": "h5",
+              "text": "Test case 1: Positive LogIn test"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "ol:nth-of-type(1)",
+              "tag": "ol",
+              "text": "Open page\n\t\t\tType username student into Username field\n\t\t\tType password Password123 into Password fi"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "li:nth-of-type(1)",
+              "tag": "li",
+              "text": "Open page"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "li:nth-of-type(2)",
+              "tag": "li",
+              "text": "Type username student into Username field"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "b:nth-of-type(1)",
+              "tag": "b",
+              "text": "student"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "li:nth-of-type(3)",
+              "tag": "li",
+              "text": "Type password Password123 into Password field"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "b:nth-of-type(1)",
+              "tag": "b",
+              "text": "Password123"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "li:nth-of-type(4)",
+              "tag": "li",
+              "text": "Push Submit button"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "b:nth-of-type(1)",
+              "tag": "b",
+              "text": "Submit"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "li:nth-of-type(5)",
+              "tag": "li",
+              "text": "Verify new page URL contains practicetestautomation.com/logged-in-successfully/"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "b:nth-of-type(1)",
+              "tag": "b",
+              "text": "practicetestautomation.com/logged-in-successfully/"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "li:nth-of-type(6)",
+              "tag": "li",
+              "text": "Verify new page contains expected text ('Congratulations' or 'successfully logged in')"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "step_index": 1,
+      "visited_urls": {
+        "https://practicetestautomation.com/practice-test-login/": true
+      }
+    },
+    "timestamp": "2026-05-22T16:16:17.1913652Z"
+  }
+}

@@ -1,0 +1,113 @@
+{
+  "run_id": "run_20260521_61dedb",
+  "session_id": "sess_5fad5dadef7f912fe6f54fdf",
+  "campaign_name": "Large Parallel Campaign",
+  "status": "FAILED",
+  "current_flow_id": "flow-theta",
+  "current_agent": "",
+  "started_at": "2026-05-21T13:39:01.9679446Z",
+  "updated_at": "2026-05-21T13:46:38.8079Z",
+  "flows": [
+    {
+      "flow_id": "flow-alpha",
+      "name": "Alpha - Login Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PASSED",
+      "started_at": "2026-05-21T13:39:02.8426969Z",
+      "finished_at": "2026-05-21T13:39:16.4396453Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-beta",
+      "name": "Beta - Students Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-21T13:39:16.4412217Z",
+      "finished_at": "2026-05-21T13:41:23.7208708Z",
+      "retry_count": 0,
+      "error": "max retries (3) exceeded"
+    },
+    {
+      "flow_id": "flow-gamma",
+      "name": "Gamma - Exception Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-21T13:41:23.723514Z",
+      "finished_at": "2026-05-21T13:43:39.4344997Z",
+      "retry_count": 0,
+      "error": "max retries (3) exceeded"
+    },
+    {
+      "flow_id": "flow-delta",
+      "name": "Delta - Timeout Page",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "PASSED",
+      "started_at": "2026-05-21T13:43:39.4397697Z",
+      "finished_at": "2026-05-21T13:43:45.7791757Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-epsilon",
+      "name": "Epsilon - File Upload Page",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "FAILED",
+      "started_at": "2026-05-21T13:43:45.7807661Z",
+      "finished_at": "2026-05-21T13:45:55.663717Z",
+      "retry_count": 0,
+      "error": "max retries (3) exceeded"
+    },
+    {
+      "flow_id": "flow-zeta",
+      "name": "Zeta - Post-Login Validation",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-21T13:45:55.6663572Z",
+      "finished_at": "2026-05-21T13:46:14.9091912Z",
+      "retry_count": 0,
+      "error": "max retries (3) exceeded"
+    },
+    {
+      "flow_id": "flow-eta",
+      "name": "Eta - Cross-Page Navigation",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "FAILED",
+      "started_at": "2026-05-21T13:46:14.9134866Z",
+      "finished_at": "2026-05-21T13:46:32.6938942Z",
+      "retry_count": 0,
+      "error": "max retries (3) exceeded"
+    },
+    {
+      "flow_id": "flow-theta",
+      "name": "Theta - Final Summary",
+      "mode": "autonomous",
+      "priority": "low",
+      "status": "PASSED",
+      "started_at": "2026-05-21T13:46:32.6992503Z",
+      "finished_at": "2026-05-21T13:46:38.8047287Z",
+      "retry_count": 0
+    }
+  ],
+  "retry_count": 0,
+  "checkpoint": {
+    "flow_id": "flow-theta",
+    "step_index": 1,
+    "step_id": "auto-step-2",
+    "payload": {
+      "current_step": "auto-step-2",
+      "obs_0": {
+        "last_output": "navigated to https://practicetestautomation.com/practice-test-login/",
+        "last_step_id": "auto-step-1",
+        "last_step_success": true
+      },
+      "step_index": 1
+    },
+    "timestamp": "2026-05-21T13:46:37.6288807Z"
+  }
+}

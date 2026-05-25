@@ -1,0 +1,522 @@
+{
+  "run_id": "run_20260525_556638",
+  "session_id": "sess_ef0089a21c0a5e8e5ab3c114",
+  "campaign_name": "Autonomous E2E Test Campaign",
+  "status": "PAUSING",
+  "current_flow_id": "auth-flow",
+  "current_agent": "planner (step 1)",
+  "started_at": "2026-05-25T05:05:04.4173647Z",
+  "updated_at": "2026-05-25T05:27:39.4324324Z",
+  "flows": [
+    {
+      "flow_id": "auth-flow",
+      "name": "Authentication Test",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "RUNNING",
+      "started_at": "2026-05-25T05:05:06.880955Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "navigation-flow",
+      "name": "Navigation Test",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "PENDING",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "search-flow",
+      "name": "Search Functionality Test",
+      "mode": "autonomous",
+      "priority": "low",
+      "status": "PENDING",
+      "retry_count": 0
+    }
+  ],
+  "retry_count": 0,
+  "checkpoint": {
+    "flow_id": "auth-flow",
+    "step_index": 0,
+    "step_id": "auto-observe-1",
+    "payload": {
+      "consecutive_observe_count": 0,
+      "current_step": "auto-observe-1",
+      "current_url": "https://practicetestautomation.com/practice-test-login/",
+      "last_step_signature": "",
+      "obs_0": {
+        "last_output": "navigated to https://practicetestautomation.com/practice-test-login/",
+        "last_step_id": "auto-navigate",
+        "last_step_success": true
+      },
+      "obs_1": {
+        "data": {
+          "interactive": [
+            {
+              "checked": false,
+              "class": "btn",
+              "disabled": false,
+              "id": "submit",
+              "selected": false,
+              "selector": "#submit",
+              "tag": "button",
+              "text": "Submit"
+            },
+            {
+              "checked": false,
+              "class": "skip-content",
+              "disabled": false,
+              "href": "#main-container",
+              "selected": false,
+              "selector": "a.skip-content",
+              "tag": "a",
+              "text": "Press \"Enter\" to skip to content"
+            },
+            {
+              "checked": false,
+              "class": "custom-logo-link",
+              "disabled": false,
+              "href": "https://practicetestautomation.com/",
+              "rel": "home",
+              "selected": false,
+              "selector": "a.custom-logo-link",
+              "tag": "a",
+              "text": ""
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "href": "https://practicetestautomation.com/",
+              "selected": false,
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Home"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "href": "https://practicetestautomation.com/practice/",
+              "selected": false,
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Practice"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "href": "https://practicetestautomation.com/courses/",
+              "selected": false,
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Courses"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "href": "https://practicetestautomation.com/blog/",
+              "selected": false,
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Blog"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "href": "https://practicetestautomation.com/contact/",
+              "selected": false,
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Contact"
+            },
+            {
+              "checked": false,
+              "class": "overflow-container",
+              "disabled": false,
+              "id": "overflow-container",
+              "selected": false,
+              "selector": "#overflow-container",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu\n\t\t\t\t\t\t\t\n\t\t\t\t\t"
+            },
+            {
+              "checked": false,
+              "class": "max-width",
+              "disabled": false,
+              "id": "max-width",
+              "selected": false,
+              "selector": "#max-width",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu\n\t\t\t\t\t\t\t\n\t\t\t\t\t"
+            },
+            {
+              "checked": false,
+              "class": "site-header",
+              "disabled": false,
+              "id": "site-header",
+              "role": "banner",
+              "selected": false,
+              "selector": "#site-header",
+              "tag": "header",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu"
+            },
+            {
+              "checked": false,
+              "class": "header-bottom",
+              "disabled": false,
+              "selected": false,
+              "selector": "div.header-bottom",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu"
+            },
+            {
+              "checked": false,
+              "class": "mobile-menu-container",
+              "disabled": false,
+              "id": "mobile-menu-container",
+              "selected": false,
+              "selector": "#mobile-menu-container",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "id": "mobile-menu-container-inner",
+              "selected": false,
+              "selector": "#mobile-menu-container-inner",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "checked": false,
+              "class": "menu-primary-container",
+              "disabled": false,
+              "id": "menu-primary-container",
+              "selected": false,
+              "selector": "#menu-primary-container",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "checked": false,
+              "class": "menu-container menu-primary",
+              "disabled": false,
+              "id": "menu-primary",
+              "role": "navigation",
+              "selected": false,
+              "selector": "#menu-primary",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "checked": false,
+              "class": "menu",
+              "disabled": false,
+              "selected": false,
+              "selector": "nav.menu",
+              "tag": "nav",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "checked": false,
+              "class": "menu-primary-items",
+              "disabled": false,
+              "id": "menu-primary-items",
+              "selected": false,
+              "selector": "#menu-primary-items",
+              "tag": "ul",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "checked": false,
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-home menu-item-43",
+              "disabled": false,
+              "id": "menu-item-43",
+              "selected": false,
+              "selector": "#menu-item-43",
+              "tag": "li",
+              "text": "Home"
+            },
+            {
+              "checked": false,
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-20",
+              "disabled": false,
+              "id": "menu-item-20",
+              "selected": false,
+              "selector": "#menu-item-20",
+              "tag": "li",
+              "text": "Practice"
+            },
+            {
+              "checked": false,
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-21",
+              "disabled": false,
+              "id": "menu-item-21",
+              "selected": false,
+              "selector": "#menu-item-21",
+              "tag": "li",
+              "text": "Courses"
+            },
+            {
+              "checked": false,
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-19",
+              "disabled": false,
+              "id": "menu-item-19",
+              "selected": false,
+              "selector": "#menu-item-19",
+              "tag": "li",
+              "text": "Blog"
+            },
+            {
+              "checked": false,
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-18",
+              "disabled": false,
+              "id": "menu-item-18",
+              "selected": false,
+              "selector": "#menu-item-18",
+              "tag": "li",
+              "text": "Contact"
+            },
+            {
+              "checked": false,
+              "class": "main-container",
+              "disabled": false,
+              "id": "main-container",
+              "role": "main",
+              "selected": false,
+              "selector": "#main-container",
+              "tag": "section",
+              "text": "Test login\n\t\n\t\tThis is a simple Login page. Students can use this page to practice writing simple po"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "id": "login",
+              "selected": false,
+              "selector": "#login",
+              "tag": "section",
+              "text": "Test login\n\t\n\t\tThis is a simple Login page. Students can use this page to practice writing simple po"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "selected": false,
+              "selector": "h2:nth-of-type(1)",
+              "tag": "h2",
+              "text": "Test login"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "selected": false,
+              "selector": "ul:nth-of-type(1)",
+              "tag": "ul",
+              "text": "This is a simple Login page. Students can use this page to practice writing simple positive and nega"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "selected": false,
+              "selector": "li:nth-of-type(1)",
+              "tag": "li",
+              "text": "This is a simple Login page. Students can use this page to practice writing simple positive and nega"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "selected": false,
+              "selector": "li:nth-of-type(2)",
+              "tag": "li",
+              "text": "Use next credentials to execute Login:\n\t\tUsername: student\n\t\tPassword: Password123"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "selected": false,
+              "selector": "b:nth-of-type(1)",
+              "tag": "b",
+              "text": "student"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "selected": false,
+              "selector": "b:nth-of-type(2)",
+              "tag": "b",
+              "text": "Password123"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "id": "form",
+              "selected": false,
+              "selector": "#form",
+              "tag": "div",
+              "text": "Username\n\t\t\t\n\t\t\n\t\t\n\t\t\tPassword\n\t\t\t\n\t\t\n\t\tSubmit"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "selected": false,
+              "selector": "div:nth-of-type(1)",
+              "tag": "div",
+              "text": "Username"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "for": "username",
+              "selected": false,
+              "selector": "label:nth-of-type(1)",
+              "tag": "label",
+              "text": "Username"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "id": "username",
+              "name": "username",
+              "selected": false,
+              "selector": "#username",
+              "tag": "input",
+              "text": "",
+              "type": "text",
+              "value": ""
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "selected": false,
+              "selector": "div:nth-of-type(2)",
+              "tag": "div",
+              "text": "Password"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "for": "password",
+              "selected": false,
+              "selector": "label:nth-of-type(1)",
+              "tag": "label",
+              "text": "Password"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "id": "password",
+              "name": "password",
+              "selected": false,
+              "selector": "#password",
+              "tag": "input",
+              "text": "",
+              "type": "password",
+              "value": "********"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "selected": false,
+              "selector": "h5:nth-of-type(1)",
+              "tag": "h5",
+              "text": "Test case 1: Positive LogIn test"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "selected": false,
+              "selector": "ol:nth-of-type(1)",
+              "tag": "ol",
+              "text": "Open page\n\t\t\tType username student into Username field\n\t\t\tType password Password123 into Password fi"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "selected": false,
+              "selector": "li:nth-of-type(1)",
+              "tag": "li",
+              "text": "Open page"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "selected": false,
+              "selector": "li:nth-of-type(2)",
+              "tag": "li",
+              "text": "Type username student into Username field"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "selected": false,
+              "selector": "b:nth-of-type(1)",
+              "tag": "b",
+              "text": "student"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "selected": false,
+              "selector": "li:nth-of-type(3)",
+              "tag": "li",
+              "text": "Type password Password123 into Password field"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "selected": false,
+              "selector": "b:nth-of-type(1)",
+              "tag": "b",
+              "text": "Password123"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "selected": false,
+              "selector": "li:nth-of-type(4)",
+              "tag": "li",
+              "text": "Push Submit button"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "selected": false,
+              "selector": "b:nth-of-type(1)",
+              "tag": "b",
+              "text": "Submit"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "selected": false,
+              "selector": "li:nth-of-type(5)",
+              "tag": "li",
+              "text": "Verify new page URL contains practicetestautomation.com/logged-in-successfully/"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "selected": false,
+              "selector": "b:nth-of-type(1)",
+              "tag": "b",
+              "text": "practicetestautomation.com/logged-in-successfully/"
+            },
+            {
+              "checked": false,
+              "disabled": false,
+              "selected": false,
+              "selector": "li:nth-of-type(6)",
+              "tag": "li",
+              "text": "Verify new page contains expected text ('Congratulations' or 'successfully logged in')"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "repetition_blocked_success": false,
+      "step_index": 0,
+      "visited_urls": {}
+    },
+    "timestamp": "2026-05-25T05:05:12.4567425Z"
+  }
+}

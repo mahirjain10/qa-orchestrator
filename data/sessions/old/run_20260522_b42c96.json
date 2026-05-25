@@ -1,0 +1,282 @@
+{
+  "run_id": "run_20260522_b42c96",
+  "session_id": "sess_c0cf06975ae410e5b6750419",
+  "campaign_name": "SauceDemo E-Commerce E2E Test",
+  "status": "FAILED",
+  "current_flow_id": "confirmation-flow",
+  "current_agent": "",
+  "started_at": "2026-05-22T13:23:28.8479993Z",
+  "updated_at": "2026-05-22T13:28:18.2235373Z",
+  "flows": [
+    {
+      "flow_id": "login-flow",
+      "name": "User Authentication",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-22T13:23:30.3430563Z",
+      "finished_at": "2026-05-22T13:26:27.4049345Z",
+      "retry_count": 0,
+      "error": "LLM signaled that the goal is unachievable: Required selectors for 'Products' title and shopping cart icon are not present in recent observations and multiple observe_ui() attempts have been made; cannot verify page elements."
+    },
+    {
+      "flow_id": "browse-flow",
+      "name": "Product Browsing and Selection",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-22T13:26:27.649785Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    },
+    {
+      "flow_id": "cart-flow",
+      "name": "Cart Management",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-22T13:26:27.8439639Z",
+      "finished_at": "2026-05-22T13:27:29.7792958Z",
+      "retry_count": 0,
+      "error": "LLM signaled that the goal is unachievable: Required cart elements (cart icon, items, checkout controls) are not present in the latest observe_ui() results and observe_ui() has been attempted multiple times; cannot proceed."
+    },
+    {
+      "flow_id": "checkout-flow",
+      "name": "Checkout Process",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-22T13:27:29.8447425Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    },
+    {
+      "flow_id": "confirmation-flow",
+      "name": "Order Confirmation and Validation",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "PASSED",
+      "started_at": "2026-05-22T13:27:29.9725209Z",
+      "finished_at": "2026-05-22T13:28:18.2130066Z",
+      "retry_count": 0
+    }
+  ],
+  "retry_count": 0,
+  "checkpoint": {
+    "flow_id": "confirmation-flow",
+    "step_index": 1,
+    "step_id": "auto-step-3",
+    "payload": {
+      "consecutive_observe_count": 2,
+      "current_step": "auto-step-3",
+      "current_url": "https://www.saucedemo.com/checkout-complete.html",
+      "last_step_signature": "",
+      "obs_0": {
+        "last_output": "navigated to https://www.saucedemo.com/checkout-complete.html",
+        "last_step_id": "auto-navigate",
+        "last_step_success": true
+      },
+      "obs_1": {
+        "data": {
+          "interactive": [
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "button:nth-of-type(1)",
+              "tag": "button",
+              "text": ""
+            },
+            {
+              "id": "user-name",
+              "name": "user-name",
+              "placeholder": "Username",
+              "selector": "#user-name",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "password",
+              "name": "password",
+              "placeholder": "Password",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "login-button",
+              "name": "login-button",
+              "placeholder": "",
+              "selector": "#login-button",
+              "tag": "input",
+              "text": ""
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "obs_2": {
+        "data": {
+          "interactive": [
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "button:nth-of-type(1)",
+              "tag": "button",
+              "text": ""
+            },
+            {
+              "id": "user-name",
+              "name": "user-name",
+              "placeholder": "Username",
+              "selector": "#user-name",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "password",
+              "name": "password",
+              "placeholder": "Password",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "login-button",
+              "name": "login-button",
+              "placeholder": "",
+              "selector": "#login-button",
+              "tag": "input",
+              "text": ""
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "last_output": {
+          "interactive": [
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "button:nth-of-type(1)",
+              "tag": "button",
+              "text": ""
+            },
+            {
+              "id": "user-name",
+              "name": "user-name",
+              "placeholder": "Username",
+              "selector": "#user-name",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "password",
+              "name": "password",
+              "placeholder": "Password",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "login-button",
+              "name": "login-button",
+              "placeholder": "",
+              "selector": "#login-button",
+              "tag": "input",
+              "text": ""
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "last_step_id": "auto-observe-1",
+        "last_step_success": true
+      },
+      "obs_3": {
+        "last_output": {
+          "interactive": [
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "button:nth-of-type(1)",
+              "tag": "button",
+              "text": ""
+            },
+            {
+              "id": "user-name",
+              "name": "user-name",
+              "placeholder": "Username",
+              "selector": "#user-name",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "password",
+              "name": "password",
+              "placeholder": "Password",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "login-button",
+              "name": "login-button",
+              "placeholder": "",
+              "selector": "#login-button",
+              "tag": "input",
+              "text": ""
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "last_step_id": "auto-step-2",
+        "last_step_success": true
+      },
+      "obs_4": {
+        "data": {
+          "interactive": [
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "button:nth-of-type(1)",
+              "tag": "button",
+              "text": ""
+            },
+            {
+              "id": "user-name",
+              "name": "user-name",
+              "placeholder": "Username",
+              "selector": "#user-name",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "password",
+              "name": "password",
+              "placeholder": "Password",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "login-button",
+              "name": "login-button",
+              "placeholder": "",
+              "selector": "#login-button",
+              "tag": "input",
+              "text": ""
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "step_index": 1
+    },
+    "timestamp": "2026-05-22T13:28:11.878695Z"
+  }
+}

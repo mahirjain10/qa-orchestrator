@@ -1,0 +1,87 @@
+{
+  "run_id": "run_20260522_e21a3a",
+  "session_id": "sess_48c6aebec0685a83ef16984a",
+  "campaign_name": "Guided Parallel Test",
+  "status": "FAILED",
+  "current_flow_id": "flow-d",
+  "current_agent": "",
+  "started_at": "2026-05-22T04:30:39.3902084Z",
+  "updated_at": "2026-05-22T04:30:40.3560074Z",
+  "flows": [
+    {
+      "flow_id": "flow-a",
+      "name": "",
+      "mode": "guided",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-22T04:30:40.2594113Z",
+      "finished_at": "2026-05-22T04:30:40.2822104Z",
+      "retry_count": 0,
+      "error": "configuration error"
+    },
+    {
+      "flow_id": "flow-b",
+      "name": "",
+      "mode": "guided",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-22T04:30:40.2670763Z",
+      "finished_at": "2026-05-22T04:30:40.2974986Z",
+      "retry_count": 0,
+      "error": "configuration error"
+    },
+    {
+      "flow_id": "flow-c",
+      "name": "",
+      "mode": "guided",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-22T04:30:40.2372021Z",
+      "finished_at": "2026-05-22T04:30:40.2576645Z",
+      "retry_count": 0,
+      "error": "configuration error"
+    },
+    {
+      "flow_id": "flow-d",
+      "name": "",
+      "mode": "guided",
+      "priority": "medium",
+      "status": "FAILED",
+      "started_at": "2026-05-22T04:30:40.3338048Z",
+      "finished_at": "2026-05-22T04:30:40.3437495Z",
+      "retry_count": 0,
+      "error": "configuration error"
+    },
+    {
+      "flow_id": "flow-e",
+      "name": "",
+      "mode": "guided",
+      "priority": "high",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-22T04:30:40.3075475Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    },
+    {
+      "flow_id": "flow-f",
+      "name": "",
+      "mode": "guided",
+      "priority": "medium",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-22T04:30:40.3549786Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    }
+  ],
+  "retry_count": 0,
+  "checkpoint": {
+    "flow_id": "flow-d",
+    "step_index": 0,
+    "step_id": "step-1",
+    "payload": {
+      "current_step": "step-1",
+      "step_index": 0
+    },
+    "timestamp": "2026-05-22T04:30:40.3375797Z"
+  }
+}

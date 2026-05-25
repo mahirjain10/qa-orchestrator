@@ -1,0 +1,724 @@
+{
+  "run_id": "run_20260522_e51742",
+  "session_id": "sess_4dbb4b8cdc6b0b04d9d45d88",
+  "campaign_name": "SauceDemo E-Commerce E2E Test",
+  "status": "FAILED",
+  "current_flow_id": "confirmation-flow",
+  "current_agent": "",
+  "started_at": "2026-05-22T13:54:09.8887397Z",
+  "updated_at": "2026-05-22T13:59:34.3787432Z",
+  "flows": [
+    {
+      "flow_id": "login-flow",
+      "name": "User Authentication",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-22T13:54:11.2992352Z",
+      "finished_at": "2026-05-22T13:56:20.9737688Z",
+      "retry_count": 0,
+      "error": "LLM signaled that the goal is unachievable: Multiple observe_ui() results do not show a selector for the 'Products' title or the shopping cart icon; after repeated observations the required elements cannot be verified."
+    },
+    {
+      "flow_id": "browse-flow",
+      "name": "Product Browsing and Selection",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-22T13:56:21.1151624Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    },
+    {
+      "flow_id": "cart-flow",
+      "name": "Cart Management",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-22T13:56:21.2422832Z",
+      "finished_at": "2026-05-22T13:58:08.8765755Z",
+      "retry_count": 0,
+      "error": "max autonomous steps reached without finishing"
+    },
+    {
+      "flow_id": "checkout-flow",
+      "name": "Checkout Process",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-22T13:58:08.8979136Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    },
+    {
+      "flow_id": "confirmation-flow",
+      "name": "Order Confirmation and Validation",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "FAILED",
+      "started_at": "2026-05-22T13:58:08.9561345Z",
+      "finished_at": "2026-05-22T13:59:34.2893812Z",
+      "retry_count": 0,
+      "error": "LLM signaled that the goal is unachievable: Page shows access/login error ('Epic sadface... when you are logged in.') and observe_ui has been repeated multiple times with no progress; cannot verify confirmation page while not logged in."
+    }
+  ],
+  "retry_count": 0,
+  "checkpoint": {
+    "flow_id": "confirmation-flow",
+    "step_index": 12,
+    "step_id": "auto-step-14",
+    "payload": {
+      "consecutive_observe_count": 1,
+      "current_step": "auto-step-14",
+      "current_url": "https://www.saucedemo.com/checkout-complete.html",
+      "last_step_signature": "",
+      "obs_0": {
+        "last_output": {
+          "interactive": [
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "button:nth-of-type(1)",
+              "tag": "button",
+              "text": ""
+            },
+            {
+              "id": "user-name",
+              "name": "user-name",
+              "placeholder": "Username",
+              "selector": "#user-name",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "password",
+              "name": "password",
+              "placeholder": "Password",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h3:has-text(\"Epic sadface: You can only access '/checkout-compl\")",
+              "tag": "h3",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "id": "login-button",
+              "name": "login-button",
+              "placeholder": "",
+              "selector": "#login-button",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:has-text(\"Accepted usernames are:\")",
+              "tag": "h4",
+              "text": "Accepted usernames are:"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:has-text(\"Password for all users:\")",
+              "tag": "h4",
+              "text": "Password for all users:"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "last_step_id": "auto-step-9",
+        "last_step_success": true
+      },
+      "obs_1": {
+        "data": {
+          "interactive": [
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "button:nth-of-type(1)",
+              "tag": "button",
+              "text": ""
+            },
+            {
+              "id": "user-name",
+              "name": "user-name",
+              "placeholder": "Username",
+              "selector": "#user-name",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "password",
+              "name": "password",
+              "placeholder": "Password",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h3:has-text(\"Epic sadface: You can only access '/checkout-compl\")",
+              "tag": "h3",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "id": "login-button",
+              "name": "login-button",
+              "placeholder": "",
+              "selector": "#login-button",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:has-text(\"Accepted usernames are:\")",
+              "tag": "h4",
+              "text": "Accepted usernames are:"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:has-text(\"Password for all users:\")",
+              "tag": "h4",
+              "text": "Password for all users:"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "obs_2": {
+        "last_output": {
+          "interactive": [
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "button:nth-of-type(1)",
+              "tag": "button",
+              "text": ""
+            },
+            {
+              "id": "user-name",
+              "name": "user-name",
+              "placeholder": "Username",
+              "selector": "#user-name",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "password",
+              "name": "password",
+              "placeholder": "Password",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h3:has-text(\"Epic sadface: You can only access '/checkout-compl\")",
+              "tag": "h3",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "id": "login-button",
+              "name": "login-button",
+              "placeholder": "",
+              "selector": "#login-button",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:has-text(\"Accepted usernames are:\")",
+              "tag": "h4",
+              "text": "Accepted usernames are:"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:has-text(\"Password for all users:\")",
+              "tag": "h4",
+              "text": "Password for all users:"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "last_step_id": "auto-step-10",
+        "last_step_success": true
+      },
+      "obs_3": {
+        "data": {
+          "interactive": [
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "button:nth-of-type(1)",
+              "tag": "button",
+              "text": ""
+            },
+            {
+              "id": "user-name",
+              "name": "user-name",
+              "placeholder": "Username",
+              "selector": "#user-name",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "password",
+              "name": "password",
+              "placeholder": "Password",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h3:has-text(\"Epic sadface: You can only access '/checkout-compl\")",
+              "tag": "h3",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "id": "login-button",
+              "name": "login-button",
+              "placeholder": "",
+              "selector": "#login-button",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:has-text(\"Accepted usernames are:\")",
+              "tag": "h4",
+              "text": "Accepted usernames are:"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:has-text(\"Password for all users:\")",
+              "tag": "h4",
+              "text": "Password for all users:"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "obs_4": {
+        "last_output": {
+          "interactive": [
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "button:nth-of-type(1)",
+              "tag": "button",
+              "text": ""
+            },
+            {
+              "id": "user-name",
+              "name": "user-name",
+              "placeholder": "Username",
+              "selector": "#user-name",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "password",
+              "name": "password",
+              "placeholder": "Password",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h3:has-text(\"Epic sadface: You can only access '/checkout-compl\")",
+              "tag": "h3",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "id": "login-button",
+              "name": "login-button",
+              "placeholder": "",
+              "selector": "#login-button",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:has-text(\"Accepted usernames are:\")",
+              "tag": "h4",
+              "text": "Accepted usernames are:"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:has-text(\"Password for all users:\")",
+              "tag": "h4",
+              "text": "Password for all users:"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "last_step_id": "auto-step-11",
+        "last_step_success": true
+      },
+      "obs_5": {
+        "data": {
+          "interactive": [
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "button:nth-of-type(1)",
+              "tag": "button",
+              "text": ""
+            },
+            {
+              "id": "user-name",
+              "name": "user-name",
+              "placeholder": "Username",
+              "selector": "#user-name",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "password",
+              "name": "password",
+              "placeholder": "Password",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h3:has-text(\"Epic sadface: You can only access '/checkout-compl\")",
+              "tag": "h3",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "id": "login-button",
+              "name": "login-button",
+              "placeholder": "",
+              "selector": "#login-button",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:has-text(\"Accepted usernames are:\")",
+              "tag": "h4",
+              "text": "Accepted usernames are:"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:has-text(\"Password for all users:\")",
+              "tag": "h4",
+              "text": "Password for all users:"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "obs_6": {
+        "last_output": {
+          "interactive": [
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "button:nth-of-type(1)",
+              "tag": "button",
+              "text": ""
+            },
+            {
+              "id": "user-name",
+              "name": "user-name",
+              "placeholder": "Username",
+              "selector": "#user-name",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "password",
+              "name": "password",
+              "placeholder": "Password",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h3:has-text(\"Epic sadface: You can only access '/checkout-compl\")",
+              "tag": "h3",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "id": "login-button",
+              "name": "login-button",
+              "placeholder": "",
+              "selector": "#login-button",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:has-text(\"Accepted usernames are:\")",
+              "tag": "h4",
+              "text": "Accepted usernames are:"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:has-text(\"Password for all users:\")",
+              "tag": "h4",
+              "text": "Password for all users:"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "last_step_id": "auto-step-12",
+        "last_step_success": true
+      },
+      "obs_7": {
+        "data": {
+          "interactive": [
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "button:nth-of-type(1)",
+              "tag": "button",
+              "text": ""
+            },
+            {
+              "id": "user-name",
+              "name": "user-name",
+              "placeholder": "Username",
+              "selector": "#user-name",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "password",
+              "name": "password",
+              "placeholder": "Password",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h3:has-text(\"Epic sadface: You can only access '/checkout-compl\")",
+              "tag": "h3",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "id": "login-button",
+              "name": "login-button",
+              "placeholder": "",
+              "selector": "#login-button",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:has-text(\"Accepted usernames are:\")",
+              "tag": "h4",
+              "text": "Accepted usernames are:"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:has-text(\"Password for all users:\")",
+              "tag": "h4",
+              "text": "Password for all users:"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "obs_8": {
+        "last_output": {
+          "interactive": [
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "button:nth-of-type(1)",
+              "tag": "button",
+              "text": ""
+            },
+            {
+              "id": "user-name",
+              "name": "user-name",
+              "placeholder": "Username",
+              "selector": "#user-name",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "password",
+              "name": "password",
+              "placeholder": "Password",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h3:has-text(\"Epic sadface: You can only access '/checkout-compl\")",
+              "tag": "h3",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "id": "login-button",
+              "name": "login-button",
+              "placeholder": "",
+              "selector": "#login-button",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:has-text(\"Accepted usernames are:\")",
+              "tag": "h4",
+              "text": "Accepted usernames are:"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:has-text(\"Password for all users:\")",
+              "tag": "h4",
+              "text": "Password for all users:"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "last_step_id": "auto-step-13",
+        "last_step_success": true
+      },
+      "obs_9": {
+        "data": {
+          "interactive": [
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "button:nth-of-type(1)",
+              "tag": "button",
+              "text": ""
+            },
+            {
+              "id": "user-name",
+              "name": "user-name",
+              "placeholder": "Username",
+              "selector": "#user-name",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "password",
+              "name": "password",
+              "placeholder": "Password",
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h3:has-text(\"Epic sadface: You can only access '/checkout-compl\")",
+              "tag": "h3",
+              "text": "Epic sadface: You can only access '/checkout-complete.html' when you are logged in."
+            },
+            {
+              "id": "login-button",
+              "name": "login-button",
+              "placeholder": "",
+              "selector": "#login-button",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:has-text(\"Accepted usernames are:\")",
+              "tag": "h4",
+              "text": "Accepted usernames are:"
+            },
+            {
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h4:has-text(\"Password for all users:\")",
+              "tag": "h4",
+              "text": "Password for all users:"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "step_index": 12
+    },
+    "timestamp": "2026-05-22T13:59:26.7271677Z"
+  }
+}

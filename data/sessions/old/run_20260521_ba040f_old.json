@@ -1,0 +1,92 @@
+{
+  "run_id": "run_20260521_ba040f",
+  "session_id": "sess_e7ccd3c88be1f65f71c37219",
+  "campaign_name": "Failure Cascade Test",
+  "status": "FAILED",
+  "current_flow_id": "chain-depends-on-skip",
+  "current_agent": "",
+  "started_at": "2026-05-21T10:46:17.2276269Z",
+  "updated_at": "2026-05-21T10:46:45.2076135Z",
+  "flows": [
+    {
+      "flow_id": "will-fail-flow",
+      "name": "Intentional Failure",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PASSED",
+      "started_at": "2026-05-21T10:46:18.1834645Z",
+      "finished_at": "2026-05-21T10:46:21.9435234Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "depends-on-fail-a",
+      "name": "Dependent Flow A",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-21T10:46:26.4933427Z",
+      "finished_at": "2026-05-21T10:46:32.5675305Z",
+      "retry_count": 0,
+      "error": "max retries (3) exceeded"
+    },
+    {
+      "flow_id": "depends-on-fail-b",
+      "name": "Dependent Flow B",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "FAILED",
+      "started_at": "2026-05-21T10:46:32.5713799Z",
+      "finished_at": "2026-05-21T10:46:38.5086658Z",
+      "retry_count": 0,
+      "error": "max retries (3) exceeded"
+    },
+    {
+      "flow_id": "independent-flow",
+      "name": "Independent Flow",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-21T10:46:21.9451847Z",
+      "finished_at": "2026-05-21T10:46:26.4911805Z",
+      "retry_count": 0,
+      "error": "max retries (3) exceeded"
+    },
+    {
+      "flow_id": "chain-depends-on-skip",
+      "name": "Chain Dependency Test",
+      "mode": "autonomous",
+      "priority": "low",
+      "status": "FAILED",
+      "started_at": "2026-05-21T10:46:38.5119764Z",
+      "finished_at": "2026-05-21T10:46:45.2037029Z",
+      "retry_count": 0,
+      "error": "max retries (3) exceeded"
+    }
+  ],
+  "retry_count": 0,
+  "checkpoint": {
+    "flow_id": "chain-depends-on-skip",
+    "step_index": 0,
+    "step_id": "auto-step-4",
+    "payload": {
+      "current_step": "auto-step-4",
+      "obs_0": {
+        "last_output": null,
+        "last_step_id": "auto-step-1",
+        "last_step_success": false
+      },
+      "obs_1": {
+        "last_output": null,
+        "last_step_id": "auto-step-2",
+        "last_step_success": false
+      },
+      "obs_2": {
+        "last_output": null,
+        "last_step_id": "auto-step-3",
+        "last_step_success": false
+      },
+      "step_index": 0
+    },
+    "timestamp": "2026-05-21T10:46:45.1970946Z"
+  }
+}

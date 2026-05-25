@@ -1,0 +1,212 @@
+{
+  "run_id": "run_20260522_97a8f8",
+  "session_id": "sess_dd708ced4f5699477966930d",
+  "campaign_name": "SauceDemo E-Commerce E2E Test",
+  "status": "RUNNING",
+  "current_flow_id": "cart-flow",
+  "current_agent": "planner (step 1)",
+  "started_at": "2026-05-22T14:06:45.9381533Z",
+  "updated_at": "2026-05-22T14:12:50.2949056Z",
+  "flows": [
+    {
+      "flow_id": "login-flow",
+      "name": "User Authentication",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PASSED",
+      "started_at": "2026-05-22T14:06:47.5677073Z",
+      "finished_at": "2026-05-22T14:07:46.1403991Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "browse-flow",
+      "name": "Product Browsing and Selection",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-22T14:07:46.3013796Z",
+      "finished_at": "2026-05-22T14:12:45.5104181Z",
+      "retry_count": 0,
+      "error": "failed to generate step: LLM request failed: API error (status=400): invalid model ID"
+    },
+    {
+      "flow_id": "cart-flow",
+      "name": "Cart Management",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "RUNNING",
+      "started_at": "2026-05-22T14:12:46.1404522Z",
+      "finished_at": "2026-05-22T14:12:45.593671Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "checkout-flow",
+      "name": "Checkout Process",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PENDING",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "confirmation-flow",
+      "name": "Order Confirmation and Validation",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "PENDING",
+      "retry_count": 0
+    }
+  ],
+  "retry_count": 0,
+  "checkpoint": {
+    "flow_id": "cart-flow",
+    "step_index": 0,
+    "step_id": "auto-observe-1",
+    "payload": {
+      "consecutive_observe_count": 0,
+      "current_step": "auto-observe-1",
+      "current_url": "https://www.saucedemo.com/cart.html",
+      "last_step_signature": "",
+      "obs_0": {
+        "last_output": "navigated to https://www.saucedemo.com/cart.html",
+        "last_step_id": "auto-navigate",
+        "last_step_success": true
+      },
+      "obs_1": {
+        "data": {
+          "interactive": [
+            {
+              "class": "",
+              "id": "react-burger-menu-btn",
+              "name": "",
+              "placeholder": "",
+              "selector": "#react-burger-menu-btn",
+              "tag": "button",
+              "text": "Open Menu"
+            },
+            {
+              "class": "",
+              "id": "react-burger-cross-btn",
+              "name": "",
+              "placeholder": "",
+              "selector": "#react-burger-cross-btn",
+              "tag": "button",
+              "text": "Close Menu"
+            },
+            {
+              "class": "btn btn_secondary back btn_medium",
+              "id": "continue-shopping",
+              "name": "continue-shopping",
+              "placeholder": "",
+              "selector": "#continue-shopping",
+              "tag": "button",
+              "text": "Continue Shopping"
+            },
+            {
+              "class": "btn btn_action btn_medium checkout_button ",
+              "id": "checkout",
+              "name": "checkout",
+              "placeholder": "",
+              "selector": "#checkout",
+              "tag": "button",
+              "text": "Checkout"
+            },
+            {
+              "class": "bm-item menu-item",
+              "id": "inventory_sidebar_link",
+              "name": "",
+              "placeholder": "",
+              "selector": "#inventory_sidebar_link",
+              "tag": "a",
+              "text": "All Items"
+            },
+            {
+              "class": "bm-item menu-item",
+              "id": "about_sidebar_link",
+              "name": "",
+              "placeholder": "",
+              "selector": "#about_sidebar_link",
+              "tag": "a",
+              "text": "About"
+            },
+            {
+              "class": "bm-item menu-item",
+              "id": "logout_sidebar_link",
+              "name": "",
+              "placeholder": "",
+              "selector": "#logout_sidebar_link",
+              "tag": "a",
+              "text": "Logout"
+            },
+            {
+              "class": "bm-item menu-item",
+              "id": "reset_sidebar_link",
+              "name": "",
+              "placeholder": "",
+              "selector": "#reset_sidebar_link",
+              "tag": "a",
+              "text": "Reset App State"
+            },
+            {
+              "class": "shopping_cart_link",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": ""
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Twitter\")",
+              "tag": "a",
+              "text": "Twitter"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"Facebook\")",
+              "tag": "a",
+              "text": "Facebook"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:has-text(\"LinkedIn\")",
+              "tag": "a",
+              "text": "LinkedIn"
+            },
+            {
+              "class": "app_logo",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div:has-text(\"Swag Labs\")",
+              "tag": "div",
+              "text": "Swag Labs"
+            },
+            {
+              "class": "title",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "span:has-text(\"Your Cart\")",
+              "tag": "span",
+              "text": "Your Cart"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "step_index": 0
+    },
+    "timestamp": "2026-05-22T14:12:50.2812279Z"
+  }
+}

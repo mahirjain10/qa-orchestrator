@@ -1,0 +1,81 @@
+{
+  "run_id": "run_20260525_6c5da7",
+  "session_id": "sess_2b60828dbe86007ff0d4f5d9",
+  "campaign_name": "Real URLs Parallel Campaign",
+  "status": "RUNNING",
+  "current_flow_id": "flow-delta",
+  "current_agent": "planner (step 1)",
+  "started_at": "2026-05-25T11:08:23.8498288Z",
+  "updated_at": "2026-05-25T11:08:30.8463999Z",
+  "flows": [
+    {
+      "flow_id": "flow-alpha",
+      "name": "Alpha - Login Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PASSED",
+      "started_at": "2026-05-25T11:08:23.8573137Z",
+      "finished_at": "2026-05-25T11:08:30.8432213Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-beta",
+      "name": "Beta - Root Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PENDING",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-gamma",
+      "name": "Gamma - Exception Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "RUNNING",
+      "started_at": "2026-05-25T11:08:23.8566793Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-delta",
+      "name": "Delta - Success Page",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "RUNNING",
+      "started_at": "2026-05-25T11:08:30.8437594Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-epsilon",
+      "name": "Epsilon - Login Title Check",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "PENDING",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-zeta",
+      "name": "Zeta - Post-Login Validation",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PENDING",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-eta",
+      "name": "Eta - Cross-Page Navigation",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "PENDING",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-theta",
+      "name": "Theta - Final Summary",
+      "mode": "autonomous",
+      "priority": "low",
+      "status": "PENDING",
+      "retry_count": 0
+    }
+  ],
+  "retry_count": 0
+}

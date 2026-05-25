@@ -1,0 +1,227 @@
+{
+  "run_id": "run_20260525_50cd33",
+  "session_id": "sess_b8266babf7abe50e3b8432af",
+  "campaign_name": "Real URLs Parallel Campaign",
+  "status": "FAILED",
+  "current_flow_id": "flow-epsilon",
+  "current_agent": "",
+  "started_at": "2026-05-24T20:57:09.6740484Z",
+  "updated_at": "2026-05-24T21:00:05.7263307Z",
+  "flows": [
+    {
+      "flow_id": "flow-alpha",
+      "name": "Alpha - Login Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PASSED",
+      "finished_at": "2026-05-24T20:57:31.8629321Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-beta",
+      "name": "Beta - Root Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-24T20:58:06.5123358Z",
+      "finished_at": "2026-05-24T21:00:03.0526299Z",
+      "retry_count": 0,
+      "error": "failed to generate step: LLM request failed: API error (status=403): Key limit exceeded (total limit). Manage it using https://openrouter.ai/workspaces/default/keys/071317ac986b71682dfd215cd63172e7fed11832f5b5d81205f62f2797a666f5"
+    },
+    {
+      "flow_id": "flow-gamma",
+      "name": "Gamma - Exception Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PASSED",
+      "started_at": "2026-05-24T20:57:31.8641388Z",
+      "finished_at": "2026-05-24T20:58:06.5118183Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-delta",
+      "name": "Delta - Success Page",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "PASSED",
+      "started_at": "2026-05-24T20:57:09.6876589Z",
+      "finished_at": "2026-05-24T20:58:54.8599562Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-epsilon",
+      "name": "Epsilon - Login Title Check",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "FAILED",
+      "started_at": "2026-05-24T20:57:09.6795354Z",
+      "finished_at": "2026-05-24T21:00:05.6961168Z",
+      "retry_count": 0,
+      "error": "failed to generate step: LLM request failed: API error (status=403): Key limit exceeded (total limit). Manage it using https://openrouter.ai/workspaces/default/keys/071317ac986b71682dfd215cd63172e7fed11832f5b5d81205f62f2797a666f5"
+    },
+    {
+      "flow_id": "flow-zeta",
+      "name": "Zeta - Post-Login Validation",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-24T20:58:54.8604913Z",
+      "finished_at": "2026-05-24T21:00:04.0878386Z",
+      "retry_count": 0,
+      "error": "failed to generate step: LLM request failed: API error (status=403): Key limit exceeded (total limit). Manage it using https://openrouter.ai/workspaces/default/keys/071317ac986b71682dfd215cd63172e7fed11832f5b5d81205f62f2797a666f5"
+    },
+    {
+      "flow_id": "flow-eta",
+      "name": "Eta - Cross-Page Navigation",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "FAILED",
+      "started_at": "2026-05-24T21:00:03.054217Z",
+      "finished_at": "2026-05-24T21:00:03.6620734Z",
+      "retry_count": 0,
+      "error": "failed to generate step: LLM request failed: API error (status=403): Key limit exceeded (total limit). Manage it using https://openrouter.ai/workspaces/default/keys/071317ac986b71682dfd215cd63172e7fed11832f5b5d81205f62f2797a666f5"
+    },
+    {
+      "flow_id": "flow-theta",
+      "name": "Theta - Final Summary",
+      "mode": "autonomous",
+      "priority": "low",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-24T21:00:04.090422Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    }
+  ],
+  "retry_count": 0,
+  "checkpoint": {
+    "flow_id": "flow-zeta",
+    "step_index": 2,
+    "step_id": "auto-step-3",
+    "payload": {
+      "consecutive_observe_count": 0,
+      "current_step": "auto-step-3",
+      "current_url": "https://practicetestautomation.com/practice-test-login/",
+      "last_step_signature": "assert_text_visible|text=Login",
+      "obs_0": {
+        "last_output": "simulated: navigated to https://practicetestautomation.com/practice-test-login/",
+        "last_step_id": "auto-navigate",
+        "last_step_success": true
+      },
+      "obs_1": {
+        "data": {
+          "interactive": [
+            {
+              "selector": "#username",
+              "tag": "input",
+              "text": "Username"
+            },
+            {
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "selector": "#login-btn",
+              "tag": "button",
+              "text": "Login"
+            },
+            {
+              "selector": "a[href='/register']",
+              "tag": "a",
+              "text": "Register"
+            },
+            {
+              "selector": "h1",
+              "tag": "h1",
+              "text": "Welcome"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "obs_2": {
+        "last_output": "simulated: verified 'Username' is visible",
+        "last_step_id": "auto-step-1",
+        "last_step_success": true
+      },
+      "obs_3": {
+        "data": {
+          "interactive": [
+            {
+              "selector": "#username",
+              "tag": "input",
+              "text": "Username"
+            },
+            {
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "selector": "#login-btn",
+              "tag": "button",
+              "text": "Login"
+            },
+            {
+              "selector": "a[href='/register']",
+              "tag": "a",
+              "text": "Register"
+            },
+            {
+              "selector": "h1",
+              "tag": "h1",
+              "text": "Welcome"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "obs_4": {
+        "last_output": "simulated: verified 'Password' is visible",
+        "last_step_id": "auto-step-2",
+        "last_step_success": true
+      },
+      "obs_5": {
+        "data": {
+          "interactive": [
+            {
+              "selector": "#username",
+              "tag": "input",
+              "text": "Username"
+            },
+            {
+              "selector": "#password",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "selector": "#login-btn",
+              "tag": "button",
+              "text": "Login"
+            },
+            {
+              "selector": "a[href='/register']",
+              "tag": "a",
+              "text": "Register"
+            },
+            {
+              "selector": "h1",
+              "tag": "h1",
+              "text": "Welcome"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "repetition_blocked_success": false,
+      "step_index": 2,
+      "visited_urls": {
+        "https://practicetestautomation.com/practice-test-login/": true
+      }
+    },
+    "timestamp": "2026-05-24T21:00:03.4338202Z"
+  }
+}

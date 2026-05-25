@@ -1,0 +1,53 @@
+{
+  "run_id": "run_20260525_884902",
+  "session_id": "sess_042c674032ad0399c75880b7",
+  "campaign_name": "SauceDemo E-Commerce E2E Test",
+  "status": "PENDING",
+  "current_flow_id": "",
+  "current_agent": "",
+  "started_at": "2026-05-25T07:35:49.1041814Z",
+  "updated_at": "2026-05-25T07:35:49.1047002Z",
+  "flows": [
+    {
+      "flow_id": "login-flow",
+      "name": "User Authentication",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PENDING",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "browse-flow",
+      "name": "Product Browsing and Selection",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PENDING",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "cart-flow",
+      "name": "Cart Management",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PENDING",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "checkout-flow",
+      "name": "Checkout Process",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PENDING",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "confirmation-flow",
+      "name": "Order Confirmation and Validation",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "PENDING",
+      "retry_count": 0
+    }
+  ],
+  "retry_count": 0
+}

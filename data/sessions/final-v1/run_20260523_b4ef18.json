@@ -1,0 +1,1864 @@
+{
+  "run_id": "run_20260523_b4ef18",
+  "session_id": "sess_730e11113807671249e1a15a",
+  "campaign_name": "Large Parallel Campaign",
+  "status": "FAILED",
+  "current_flow_id": "flow-zeta",
+  "current_agent": "",
+  "started_at": "2026-05-23T10:15:44.6510351Z",
+  "updated_at": "2026-05-23T10:18:27.510195Z",
+  "flows": [
+    {
+      "flow_id": "flow-alpha",
+      "name": "Alpha - Login Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PASSED",
+      "started_at": "2026-05-23T10:15:54.2534986Z",
+      "finished_at": "2026-05-23T10:16:07.402954Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-beta",
+      "name": "Beta - Students Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "FAILED",
+      "started_at": "2026-05-23T10:16:04.4897802Z",
+      "finished_at": "2026-05-23T10:17:18.0758338Z",
+      "retry_count": 0,
+      "error": "LLM signaled that the goal is unachievable: Page returns 404 Not Found despite multiple observations; goal cannot be achieved."
+    },
+    {
+      "flow_id": "flow-gamma",
+      "name": "Gamma - Exception Page",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PASSED",
+      "started_at": "2026-05-23T10:15:54.2721778Z",
+      "finished_at": "2026-05-23T10:16:04.4055284Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-delta",
+      "name": "Delta - Timeout Page",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "FAILED",
+      "started_at": "2026-05-23T10:15:54.240128Z",
+      "finished_at": "2026-05-23T10:17:02.9357103Z",
+      "retry_count": 0,
+      "error": "LLM stuck in loop — repeated same step 3+ times despite steering"
+    },
+    {
+      "flow_id": "flow-epsilon",
+      "name": "Epsilon - File Upload Page",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "FAILED",
+      "started_at": "2026-05-23T10:16:07.4681076Z",
+      "finished_at": "2026-05-23T10:18:27.4887049Z",
+      "retry_count": 0,
+      "error": "root navigation attempted 3+ times — likely invalid target URL"
+    },
+    {
+      "flow_id": "flow-zeta",
+      "name": "Zeta - Post-Login Validation",
+      "mode": "autonomous",
+      "priority": "high",
+      "status": "PASSED",
+      "started_at": "2026-05-23T10:17:03.0077198Z",
+      "finished_at": "2026-05-23T10:17:53.1168878Z",
+      "retry_count": 0
+    },
+    {
+      "flow_id": "flow-eta",
+      "name": "Eta - Cross-Page Navigation",
+      "mode": "autonomous",
+      "priority": "medium",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-23T10:17:18.0938357Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    },
+    {
+      "flow_id": "flow-theta",
+      "name": "Theta - Final Summary",
+      "mode": "autonomous",
+      "priority": "low",
+      "status": "SKIPPED_UPSTREAM_FAILED",
+      "finished_at": "2026-05-23T10:17:53.1341263Z",
+      "retry_count": 0,
+      "error": "upstream_failed"
+    }
+  ],
+  "retry_count": 0,
+  "checkpoint": {
+    "flow_id": "flow-epsilon",
+    "step_index": 1,
+    "step_id": "auto-observe-7",
+    "payload": {
+      "consecutive_observe_count": 0,
+      "current_step": "auto-observe-7",
+      "current_url": "https://practicetestautomation.com/practice-test-file-upload/",
+      "last_step_signature": "navigate|url=https://practicetestautomation.com/practice-test-file-upload/",
+      "obs_0": {
+        "data": {
+          "interactive": [
+            {
+              "class": "skip-content",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a.skip-content",
+              "tag": "a",
+              "text": "Press \"Enter\" to skip to content"
+            },
+            {
+              "class": "custom-logo-link",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a.custom-logo-link",
+              "tag": "a",
+              "text": ""
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Home"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Practice"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Courses"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Blog"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Contact"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "nine courses with over 70,000 students"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "BestSeller XPath course"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "HighestRated Selenium course"
+            },
+            {
+              "class": "overflow-container",
+              "id": "overflow-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#overflow-container",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu\n\t\t\t\t\t\t\t\n\t\t\t\t\t"
+            },
+            {
+              "class": "max-width",
+              "id": "max-width",
+              "name": "",
+              "placeholder": "",
+              "selector": "#max-width",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu\n\t\t\t\t\t\t\t\n\t\t\t\t\t"
+            },
+            {
+              "class": "site-header",
+              "id": "site-header",
+              "name": "",
+              "placeholder": "",
+              "selector": "#site-header",
+              "tag": "header",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu"
+            },
+            {
+              "class": "header-bottom",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.header-bottom",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu"
+            },
+            {
+              "class": "mobile-menu-container",
+              "id": "mobile-menu-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#mobile-menu-container",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "",
+              "id": "mobile-menu-container-inner",
+              "name": "",
+              "placeholder": "",
+              "selector": "#mobile-menu-container-inner",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu-primary-container",
+              "id": "menu-primary-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-primary-container",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu-container menu-primary",
+              "id": "menu-primary",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-primary",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "nav.menu",
+              "tag": "nav",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu-primary-items",
+              "id": "menu-primary-items",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-primary-items",
+              "tag": "ul",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-home current-menu-item page_item page-item-23 current_page_item menu-item-43",
+              "id": "menu-item-43",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-43",
+              "tag": "li",
+              "text": "Home"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-20",
+              "id": "menu-item-20",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-20",
+              "tag": "li",
+              "text": "Practice"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-21",
+              "id": "menu-item-21",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-21",
+              "tag": "li",
+              "text": "Courses"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-19",
+              "id": "menu-item-19",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-19",
+              "tag": "li",
+              "text": "Blog"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-18",
+              "id": "menu-item-18",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-18",
+              "tag": "li",
+              "text": "Contact"
+            },
+            {
+              "class": "main-container",
+              "id": "main-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#main-container",
+              "tag": "section",
+              "text": "Hello\n\t\t\n\t\t\t\t\n\t\t\t\n\n\n\n\nWelcome to Practice Test Automation!\n\n\n\nI’m Dmitry Shyshkin, your guide on the"
+            },
+            {
+              "class": "loop-container",
+              "id": "loop-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#loop-container",
+              "tag": "div",
+              "text": "Hello\n\t\t\n\t\t\t\t\n\t\t\t\n\n\n\n\nWelcome to Practice Test Automation!\n\n\n\nI’m Dmitry Shyshkin, your guide on the"
+            },
+            {
+              "class": "post-23 page type-page status-publish hentry entry",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.post-23.page.type-page.status-publish.hentry.entry",
+              "tag": "div",
+              "text": "Hello\n\t\t\n\t\t\t\t\n\t\t\t\n\n\n\n\nWelcome to Practice Test Automation!\n\n\n\nI’m Dmitry Shyshkin, your guide on the"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "article:nth-of-type(1)",
+              "tag": "article",
+              "text": "Hello\n\t\t\n\t\t\t\t\n\t\t\t\n\n\n\n\nWelcome to Practice Test Automation!\n\n\n\nI’m Dmitry Shyshkin, your guide on the"
+            },
+            {
+              "class": "post-header",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.post-header",
+              "tag": "div",
+              "text": "Hello"
+            },
+            {
+              "class": "post-title",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h1.post-title",
+              "tag": "h1",
+              "text": "Hello"
+            },
+            {
+              "class": "post-content",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.post-content",
+              "tag": "div",
+              "text": "Welcome to Practice Test Automation!\n\n\n\nI’m Dmitry Shyshkin, your guide on the path to a thriving QA"
+            },
+            {
+              "class": "wp-block-paragraph",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p.wp-block-paragraph",
+              "tag": "p",
+              "text": "Welcome to Practice Test Automation!"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "strong:nth-of-type(1)",
+              "tag": "strong",
+              "text": "Welcome to Practice Test Automation!"
+            },
+            {
+              "class": "wp-block-paragraph",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p.wp-block-paragraph",
+              "tag": "p",
+              "text": "I’m Dmitry Shyshkin, your guide on the path to a thriving QA career. Effortlessly master Selenium We"
+            },
+            {
+              "class": "wp-block-paragraph",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p.wp-block-paragraph",
+              "tag": "p",
+              "text": "Experience and Expertise"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "strong:nth-of-type(1)",
+              "tag": "strong",
+              "text": "Experience and Expertise"
+            },
+            {
+              "class": "wp-block-paragraph",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p.wp-block-paragraph",
+              "tag": "p",
+              "text": "As a Principal Software Development Engineer in Test, I bring over a decade of experience in automat"
+            },
+            {
+              "class": "wp-block-paragraph",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p.wp-block-paragraph",
+              "tag": "p",
+              "text": "Beyond Test Automation"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "strong:nth-of-type(1)",
+              "tag": "strong",
+              "text": "Beyond Test Automation"
+            },
+            {
+              "class": "wp-block-paragraph",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p.wp-block-paragraph",
+              "tag": "p",
+              "text": "Not only have I automated tests, but I’ve also applied automation to job searches and even finding c"
+            },
+            {
+              "class": "wp-block-paragraph",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p.wp-block-paragraph",
+              "tag": "p",
+              "text": "Courses and Achievements"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "strong:nth-of-type(1)",
+              "tag": "strong",
+              "text": "Courses and Achievements"
+            },
+            {
+              "class": "wp-block-paragraph",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p.wp-block-paragraph",
+              "tag": "p",
+              "text": "In 2017, I started sharing my test automation expertise through video courses, beginning with a Sele"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "strong:nth-of-type(1)",
+              "tag": "strong",
+              "text": "nine courses with over 70,000 students"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "strong:nth-of-type(2)",
+              "tag": "strong",
+              "text": "BestSeller XPath course"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "strong:nth-of-type(3)",
+              "tag": "strong",
+              "text": "HighestRated Selenium course"
+            },
+            {
+              "class": "wp-block-paragraph",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p.wp-block-paragraph",
+              "tag": "p",
+              "text": "A Resourceful Website"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "strong:nth-of-type(1)",
+              "tag": "strong",
+              "text": "A Resourceful Website"
+            },
+            {
+              "class": "wp-block-paragraph",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p.wp-block-paragraph",
+              "tag": "p",
+              "text": "This website was carefully crafted to host a diverse selection of articles, standalone lectures, tip"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "last_output": {
+          "interactive": [
+            {
+              "class": "skip-content",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a.skip-content",
+              "tag": "a",
+              "text": "Press \"Enter\" to skip to content"
+            },
+            {
+              "class": "custom-logo-link",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a.custom-logo-link",
+              "tag": "a",
+              "text": ""
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Home"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Practice"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Courses"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Blog"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Contact"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "nine courses with over 70,000 students"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "BestSeller XPath course"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "HighestRated Selenium course"
+            },
+            {
+              "class": "overflow-container",
+              "id": "overflow-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#overflow-container",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu\n\t\t\t\t\t\t\t\n\t\t\t\t\t"
+            },
+            {
+              "class": "max-width",
+              "id": "max-width",
+              "name": "",
+              "placeholder": "",
+              "selector": "#max-width",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu\n\t\t\t\t\t\t\t\n\t\t\t\t\t"
+            },
+            {
+              "class": "site-header",
+              "id": "site-header",
+              "name": "",
+              "placeholder": "",
+              "selector": "#site-header",
+              "tag": "header",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu"
+            },
+            {
+              "class": "header-bottom",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.header-bottom",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu"
+            },
+            {
+              "class": "mobile-menu-container",
+              "id": "mobile-menu-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#mobile-menu-container",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "",
+              "id": "mobile-menu-container-inner",
+              "name": "",
+              "placeholder": "",
+              "selector": "#mobile-menu-container-inner",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu-primary-container",
+              "id": "menu-primary-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-primary-container",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu-container menu-primary",
+              "id": "menu-primary",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-primary",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "nav.menu",
+              "tag": "nav",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu-primary-items",
+              "id": "menu-primary-items",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-primary-items",
+              "tag": "ul",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-home current-menu-item page_item page-item-23 current_page_item menu-item-43",
+              "id": "menu-item-43",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-43",
+              "tag": "li",
+              "text": "Home"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-20",
+              "id": "menu-item-20",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-20",
+              "tag": "li",
+              "text": "Practice"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-21",
+              "id": "menu-item-21",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-21",
+              "tag": "li",
+              "text": "Courses"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-19",
+              "id": "menu-item-19",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-19",
+              "tag": "li",
+              "text": "Blog"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-18",
+              "id": "menu-item-18",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-18",
+              "tag": "li",
+              "text": "Contact"
+            },
+            {
+              "class": "main-container",
+              "id": "main-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#main-container",
+              "tag": "section",
+              "text": "Hello\n\t\t\n\t\t\t\t\n\t\t\t\n\n\n\n\nWelcome to Practice Test Automation!\n\n\n\nI’m Dmitry Shyshkin, your guide on the"
+            },
+            {
+              "class": "loop-container",
+              "id": "loop-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#loop-container",
+              "tag": "div",
+              "text": "Hello\n\t\t\n\t\t\t\t\n\t\t\t\n\n\n\n\nWelcome to Practice Test Automation!\n\n\n\nI’m Dmitry Shyshkin, your guide on the"
+            },
+            {
+              "class": "post-23 page type-page status-publish hentry entry",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.post-23.page.type-page.status-publish.hentry.entry",
+              "tag": "div",
+              "text": "Hello\n\t\t\n\t\t\t\t\n\t\t\t\n\n\n\n\nWelcome to Practice Test Automation!\n\n\n\nI’m Dmitry Shyshkin, your guide on the"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "article:nth-of-type(1)",
+              "tag": "article",
+              "text": "Hello\n\t\t\n\t\t\t\t\n\t\t\t\n\n\n\n\nWelcome to Practice Test Automation!\n\n\n\nI’m Dmitry Shyshkin, your guide on the"
+            },
+            {
+              "class": "post-header",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.post-header",
+              "tag": "div",
+              "text": "Hello"
+            },
+            {
+              "class": "post-title",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h1.post-title",
+              "tag": "h1",
+              "text": "Hello"
+            },
+            {
+              "class": "post-content",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.post-content",
+              "tag": "div",
+              "text": "Welcome to Practice Test Automation!\n\n\n\nI’m Dmitry Shyshkin, your guide on the path to a thriving QA"
+            },
+            {
+              "class": "wp-block-paragraph",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p.wp-block-paragraph",
+              "tag": "p",
+              "text": "Welcome to Practice Test Automation!"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "strong:nth-of-type(1)",
+              "tag": "strong",
+              "text": "Welcome to Practice Test Automation!"
+            },
+            {
+              "class": "wp-block-paragraph",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p.wp-block-paragraph",
+              "tag": "p",
+              "text": "I’m Dmitry Shyshkin, your guide on the path to a thriving QA career. Effortlessly master Selenium We"
+            },
+            {
+              "class": "wp-block-paragraph",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p.wp-block-paragraph",
+              "tag": "p",
+              "text": "Experience and Expertise"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "strong:nth-of-type(1)",
+              "tag": "strong",
+              "text": "Experience and Expertise"
+            },
+            {
+              "class": "wp-block-paragraph",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p.wp-block-paragraph",
+              "tag": "p",
+              "text": "As a Principal Software Development Engineer in Test, I bring over a decade of experience in automat"
+            },
+            {
+              "class": "wp-block-paragraph",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p.wp-block-paragraph",
+              "tag": "p",
+              "text": "Beyond Test Automation"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "strong:nth-of-type(1)",
+              "tag": "strong",
+              "text": "Beyond Test Automation"
+            },
+            {
+              "class": "wp-block-paragraph",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p.wp-block-paragraph",
+              "tag": "p",
+              "text": "Not only have I automated tests, but I’ve also applied automation to job searches and even finding c"
+            },
+            {
+              "class": "wp-block-paragraph",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p.wp-block-paragraph",
+              "tag": "p",
+              "text": "Courses and Achievements"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "strong:nth-of-type(1)",
+              "tag": "strong",
+              "text": "Courses and Achievements"
+            },
+            {
+              "class": "wp-block-paragraph",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p.wp-block-paragraph",
+              "tag": "p",
+              "text": "In 2017, I started sharing my test automation expertise through video courses, beginning with a Sele"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "strong:nth-of-type(1)",
+              "tag": "strong",
+              "text": "nine courses with over 70,000 students"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "strong:nth-of-type(2)",
+              "tag": "strong",
+              "text": "BestSeller XPath course"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "strong:nth-of-type(3)",
+              "tag": "strong",
+              "text": "HighestRated Selenium course"
+            },
+            {
+              "class": "wp-block-paragraph",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p.wp-block-paragraph",
+              "tag": "p",
+              "text": "A Resourceful Website"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "strong:nth-of-type(1)",
+              "tag": "strong",
+              "text": "A Resourceful Website"
+            },
+            {
+              "class": "wp-block-paragraph",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p.wp-block-paragraph",
+              "tag": "p",
+              "text": "This website was carefully crafted to host a diverse selection of articles, standalone lectures, tip"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "last_step_id": "engine-root-observe",
+        "last_step_success": true
+      },
+      "obs_1": {
+        "last_output": "clicked #menu-item-20",
+        "last_step_id": "auto-step-5",
+        "last_step_success": true
+      },
+      "obs_2": {
+        "data": {
+          "interactive": [
+            {
+              "class": "skip-content",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a.skip-content",
+              "tag": "a",
+              "text": "Press \"Enter\" to skip to content"
+            },
+            {
+              "class": "custom-logo-link",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a.custom-logo-link",
+              "tag": "a",
+              "text": ""
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Home"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Practice"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Courses"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Blog"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Contact"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Test Login Page"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Test Exceptions"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Test Table"
+            },
+            {
+              "class": "overflow-container",
+              "id": "overflow-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#overflow-container",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu\n\t\t\t\t\t\t\t\n\t\t\t\t\t"
+            },
+            {
+              "class": "max-width",
+              "id": "max-width",
+              "name": "",
+              "placeholder": "",
+              "selector": "#max-width",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu\n\t\t\t\t\t\t\t\n\t\t\t\t\t"
+            },
+            {
+              "class": "site-header",
+              "id": "site-header",
+              "name": "",
+              "placeholder": "",
+              "selector": "#site-header",
+              "tag": "header",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu"
+            },
+            {
+              "class": "header-bottom",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.header-bottom",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu"
+            },
+            {
+              "class": "mobile-menu-container",
+              "id": "mobile-menu-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#mobile-menu-container",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "",
+              "id": "mobile-menu-container-inner",
+              "name": "",
+              "placeholder": "",
+              "selector": "#mobile-menu-container-inner",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu-primary-container",
+              "id": "menu-primary-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-primary-container",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu-container menu-primary",
+              "id": "menu-primary",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-primary",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "nav.menu",
+              "tag": "nav",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu-primary-items",
+              "id": "menu-primary-items",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-primary-items",
+              "tag": "ul",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-home menu-item-43",
+              "id": "menu-item-43",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-43",
+              "tag": "li",
+              "text": "Home"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page current-menu-item page_item page-item-11 current_page_item menu-item-20",
+              "id": "menu-item-20",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-20",
+              "tag": "li",
+              "text": "Practice"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-21",
+              "id": "menu-item-21",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-21",
+              "tag": "li",
+              "text": "Courses"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-19",
+              "id": "menu-item-19",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-19",
+              "tag": "li",
+              "text": "Blog"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-18",
+              "id": "menu-item-18",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-18",
+              "tag": "li",
+              "text": "Contact"
+            },
+            {
+              "class": "main-container",
+              "id": "main-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#main-container",
+              "tag": "section",
+              "text": "Practice\n\t\t\n\t\t\t\t\n\t\t\t\n\n\n\n\n\n\nTest Login Page\n\n\n\n\n\nSimple login page where testers can execute positive"
+            },
+            {
+              "class": "loop-container",
+              "id": "loop-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#loop-container",
+              "tag": "div",
+              "text": "Practice\n\t\t\n\t\t\t\t\n\t\t\t\n\n\n\n\n\n\nTest Login Page\n\n\n\n\n\nSimple login page where testers can execute positive"
+            },
+            {
+              "class": "post-11 page type-page status-publish hentry entry",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.post-11.page.type-page.status-publish.hentry.entry",
+              "tag": "div",
+              "text": "Practice\n\t\t\n\t\t\t\t\n\t\t\t\n\n\n\n\n\n\nTest Login Page\n\n\n\n\n\nSimple login page where testers can execute positive"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "article:nth-of-type(1)",
+              "tag": "article",
+              "text": "Practice\n\t\t\n\t\t\t\t\n\t\t\t\n\n\n\n\n\n\nTest Login Page\n\n\n\n\n\nSimple login page where testers can execute positive"
+            },
+            {
+              "class": "post-header",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.post-header",
+              "tag": "div",
+              "text": "Practice"
+            },
+            {
+              "class": "post-title",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h1.post-title",
+              "tag": "h1",
+              "text": "Practice"
+            },
+            {
+              "class": "post-content",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.post-content",
+              "tag": "div",
+              "text": "Test Login Page\n\n\n\n\n\nSimple login page where testers can execute positive and negative login test ca"
+            },
+            {
+              "class": "wp-block-columns is-layout-flex wp-container-core-columns-is-layout-8f761849 wp-block-columns-is-layout-flex",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.wp-block-columns.is-layout-flex.wp-container-core-columns-is-layout-8f761849.wp-block-columns-is-layout-flex",
+              "tag": "div",
+              "text": "Test Login Page\n\n\n\n\n\nSimple login page where testers can execute positive and negative login test ca"
+            },
+            {
+              "class": "wp-block-column is-layout-flow wp-block-column-is-layout-flow",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.wp-block-column.is-layout-flow.wp-block-column-is-layout-flow",
+              "tag": "div",
+              "text": "Test Login Page"
+            },
+            {
+              "class": "wp-block-paragraph",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p.wp-block-paragraph",
+              "tag": "p",
+              "text": "Test Login Page"
+            },
+            {
+              "class": "wp-block-column is-layout-flow wp-block-column-is-layout-flow",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.wp-block-column.is-layout-flow.wp-block-column-is-layout-flow",
+              "tag": "div",
+              "text": "Simple login page where testers can execute positive and negative login test cases"
+            },
+            {
+              "class": "wp-block-paragraph",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p.wp-block-paragraph",
+              "tag": "p",
+              "text": "Simple login page where testers can execute positive and negative login test cases"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "em:nth-of-type(1)",
+              "tag": "em",
+              "text": "Simple login page where testers can execute positive and negative login test cases"
+            },
+            {
+              "class": "wp-block-columns is-layout-flex wp-container-core-columns-is-layout-8f761849 wp-block-columns-is-layout-flex",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.wp-block-columns.is-layout-flex.wp-container-core-columns-is-layout-8f761849.wp-block-columns-is-layout-flex",
+              "tag": "div",
+              "text": "Test Exceptions\n\n\n\n\n\nPage to reproduce the most common Selenium Exceptions."
+            },
+            {
+              "class": "wp-block-column is-layout-flow wp-block-column-is-layout-flow",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.wp-block-column.is-layout-flow.wp-block-column-is-layout-flow",
+              "tag": "div",
+              "text": "Test Exceptions"
+            },
+            {
+              "class": "wp-block-paragraph",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p.wp-block-paragraph",
+              "tag": "p",
+              "text": "Test Exceptions"
+            },
+            {
+              "class": "wp-block-column is-layout-flow wp-block-column-is-layout-flow",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.wp-block-column.is-layout-flow.wp-block-column-is-layout-flow",
+              "tag": "div",
+              "text": "Page to reproduce the most common Selenium Exceptions."
+            },
+            {
+              "class": "wp-block-paragraph",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p.wp-block-paragraph",
+              "tag": "p",
+              "text": "Page to reproduce the most common Selenium Exceptions."
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "em:nth-of-type(1)",
+              "tag": "em",
+              "text": "Page to reproduce the most common Selenium Exceptions."
+            },
+            {
+              "class": "wp-block-columns is-layout-flex wp-container-core-columns-is-layout-8f761849 wp-block-columns-is-layout-flex",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.wp-block-columns.is-layout-flex.wp-container-core-columns-is-layout-8f761849.wp-block-columns-is-layout-flex",
+              "tag": "div",
+              "text": "Test Table\n\n\n\n\n\nPage to practice UI interactions and data validation with dynamic tables, filters, a"
+            },
+            {
+              "class": "wp-block-column is-layout-flow wp-block-column-is-layout-flow",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.wp-block-column.is-layout-flow.wp-block-column-is-layout-flow",
+              "tag": "div",
+              "text": "Test Table"
+            },
+            {
+              "class": "wp-block-paragraph",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p.wp-block-paragraph",
+              "tag": "p",
+              "text": "Test Table"
+            },
+            {
+              "class": "wp-block-column is-layout-flow wp-block-column-is-layout-flow",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.wp-block-column.is-layout-flow.wp-block-column-is-layout-flow",
+              "tag": "div",
+              "text": "Page to practice UI interactions and data validation with dynamic tables, filters, and sorting contr"
+            },
+            {
+              "class": "wp-block-paragraph",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p.wp-block-paragraph",
+              "tag": "p",
+              "text": "Page to practice UI interactions and data validation with dynamic tables, filters, and sorting contr"
+            },
+            {
+              "class": "design-credit",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.design-credit",
+              "tag": "div",
+              "text": "© Copyright 2020  Practice Test Automation.  All rights reserved  |  Privacy Policy"
+            }
+          ],
+          "page_state": "loaded"
+        },
+        "source": "observe_ui"
+      },
+      "obs_3": {
+        "last_output": "navigated to https://practicetestautomation.com/practice-test-file-upload/",
+        "last_step_id": "auto-step-6",
+        "last_step_success": true
+      },
+      "obs_4": {
+        "data": {
+          "interactive": [
+            {
+              "class": "skip-content",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a.skip-content",
+              "tag": "a",
+              "text": "Press \"Enter\" to skip to content"
+            },
+            {
+              "class": "custom-logo-link",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a.custom-logo-link",
+              "tag": "a",
+              "text": ""
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Home"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Practice"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Courses"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Blog"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Contact"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(1)",
+              "tag": "a",
+              "text": "Practice Test Automation."
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "a:nth-of-type(2)",
+              "tag": "a",
+              "text": "Privacy Policy"
+            },
+            {
+              "class": "overflow-container",
+              "id": "overflow-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#overflow-container",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu\n\t\t\t\t\t\t\t\n\t\t\t\t\t"
+            },
+            {
+              "class": "max-width",
+              "id": "max-width",
+              "name": "",
+              "placeholder": "",
+              "selector": "#max-width",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu\n\t\t\t\t\t\t\t\n\t\t\t\t\t"
+            },
+            {
+              "class": "site-header",
+              "id": "site-header",
+              "name": "",
+              "placeholder": "",
+              "selector": "#site-header",
+              "tag": "header",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu"
+            },
+            {
+              "class": "header-bottom",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.header-bottom",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact\n\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\topen menu"
+            },
+            {
+              "class": "mobile-menu-container",
+              "id": "mobile-menu-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#mobile-menu-container",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "",
+              "id": "mobile-menu-container-inner",
+              "name": "",
+              "placeholder": "",
+              "selector": "#mobile-menu-container-inner",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu-primary-container",
+              "id": "menu-primary-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-primary-container",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu-container menu-primary",
+              "id": "menu-primary",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-primary",
+              "tag": "div",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "nav.menu",
+              "tag": "nav",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu-primary-items",
+              "id": "menu-primary-items",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-primary-items",
+              "tag": "ul",
+              "text": "Home\nPractice\nCourses\nBlog\nContact"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-home menu-item-43",
+              "id": "menu-item-43",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-43",
+              "tag": "li",
+              "text": "Home"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-20",
+              "id": "menu-item-20",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-20",
+              "tag": "li",
+              "text": "Practice"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-21",
+              "id": "menu-item-21",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-21",
+              "tag": "li",
+              "text": "Courses"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page current_page_parent menu-item-19",
+              "id": "menu-item-19",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-19",
+              "tag": "li",
+              "text": "Blog"
+            },
+            {
+              "class": "menu-item menu-item-type-post_type menu-item-object-page menu-item-18",
+              "id": "menu-item-18",
+              "name": "",
+              "placeholder": "",
+              "selector": "#menu-item-18",
+              "tag": "li",
+              "text": "Contact"
+            },
+            {
+              "class": "main-container",
+              "id": "main-container",
+              "name": "",
+              "placeholder": "",
+              "selector": "#main-container",
+              "tag": "section",
+              "text": "404: Page Not Found\n\t\t\t\t\n\t\t\t\t\n\t\t\t\t\tSorry, we couldn't find a page at this URL\n\t\t\t\t\tPlease double-che"
+            },
+            {
+              "class": "entry",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.entry",
+              "tag": "div",
+              "text": "404: Page Not Found\n\t\t\t\t\n\t\t\t\t\n\t\t\t\t\tSorry, we couldn't find a page at this URL\n\t\t\t\t\tPlease double-che"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "article:nth-of-type(1)",
+              "tag": "article",
+              "text": "404: Page Not Found\n\t\t\t\t\n\t\t\t\t\n\t\t\t\t\tSorry, we couldn't find a page at this URL\n\t\t\t\t\tPlease double-che"
+            },
+            {
+              "class": "post-padding-container",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.post-padding-container",
+              "tag": "div",
+              "text": "404: Page Not Found\n\t\t\t\t\n\t\t\t\t\n\t\t\t\t\tSorry, we couldn't find a page at this URL\n\t\t\t\t\tPlease double-che"
+            },
+            {
+              "class": "post-header",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.post-header",
+              "tag": "div",
+              "text": "404: Page Not Found"
+            },
+            {
+              "class": "post-title",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "h1.post-title",
+              "tag": "h1",
+              "text": "404: Page Not Found"
+            },
+            {
+              "class": "post-content",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.post-content",
+              "tag": "div",
+              "text": "Sorry, we couldn't find a page at this URL\n\t\t\t\t\tPlease double-check that the URL is correct or try s"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p:nth-of-type(1)",
+              "tag": "p",
+              "text": "Sorry, we couldn't find a page at this URL"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "p:nth-of-type(2)",
+              "tag": "p",
+              "text": "Please double-check that the URL is correct or try searching our site with the form below."
+            },
+            {
+              "class": "search-form-container",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.search-form-container",
+              "tag": "div",
+              "text": "Search"
+            },
+            {
+              "class": "search-form",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "form.search-form",
+              "tag": "form",
+              "text": "Search"
+            },
+            {
+              "class": "screen-reader-text",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "label.screen-reader-text",
+              "tag": "label",
+              "text": "Search"
+            },
+            {
+              "class": "search-field",
+              "id": "search-field",
+              "name": "s",
+              "placeholder": " Search for...",
+              "selector": "#search-field",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "search-submit",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "input.search-submit",
+              "tag": "input",
+              "text": ""
+            },
+            {
+              "class": "design-credit",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "div.design-credit",
+              "tag": "div",
+              "text": "© Copyright 2020  Practice Test Automation.  All rights reserved  |  Privacy Policy"
+            },
+            {
+              "class": "",
+              "id": "",
+              "name": "",
+              "placeholder": "",
+              "selector": "span:nth-of-type(1)",
+              "tag": "span",
+              "text": "© Copyright 2020  Practice Test Automation.  All rights reserved  |  Privacy Policy"
+            }
+          ],
+          "page_state": "loaded",
+          "warning": "⚠️ WARNING: Page appears to be a 404 or error page."
+        },
+        "source": "observe_ui"
+      },
+      "step_index": 1,
+      "visited_urls": {
+        "https://practicetestautomation.com": true,
+        "https://practicetestautomation.com/practice-test-file-upload/": true
+      }
+    },
+    "timestamp": "2026-05-23T10:18:27.473336Z"
+  }
+}
