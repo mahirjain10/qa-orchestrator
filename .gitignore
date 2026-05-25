@@ -37,7 +37,7 @@ vendor/
 Thumbs.db
 
 # Data directories
-data/
+# data/ (unignored for analysis)
 artifacts/
 campaigns/**/*.json
 
