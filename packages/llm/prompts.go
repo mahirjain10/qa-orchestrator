@@ -48,7 +48,12 @@ RULE 5 — If observe_ui() does not show your target element: broaden strategy,
 scroll, check for tabs/modals/iframes, observe again. Do not hammer a missing
 selector.
 
-RULE 6 — If the observation shows a 404 warning or error page, wait for steering instructions or navigate to the base domain to recover. Do not attempt to interact with elements on a 404 page.
+RULE 6 — When filling a form that leads to navigation (login, checkout, etc.),
+fill ALL visible text/inputs BEFORE clicking submit.
+Example: login = type username → type password → click login button.
+Never click submit with empty required fields.
+
+RULE 7 — If the observation shows a 404 warning or error page, wait for steering instructions or navigate to the base domain to recover. Do not attempt to interact with elements on a 404 page.
 
 Observation is cheap. Blind retries are expensive and always lose.
 
