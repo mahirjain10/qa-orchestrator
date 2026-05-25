@@ -17,7 +17,11 @@ type SessionStore struct {
 	mu       sync.RWMutex
 	baseDir  string
 	sessions map[string]*types.Session
+	order    []string // insertion/access order; front = oldest
+	maxSize  int
 }
+
+const DefaultMaxCacheSize = 50
 
 func NewSessionStore(baseDir string) (*SessionStore, error) {
 	if err := os.MkdirAll(baseDir, 0755); err != nil {
@@ -27,6 +31,8 @@ func NewSessionStore(baseDir string) (*SessionStore, error) {
 	return &SessionStore{
 		baseDir:  baseDir,
 		sessions: make(map[string]*types.Session),
+		order:    make([]string, 0),
+		maxSize:  DefaultMaxCacheSize,
 	}, nil
 }
 
@@ -47,6 +53,8 @@ func (s *SessionStore) Create(campaign *types.Campaign) (*types.Session, error) 
 	}
 
 	s.sessions[session.RunID] = session
+	s.touchOrder(session.RunID)
+	s.evictIfNeeded()
 
 	if err := s.persist(session); err != nil {
 		delete(s.sessions, session.RunID)
@@ -62,6 +70,9 @@ func (s *SessionStore) Get(runID string) (*types.Session, error) {
 	s.mu.RUnlock()
 
 	if exists {
+		s.mu.Lock()
+		s.touchOrder(runID)
+		s.mu.Unlock()
 		return session.Clone(), nil
 	}
 
@@ -69,6 +80,7 @@ func (s *SessionStore) Get(runID string) (*types.Session, error) {
 	defer s.mu.Unlock()
 
 	if session, exists := s.sessions[runID]; exists {
+		s.touchOrder(runID)
 		return session.Clone(), nil
 	}
 
@@ -78,6 +90,8 @@ func (s *SessionStore) Get(runID string) (*types.Session, error) {
 	}
 
 	s.sessions[runID] = session
+	s.touchOrder(runID)
+	s.evictIfNeeded()
 	return session.Clone(), nil
 }
 
@@ -88,6 +102,8 @@ func (s *SessionStore) Save(session *types.Session) error {
 	cloned := session.Clone()
 	cloned.UpdatedAt = time.Now().UTC()
 	s.sessions[cloned.RunID] = cloned
+	s.touchOrder(cloned.RunID)
+	s.evictIfNeeded()
 	return s.persist(cloned)
 }
 
@@ -131,6 +147,8 @@ func (s *SessionStore) List() ([]*types.Session, error) {
 			return nil, fmt.Errorf("loading session %s: %w", runID, err)
 		}
 		s.sessions[runID] = session
+		s.touchOrder(runID)
+		s.evictIfNeeded()
 		sessions = append(sessions, session.Clone())
 	}
 
@@ -150,6 +168,8 @@ func (s *SessionStore) UpdateStatus(runID string, status types.RunState) error {
 	cloned.Status = status
 	cloned.UpdatedAt = time.Now().UTC()
 	s.sessions[runID] = cloned
+	s.touchOrder(runID)
+	s.evictIfNeeded()
 	return s.persist(cloned)
 }
 
@@ -165,6 +185,8 @@ func (s *SessionStore) UpdateFlowState(runID, flowID string, status types.FlowSt
 	cloned := session.Clone()
 	cloned.UpdateFlowState(flowID, status, errMsg)
 	s.sessions[runID] = cloned
+	s.touchOrder(runID)
+	s.evictIfNeeded()
 	return s.persist(cloned)
 }
 
@@ -180,6 +202,8 @@ func (s *SessionStore) SaveCheckpoint(runID string, cp *types.Checkpoint) error 
 	cloned := session.Clone()
 	cloned.SetCheckpoint(cp.FlowID, cp.StepID, cp.StepIndex, cp.Payload)
 	s.sessions[runID] = cloned
+	s.touchOrder(runID)
+	s.evictIfNeeded()
 	return s.persist(cloned)
 }
 
@@ -192,13 +216,56 @@ func (s *SessionStore) Delete(runID string) error {
 		return fmt.Errorf("deleting session file: %w", err)
 	}
 	delete(s.sessions, runID)
+	for i, id := range s.order {
+		if id == runID {
+			s.order = append(s.order[:i], s.order[i+1:]...)
+			break
+		}
+	}
 	return nil
+}
+
+// Cache management
+
+// touchOrder marks a session as recently accessed by moving it to the back.
+// Must be called with s.mu held (write lock).
+func (s *SessionStore) touchOrder(runID string) {
+	for i, id := range s.order {
+		if id == runID {
+			s.order = append(s.order[:i], s.order[i+1:]...)
+			break
+		}
+	}
+	s.order = append(s.order, runID)
+}
+
+// evictIfNeeded removes the oldest terminal-state session from the cache
+// when the cache exceeds maxSize. Never evicts sessions in a running/pending state.
+// Must be called with s.mu held (write lock).
+func (s *SessionStore) evictIfNeeded() {
+	for len(s.sessions) > s.maxSize && len(s.order) > 0 {
+		oldest := s.order[0]
+		s.order = s.order[1:]
+
+		if session, exists := s.sessions[oldest]; exists {
+			switch session.Status {
+			case types.RunStateRunning, types.RunStatePending,
+				types.RunStateWaitingInput:
+				// Put it back at the end and try the next one
+				s.order = append(s.order, oldest)
+				continue
+			}
+		}
+
+		delete(s.sessions, oldest)
+	}
 }
 
 // Private helpers
 
 func (s *SessionStore) getOrLoadLocked(runID string) (*types.Session, error) {
 	if session, exists := s.sessions[runID]; exists {
+		s.touchOrder(runID)
 		return session.Clone(), nil
 	}
 	session, err := s.loadFromFile(runID)
@@ -206,6 +273,8 @@ func (s *SessionStore) getOrLoadLocked(runID string) (*types.Session, error) {
 		return nil, err
 	}
 	s.sessions[runID] = session
+	s.touchOrder(runID)
+	s.evictIfNeeded()
 	return session.Clone(), nil
 }
 
