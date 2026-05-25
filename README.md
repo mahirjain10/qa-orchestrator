@@ -25,6 +25,100 @@ High-level runtime path:
    - Artifact store: screenshots/logs/reports.
 7. TUI renders live run state and accepts operator commands.
 
+```text
++-----------------------------+
+|      User / QA Engineer     |
+|  uses terminal TUI          |
++-------------+---------------+
+              |
+              v
++-----------------------------+
+|      TUI Application        |
+| start/pause/resume/cancel   |
+| steer/show traces/status    |
++-------------+---------------+
+              |
+              v
++-----------------------------+
+|   Runtime Control Layer     |
+| lifecycle + HITL gate       |
++-------------+---------------+
+              |
+              v
++-----------------------------+
+|   Campaign YAML Validator   |
+| schema, fields, deps, mode  |
++-------------+---------------+
+              |
+              v
++-----------------------------+
+|  Campaign Orchestrator      |
+| graph, eligibility, retry   |
+| session management          |
+| worker pool + semaphore     |
++------+------------+---------+
+       |            |
+       v            v
++------------+  +-------------+
+| Session    |  | Trace Store |
+| Store      |  | events/logs |
++------------+  +-------------+
+       |
+       v
++---------------+
+| Artifact Store|
+| screenshots   |
+| logs/reports  |
++-------+-------+
+        |
+        v
++-----------------------------+
+|       Mode Router           |
+| reads flow `mode` field     |
+| guided | autonomous         |
++------+---------------+------+
+       |               |
+       v               v
++-----------+   +------------------+
+| Guided    |   | Autonomous       |
+| Execution |   | Execution        |
+| follows   |   | Planner generates|
+| predefined|   | steps from goal  |
+| steps     |   | using LLM        |
++-----+-----+   +--------+---------+
+      |                  |
+      +--------+---------+
+               |
+               v
++-----------------------------+
+| Flow Execution Engine       |
+| Planner -> Executor         |
+| -> Validator -> Recovery    |
+| + dependency context        |
++-------------+---------------+
+              |
+              v
++-----------------------------+
+| Tool Registry               |
+| trusted primitives          |
++-------------+---------------+
+              |
+              v
++-----------------------------+
+| Browser Runtime             |
++-------------+---------------+
+              |
+              v
++-----------------------------+
+| Playwright Runtime          |
++-------------+---------------+
+              |
+              v
++-----------------------------+
+| Target Web App              |
++-----------------------------+
+```
+
 Detailed design is in [docs/design/architecture.md](docs/design/architecture.md).
 
 ## Repository layout
@@ -81,6 +175,45 @@ To maintain a clean root directory, all transient files (e.g., `MIDWORK.md`, `se
 ## Agent Hand-off Experiment (Experimental)
 
 This repository implements an experimental "Run Summary" hand-off mechanism for AI agents. Instead of agents traversing the entire codebase to guess previous progress, we use `docs/history/run-summaries/` to provide high-context, surgical summaries of past work. 
+
+### Example: Run Summary (`docs/history/run_summaries/run_001.md`)
+
+```markdown
+# Run Summary — 001
+
+## Goal
+Initial project setup and Phase 1 implementation.
+
+## What happened
+1. Created project structure with root module.
+2. Implemented campaign parser (YAML/JSON/natural-language).
+3. Implemented dependency validator.
+4. Implemented run/session ID generation.
+5. Implemented session store with atomic writes.
+
+## Files created/modified
+- `packages/shared/types/campaign.go`
+- `packages/orchestrator/campaign/parser.go`
+- `packages/storage/session/store.go`
+
+## Status
+- Tests: PASSED
+- Phase: COMPLETE
+
+## Next
+- Phase 2: TUI Shell.
+```
+
+### Example: Execution Logs (`logs/app.log` style)
+
+```text
+2026-05-25 14:02:10 [INFO] Orchestrator: starting campaign "Login Campaign" (v1.0)
+2026-05-25 14:02:11 [INFO] Flow: starting flow "auth-flow" (mode: autonomous, priority: high)
+2026-05-25 14:02:15 [DEBUG] Agent[auth-flow]: planning next step for goal "Test login with invalid credentials"
+2026-05-25 14:02:18 [INFO] Executor[auth-flow]: tool=navigate params={"url": "https://example.com/login"}
+2026-05-25 14:02:22 [INFO] Validator[auth-flow]: step PASSED (observation: page loaded, login form visible)
+2026-05-25 14:02:30 [INFO] Flow: flow "auth-flow" COMPLETED successfully
+```
 
 Feedback from participating agents suggests this significantly reduces "hallucination-guessing" and provides a cleaner state transfer than raw log analysis. While experimental, this approach aims to streamline multi-turn agentic workflows.
 
