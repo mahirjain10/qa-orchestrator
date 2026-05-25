@@ -1,6 +1,7 @@
 package browserruntime
 
 import (
+	"context"
 	"testing"
 )
 
@@ -85,5 +86,87 @@ func TestNewBrowserRuntimeWithConfig(t *testing.T) {
 
 	if runtime.config.ViewportWidth != 1920 {
 		t.Errorf("ViewportWidth = %d, want 1920", runtime.config.ViewportWidth)
+	}
+}
+
+func TestStop_NilsFieldsAndIsIdempotent(t *testing.T) {
+	r, err := NewBrowserRuntime(nil)
+	if err != nil {
+		t.Fatalf("NewBrowserRuntime failed: %v", err)
+	}
+	r.isRunning = true
+
+	if err := r.Stop(); err != nil {
+		t.Fatalf("Stop() error: %v", err)
+	}
+
+	if r.page != nil {
+		t.Error("page should be nil after Stop()")
+	}
+	if r.context != nil {
+		t.Error("context should be nil after Stop()")
+	}
+	if r.browser != nil {
+		t.Error("browser should be nil after Stop()")
+	}
+	if r.pw != nil {
+		t.Error("pw should be nil after Stop()")
+	}
+	if r.isRunning {
+		t.Error("isRunning should be false after Stop()")
+	}
+
+	// Second call must not panic or error
+	if err := r.Stop(); err != nil {
+		t.Fatalf("second Stop() error: %v", err)
+	}
+}
+
+func TestClose_NilsFlowFields(t *testing.T) {
+	flow := &FlowBrowserRuntime{
+		isRunning: true,
+	}
+
+	if err := flow.Close(); err != nil {
+		t.Fatalf("Close() error: %v", err)
+	}
+
+	if flow.page != nil {
+		t.Error("page should be nil after Close()")
+	}
+	if flow.context != nil {
+		t.Error("context should be nil after Close()")
+	}
+	if flow.isRunning {
+		t.Error("isRunning should be false after Close()")
+	}
+}
+
+func TestOperations_FailWhenNotRunning(t *testing.T) {
+	r, err := NewBrowserRuntime(nil)
+	if err != nil {
+		t.Fatalf("NewBrowserRuntime failed: %v", err)
+	}
+
+	ctx := context.Background()
+	ops := []struct {
+		name string
+		fn   func() error
+	}{
+		{"Navigate", func() error { return r.Navigate(ctx, "https://example.com") }},
+		{"Click", func() error { return r.Click(ctx, "#btn") }},
+		{"Fill", func() error { return r.Fill(ctx, "#input", "val") }},
+		{"WaitForSelector", func() error { return r.WaitForSelector(ctx, "#el", nil) }},
+		{"TextContent", func() error { _, err := r.TextContent(ctx, "#el"); return err }},
+		{"InnerHTML", func() error { _, err := r.InnerHTML(ctx, "#el"); return err }},
+		{"Evaluate", func() error { _, err := r.Evaluate(ctx, "1+1"); return err }},
+		{"Screenshot", func() error { _, err := r.Screenshot(ctx, nil); return err }},
+	}
+	for _, op := range ops {
+		t.Run(op.name, func(t *testing.T) {
+			if err := op.fn(); err == nil {
+				t.Error("expected error for non-started runtime, got nil")
+			}
+		})
 	}
 }

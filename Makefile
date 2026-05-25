@@ -26,7 +26,7 @@ run-guided:
 	$(MAKE) run ARGS="campaigns/sample-guided.yaml"
 
 run-real: build
-	$(BROWSER_MODE) $(BINARY) --browser real $(CAMPAIGN) $(ARGS)
+	$(BINARY) --browser real $(CAMPAIGN) $(ARGS)
 
 # Generate per-campaign targets for mock and real modes
 define gen-campaign-targets
@@ -53,7 +53,7 @@ run-real-large: run-real-large-parallel
 
 list-campaigns:
 	@echo "Available campaigns (use 'run-<name>' or 'run-real-<name>'):"
-	@for c in $(CAMPAIGNS); do echo "  $$c"; done
+	@$(foreach c,$(CAMPAIGNS),echo "  $(c)";)
 
 resume: build
 	$(BINARY) --resume $(RUN_ID) $(CAMPAIGN)
@@ -99,13 +99,33 @@ check-env:
 	@$(if $(GEMINI_API_KEY), echo "OK: GEMINI_API_KEY is configured.", echo "INFO: GEMINI_API_KEY not set.")
 	@$(if $(GEMINI_MODEL), echo "OK: GEMINI_MODEL=$(GEMINI_MODEL)", echo "INFO: GEMINI_MODEL not set (default: gemini-2.0-flash)")
 	@echo ""
+	@echo "=== Reasoning / Thinking ==="
+	@$(if $(LLM_REASONING_EFFORT), echo "OK: LLM_REASONING_EFFORT=$(LLM_REASONING_EFFORT)", echo "INFO: LLM_REASONING_EFFORT not set (model default applies)")
+	@$(if $(LLM_THINKING_TYPE), echo "OK: LLM_THINKING_TYPE=$(LLM_THINKING_TYPE)", echo "INFO: LLM_THINKING_TYPE not set (thinking disabled by default)")
+	@$(if $(LLM_THINKING_BUDGET), \
+		echo "OK: LLM_THINKING_BUDGET=$(LLM_THINKING_BUDGET)", \
+		echo "INFO: LLM_THINKING_BUDGET not set (no explicit budget)")
+	@$(if $(LLM_HTTP_REFERER), echo "OK: LLM_HTTP_REFERER=$(LLM_HTTP_REFERER)", echo "INFO: LLM_HTTP_REFERER not set")
+	@$(if $(LLM_APP_TITLE), echo "OK: LLM_APP_TITLE=$(LLM_APP_TITLE)", echo "INFO: LLM_APP_TITLE not set")
+	@echo ""
+	@echo "=== Provider Routing (OpenRouter only) ==="
+	@$(if $(LLM_PROVIDER_PRIORITY), echo "OK: LLM_PROVIDER_PRIORITY=$(LLM_PROVIDER_PRIORITY)", echo "INFO: LLM_PROVIDER_PRIORITY not set")
+	@$(if $(LLM_PROVIDER_ONLY), echo "OK: LLM_PROVIDER_ONLY=$(LLM_PROVIDER_ONLY)", echo "INFO: LLM_PROVIDER_ONLY not set")
+	@$(if $(LLM_ALLOW_FALLBACKS), echo "OK: LLM_ALLOW_FALLBACKS=$(LLM_ALLOW_FALLBACKS)", echo "INFO: LLM_ALLOW_FALLBACKS not set")
+	@echo ""
 	@echo "Usage:"
-	@echo "  OpenRouter:  LLM_API_KEY=xxx LLM_MODEL=openai/gpt-4o make run CAMPAIGN='campaigns/my.yaml'"
-	@echo "  Gemini:      LLM_PROVIDER=gemini GEMINI_API_KEY=xxx make run CAMPAIGN='campaigns/my.yaml'"
+	@echo "  OpenRouter (GPT):          LLM_API_KEY=sk-or-... LLM_MODEL=openai/gpt-4o-mini make run CAMPAIGN='campaigns/my.yaml'"
+	@echo "  OpenRouter (DeepSeek V4):  LLM_API_KEY=sk-or-... LLM_MODEL=deepseek/deepseek-v4-pro LLM_REASONING_EFFORT=high make run CAMPAIGN='campaigns/my.yaml'"
+	@echo "  OpenRouter (thinking):     LLM_API_KEY=sk-or-... LLM_MODEL=deepseek/deepseek-v4-pro LLM_THINKING_TYPE=enabled LLM_THINKING_BUDGET=4000 make run"
+	@echo "  Gemini:                    LLM_PROVIDER=gemini GEMINI_API_KEY=AIza-... make run CAMPAIGN='campaigns/my.yaml'"
 
 clean:
-	powershell -NoProfile -Command "if (Test-Path '$(BINARY)') { Remove-Item '$(BINARY)' -Force }"
-	powershell -NoProfile -Command "if (Test-Path './coverage.out') { Remove-Item './coverage.out' -Force }"
+ifeq ($(OS),Windows_NT)
+	-if exist "$(BINARY)" del /Q "$(BINARY)"
+	-if exist "./coverage.out" del /Q "./coverage.out"
+else
+	@rm -f $(BINARY) coverage.out
+endif
 	go clean
 
 help:
@@ -120,20 +140,3 @@ help:
 	@echo "  run-sample         Alias for run-sample-autonomous"
 	@echo "  run-guided         Alias for run-sample-guided"
 	@echo "  run-real-sample    Alias for run-real-sample-autonomous"
-	@echo "  run-real-large     Alias for run-real-large-parallel"
-	@echo "  list-campaigns     Show all available campaign names"
-	@echo "  install-playwright Install Playwright browsers (required for --browser real)"
-	@echo "  resume             Resume a session: make resume RUN_ID=run_xxx CAMPAIGN=campaigns/sample-guided.yaml"
-	@echo "  test               Run all tests"
-	@echo "  test-short         Run short tests only"
-	@echo "  test-cover         Generate coverage summary"
-	@echo "  test-campaigns     Validate all $(words $(CAMPAIGNS)) campaign YAMLs parse correctly"
-	@echo "  fmt                Run go fmt"
-	@echo "  vet                Run go vet"
-	@echo "  lint               Run fmt + vet"
-	@echo "  verify             Run tests then build"
-	@echo "  deps               Download Go deps + install Playwright"
-	@echo "  tidy               Run go mod tidy"
-	@echo "  check-env          Show LLM/Gemini configuration status"
-	@echo "  clean              Remove build/coverage artifacts"
-	@echo "  help               Show this help"

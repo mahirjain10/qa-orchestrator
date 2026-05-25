@@ -10,7 +10,6 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"qa-orchestrator/apps/tui/internal/components"
 	"qa-orchestrator/packages/runtime"
 	"qa-orchestrator/packages/shared/types"
 	"qa-orchestrator/packages/storage/artifact"
@@ -156,6 +155,30 @@ func TestSteeringCommandApprove(t *testing.T) {
 
 	if screen.msg != "Approval noted and run resumed" {
 		t.Fatalf("expected approval message, got %q", screen.msg)
+	}
+}
+
+func TestSteeringCommandContinueGetRunStatusError(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	_ = runID
+	screen.currentRun = &types.Session{RunID: "nonexistent-run-id"}
+
+	screen.processSteeringCommand("continue")
+
+	if !strings.Contains(screen.msg, "Error getting run status") {
+		t.Fatalf("expected error getting run status message, got %q", screen.msg)
+	}
+}
+
+func TestSteeringCommandApproveGetRunStatusError(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	_ = runID
+	screen.currentRun = &types.Session{RunID: "nonexistent-run-id"}
+
+	screen.processSteeringCommand("approve")
+
+	if !strings.Contains(screen.msg, "Error getting run status") {
+		t.Fatalf("expected error getting run status message, got %q", screen.msg)
 	}
 }
 
@@ -1549,6 +1572,7 @@ func TestFilterModeCancelledOnEsc(t *testing.T) {
 	screen.currentRun = &types.Session{RunID: runID}
 	screen.activeView = ViewTraces
 	screen.tracePanel.FilterMode = true
+	screen.tracePanel.FilterInput.Focus()
 	screen.tracePanel.FilterInput.SetValue("test")
 
 	_, _ = screen.handleFilterKey(tea.KeyMsg{Type: tea.KeyEscape})
@@ -1558,6 +1582,39 @@ func TestFilterModeCancelledOnEsc(t *testing.T) {
 	}
 	if screen.tracePanel.FilterInput.Value() != "" {
 		t.Fatal("expected filter input to be cleared")
+	}
+	if screen.tracePanel.FilterInput.Focused() {
+		t.Fatal("expected FilterInput to be blurred after escape")
+	}
+}
+
+func TestFilterModeEnterBlursInput(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.currentRun = &types.Session{RunID: runID}
+	screen.activeView = ViewTraces
+	screen.tracePanel.FilterMode = true
+	screen.tracePanel.FilterInput.Focus()
+	screen.tracePanel.FilterInput.SetValue("test")
+
+	_, _ = screen.handleFilterKey(tea.KeyMsg{Type: tea.KeyEnter})
+
+	if screen.tracePanel.FilterInput.Focused() {
+		t.Fatal("expected FilterInput to be blurred after enter")
+	}
+}
+
+func TestFilterModeEscBlursInput(t *testing.T) {
+	screen, runID := newScreenWithRun(t)
+	screen.currentRun = &types.Session{RunID: runID}
+	screen.activeView = ViewTraces
+	screen.tracePanel.FilterMode = true
+	screen.tracePanel.FilterInput.Focus()
+	screen.tracePanel.FilterInput.SetValue("test")
+
+	_, _ = screen.handleFilterKey(tea.KeyMsg{Type: tea.KeyEscape})
+
+	if screen.tracePanel.FilterInput.Focused() {
+		t.Fatal("expectedFilterInput to be blurred after escape")
 	}
 }
 
@@ -1576,131 +1633,11 @@ func TestFilterModeAppliedOnEnter(t *testing.T) {
 	if screen.tracePanel.Filter.Text != "browser" {
 		t.Fatalf("expected filter text 'browser', got %q", screen.tracePanel.Filter.Text)
 	}
-	if screen.tracePanel.Selected != 0 {
+if screen.tracePanel.Selected != 0 {
 		t.Fatalf("expected selected to reset to 0, got %d", screen.tracePanel.Selected)
 	}
-}
-
-func TestShowFailedToggle(t *testing.T) {
-	screen, runID := newScreenWithRun(t)
-	screen.currentRun = &types.Session{RunID: runID}
-	screen.activeView = ViewTraces
-	screen.sidebarFocus = false
-
-	_, _ = screen.handleMainKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'S'}})
-
-	if !screen.tracePanel.Filter.ShowFailed {
-		t.Fatal("expected showFailed to be true after toggle")
-	}
-
-	_, _ = screen.handleMainKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'S'}})
-
-	if screen.tracePanel.Filter.ShowFailed {
-		t.Fatal("expected showFailed to be false after second toggle")
-	}
-}
-
-func TestFilteredEventsReturnsAllWhenNoFilter(t *testing.T) {
-	panel := components.NewTracePanelModel()
-	events := []*types.TraceEvent{
-		types.NewTraceEvent("run-1", "flow-1", "agent", types.TraceEventStepExecution, "action1", types.TraceStatusSuccess),
-		types.NewTraceEvent("run-1", "flow-1", "agent", types.TraceEventStepExecution, "action2", types.TraceStatusFailed),
-	}
-	panel.SetEvents(events)
-
-	filtered := panel.FilteredEvents()
-	if len(filtered) != 2 {
-		t.Fatalf("expected 2 events, got %d", len(filtered))
-	}
-}
-
-func TestFilteredEventsFiltersByText(t *testing.T) {
-	panel := components.NewTracePanelModel()
-	events := []*types.TraceEvent{
-		types.NewTraceEvent("run-1", "flow-1", "agent", types.TraceEventStepExecution, "browser click", types.TraceStatusSuccess),
-		types.NewTraceEvent("run-1", "flow-1", "agent", types.TraceEventStepExecution, "api call", types.TraceStatusSuccess),
-	}
-	panel.SetEvents(events)
-	panel.Filter.Text = "browser"
-
-	filtered := panel.FilteredEvents()
-	if len(filtered) != 1 {
-		t.Fatalf("expected 1 event, got %d", len(filtered))
-	}
-	if filtered[0].Action != "browser click" {
-		t.Fatalf("expected 'browser click', got %q", filtered[0].Action)
-	}
-}
-
-func TestFilteredEventsFiltersByShowFailed(t *testing.T) {
-	panel := components.NewTracePanelModel()
-	events := []*types.TraceEvent{
-		types.NewTraceEvent("run-1", "flow-1", "agent", types.TraceEventStepExecution, "action1", types.TraceStatusSuccess),
-		types.NewTraceEvent("run-1", "flow-1", "agent", types.TraceEventStepExecution, "action2", types.TraceStatusFailed),
-		types.NewTraceEvent("run-1", "flow-1", "agent", types.TraceEventStepExecution, "action3", types.TraceStatusSuccess),
-	}
-	panel.SetEvents(events)
-	panel.Filter.ShowFailed = true
-
-	filtered := panel.FilteredEvents()
-	if len(filtered) != 1 {
-		t.Fatalf("expected 1 event, got %d", len(filtered))
-	}
-	if filtered[0].Status != types.TraceStatusFailed {
-		t.Fatal("expected failed event")
-	}
-}
-
-func TestFilteredEventsFiltersByFlowID(t *testing.T) {
-	panel := components.NewTracePanelModel()
-	events := []*types.TraceEvent{
-		types.NewTraceEvent("run-1", "flow-1", "agent", types.TraceEventStepExecution, "action1", types.TraceStatusSuccess),
-		types.NewTraceEvent("run-1", "flow-2", "agent", types.TraceEventStepExecution, "action2", types.TraceStatusSuccess),
-	}
-	panel.SetEvents(events)
-	panel.Filter.FlowID = "flow-1"
-
-	filtered := panel.FilteredEvents()
-	if len(filtered) != 1 {
-		t.Fatalf("expected 1 event, got %d", len(filtered))
-	}
-	if filtered[0].FlowID != "flow-1" {
-		t.Fatalf("expected flow-1, got %q", filtered[0].FlowID)
-	}
-}
-
-func TestFilteredEventsFiltersByEventType(t *testing.T) {
-	panel := components.NewTracePanelModel()
-	events := []*types.TraceEvent{
-		types.NewTraceEvent("run-1", "flow-1", "agent", types.TraceEventStepExecution, "action1", types.TraceStatusSuccess),
-		types.NewTraceEvent("run-1", "flow-1", "agent", types.TraceEventToolResult, "action2", types.TraceStatusSuccess),
-	}
-	panel.SetEvents(events)
-	panel.Filter.EventType = "tool_result"
-
-	filtered := panel.FilteredEvents()
-	if len(filtered) != 1 {
-		t.Fatalf("expected 1 event, got %d", len(filtered))
-	}
-	if filtered[0].EventType != types.TraceEventToolResult {
-		t.Fatalf("expected tool_result event, got %q", filtered[0].EventType)
-	}
-	if filtered[0].EventType != types.TraceEventToolResult {
-		t.Fatalf("expected tool_call event, got %q", filtered[0].EventType)
-	}
-}
-
-func TestFilteredEventsCaseInsensitiveText(t *testing.T) {
-	panel := components.NewTracePanelModel()
-	events := []*types.TraceEvent{
-		types.NewTraceEvent("run-1", "flow-1", "agent", types.TraceEventStepExecution, "Browser Click", types.TraceStatusSuccess),
-	}
-	panel.SetEvents(events)
-	panel.Filter.Text = "browser"
-
-	filtered := panel.FilteredEvents()
-	if len(filtered) != 1 {
-		t.Fatalf("expected 1 event with case-insensitive match, got %d", len(filtered))
+	if screen.tracePanel.FilterInput.Focused() {
+		t.Fatal("expected FilterInput to be blurred after enter")
 	}
 }
 
@@ -1715,6 +1652,9 @@ func TestFilterTextClearedOnEmptyEnter(t *testing.T) {
 
 	if screen.tracePanel.Filter.Text != "" {
 		t.Fatalf("expected filter text to be cleared, got %q", screen.tracePanel.Filter.Text)
+	}
+	if screen.tracePanel.FilterInput.Focused() {
+		t.Fatal("expected FilterInput to be blurred after enter")
 	}
 }
 
@@ -3097,5 +3037,66 @@ func TestSteerCommandNoArgs(t *testing.T) {
 	}
 	if !strings.Contains(screen.msg, "Usage") {
 		t.Fatalf("expected usage message, got %q", screen.msg)
+	}
+}
+
+func TestVisualSessions_CurrentFirst(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	now := time.Now()
+	screen.sessions = []*types.Session{
+		{RunID: "run-alpha", CampaignName: "Alpha", StartedAt: now.Add(-2 * time.Hour)},
+		{RunID: "run-beta", CampaignName: "Beta", StartedAt: now.Add(-1 * time.Hour)},
+		{RunID: "run-gamma", CampaignName: "Gamma", StartedAt: now},
+	}
+	screen.currentRun = screen.sessions[1]
+
+	vis := screen.visualSessions()
+	if len(vis) != 3 {
+		t.Fatalf("expected 3 sessions, got %d", len(vis))
+	}
+	if vis[0].RunID != "run-beta" {
+		t.Errorf("expected current session first, got %s", vis[0].RunID)
+	}
+	if vis[1].RunID != "run-gamma" {
+		t.Errorf("expected Gamma (newest previous) second, got %s", vis[1].RunID)
+	}
+	if vis[2].RunID != "run-alpha" {
+		t.Errorf("expected Alpha (oldest previous) last, got %s", vis[2].RunID)
+	}
+}
+
+func TestVisualSessions_NoCurrentRunSortsNewestFirst(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	now := time.Now()
+	screen.sessions = []*types.Session{
+		{RunID: "run-old", CampaignName: "Old", StartedAt: now.Add(-3 * time.Hour)},
+		{RunID: "run-new", CampaignName: "New", StartedAt: now.Add(-1 * time.Hour)},
+		{RunID: "run-mid", CampaignName: "Mid", StartedAt: now.Add(-2 * time.Hour)},
+	}
+	screen.currentRun = nil
+
+	vis := screen.visualSessions()
+	if len(vis) != 3 {
+		t.Fatalf("expected 3 sessions, got %d", len(vis))
+	}
+	if vis[0].RunID != "run-new" {
+		t.Errorf("expected newest first, got %s", vis[0].RunID)
+	}
+	if vis[1].RunID != "run-mid" {
+		t.Errorf("expected mid second, got %s", vis[1].RunID)
+	}
+	if vis[2].RunID != "run-old" {
+		t.Errorf("expected oldest last, got %s", vis[2].RunID)
+	}
+}
+
+func TestVisualSessions_Empty(t *testing.T) {
+	screen, _ := newScreenWithRun(t)
+	screen.sessions = nil
+	screen.currentRun = nil
+
+	vis := screen.visualSessions()
+	if len(vis) != 0 {
+		t.Fatalf("expected empty result, got %d sessions", len(vis))
 	}
 }

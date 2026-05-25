@@ -3,8 +3,11 @@ package llm
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
+
+	"qa-orchestrator/packages/shared"
 )
 
 const (
@@ -16,7 +19,7 @@ const (
 	envHTTPReferer      = "LLM_HTTP_REFERER"
 	envAppTitle         = "LLM_APP_TITLE"
 	envProviderPriority = "LLM_PROVIDER_PRIORITY"
-	envProviderAllow    = "LLM_PROVIDER_ALLOW"
+	envAllowFallbacks    = "LLM_ALLOW_FALLBACKS"
 	envProviderOnly     = "LLM_PROVIDER_ONLY"
 	envProvider         = "LLM_PROVIDER"
 	envGeminiAPIKey     = "GEMINI_API_KEY"
@@ -28,11 +31,12 @@ const (
 
 	defaultBaseURL        = "https://openrouter.ai/api/v1"
 	defaultModel          = "openai/gpt-4o-mini"
-	defaultTimeout        = 30
+	defaultTimeout        = 120
 	defaultMaxRetries     = 3
 	defaultProvider       = "auto"
 	defaultGeminiModel    = "gemini-2.0-flash"
 	defaultFallbackModels = "openai/gpt-4o-mini,gemini/gemini-2.0-flash-001"
+	maxMaxRetries        = 20
 )
 
 type Config struct {
@@ -45,7 +49,7 @@ type Config struct {
 	HTTPReferer      string
 	AppTitle         string
 	ProviderPriority string
-	ProviderAllow    string
+	AllowFallbacks string
 	ProviderOnly     string
 	Provider         string
 	GeminiAPIKey     string
@@ -56,98 +60,32 @@ type Config struct {
 }
 
 func LoadConfig() (*Config, error) {
-	provider := os.Getenv(envProvider)
-	if provider == "" {
-		provider = defaultProvider
+	provider := resolveProvider(os.Getenv(envProvider))
+	model, geminiModel := resolveModel(provider, os.Getenv(envModel), os.Getenv(envGeminiModel))
+	apiKey, geminiAPIKey, err := validateAPIKeys(provider, os.Getenv(envAPIKey), os.Getenv(envGeminiAPIKey))
+	if err != nil {
+		return nil, err
 	}
-
-	if strings.HasPrefix(provider, "gemini") || strings.HasPrefix(provider, "google/") {
-		provider = "gemini"
-	} else if strings.HasPrefix(provider, "gpt-") || strings.HasPrefix(provider, "o1") || strings.HasPrefix(provider, "o3") {
-		provider = "openai"
-	} else if strings.HasPrefix(provider, "openai/") || strings.HasPrefix(provider, "anthropic/") || strings.HasPrefix(provider, "meta/") {
-		provider = "openrouter"
-	}
-
-	model := os.Getenv(envModel)
-	geminiModel := os.Getenv(envGeminiModel)
-	if geminiModel == "" {
-		geminiModel = defaultGeminiModel
-	}
-
-	if provider == "auto" {
-		if model == "" {
-			model = defaultModel
-		}
-	} else if provider == "gemini" {
-		if model == "" {
-			model = geminiModel
-		}
-	}
-
-	apiKey := os.Getenv(envAPIKey)
-	geminiAPIKey := os.Getenv(envGeminiAPIKey)
-
-	if provider == "gemini" {
-		if geminiAPIKey == "" && apiKey == "" {
-			return nil, fmt.Errorf("%s or %s environment variable is required for Gemini provider", envGeminiAPIKey, envAPIKey)
-		}
-		if geminiAPIKey == "" {
-			geminiAPIKey = apiKey
-		}
-	} else {
-		if apiKey == "" {
-			return nil, fmt.Errorf("%s environment variable is required", envAPIKey)
-		}
-	}
-
 	if model == "" {
 		return nil, fmt.Errorf("%s environment variable is required", envModel)
 	}
-
-	baseURL := os.Getenv(envBaseURL)
-	if baseURL == "" && provider != "gemini" {
-		baseURL = defaultBaseURL
+	baseURL := resolveBaseURL(provider, model, os.Getenv(envBaseURL))
+	timeout, err := parseEnvInt(envTimeout, defaultTimeout)
+	if err != nil {
+		return nil, err
 	}
-
-	timeout := defaultTimeout
-	if timeoutStr := os.Getenv(envTimeout); timeoutStr != "" {
-		var err error
-		timeout, err = parseTimeout(timeoutStr)
-		if err != nil {
-			return nil, fmt.Errorf("invalid %s: %w", envTimeout, err)
-		}
+	maxRetries, err := parseEnvIntWithBounds(envMaxRetries, defaultMaxRetries, 0, maxMaxRetries)
+	if err != nil {
+		return nil, err
 	}
-
-	maxRetries := defaultMaxRetries
-	if retriesStr := os.Getenv(envMaxRetries); retriesStr != "" {
-		var err error
-		maxRetries, err = parseInt(retriesStr)
-		if err != nil {
-			return nil, fmt.Errorf("invalid %s: %w", envMaxRetries, err)
-		}
-		if maxRetries < 0 {
-			return nil, fmt.Errorf("%s must be non-negative, got %d", envMaxRetries, maxRetries)
-		}
+	fallbackModels := shared.SplitAndTrim(os.Getenv(envFallbackModels), ",")
+	if len(fallbackModels) == 0 {
+		fallbackModels = shared.SplitAndTrim(defaultFallbackModels, ",")
 	}
-
-	fallbackModels := []string{}
-	fbStr := os.Getenv(envFallbackModels)
-	if fbStr == "" {
-		fbStr = defaultFallbackModels
+	budget, err := parseEnvIntWithBounds(envThinkingBudget, 0, 0, -1)
+	if err != nil {
+		return nil, err
 	}
-	for _, p := range strings.Split(fbStr, ",") {
-		p = strings.TrimSpace(p)
-		if p != "" {
-			fallbackModels = append(fallbackModels, p)
-		}
-	}
-
-	budget := 0
-	if budgetStr := os.Getenv(envThinkingBudget); budgetStr != "" {
-		budget, _ = parseInt(budgetStr)
-	}
-
 	return &Config{
 		APIKey:           apiKey,
 		BaseURL:          baseURL,
@@ -158,7 +96,7 @@ func LoadConfig() (*Config, error) {
 		HTTPReferer:      os.Getenv(envHTTPReferer),
 		AppTitle:         os.Getenv(envAppTitle),
 		ProviderPriority: os.Getenv(envProviderPriority),
-		ProviderAllow:    os.Getenv(envProviderAllow),
+		AllowFallbacks:   os.Getenv(envAllowFallbacks),
 		ProviderOnly:     os.Getenv(envProviderOnly),
 		Provider:         provider,
 		GeminiAPIKey:     geminiAPIKey,
@@ -169,14 +107,99 @@ func LoadConfig() (*Config, error) {
 	}, nil
 }
 
-func parseTimeout(s string) (int, error) {
-	return parseInt(s)
+func resolveProvider(provider string) string {
+	if provider == "" {
+		provider = defaultProvider
+	}
+	switch {
+	case strings.HasPrefix(provider, "gemini") || strings.HasPrefix(provider, "google/"):
+		return "gemini"
+	case strings.HasPrefix(provider, "gpt-") || strings.HasPrefix(provider, "o1") || strings.HasPrefix(provider, "o3"):
+		return "openai"
+	case strings.HasPrefix(provider, "openai/") || strings.HasPrefix(provider, "anthropic/") || strings.HasPrefix(provider, "meta/"):
+		return "openrouter"
+	}
+	return provider
+}
+
+func resolveModel(provider, model, geminiModel string) (string, string) {
+	if geminiModel == "" {
+		geminiModel = defaultGeminiModel
+	}
+	if model != "" {
+		return model, geminiModel
+	}
+	switch provider {
+	case "auto":
+		return defaultModel, geminiModel
+	case "gemini":
+		return geminiModel, geminiModel
+	}
+	return model, geminiModel
+}
+
+func validateAPIKeys(provider, apiKey, geminiAPIKey string) (string, string, error) {
+	if provider == "gemini" {
+		if geminiAPIKey == "" && apiKey == "" {
+			return "", "", fmt.Errorf("%s or %s environment variable is required for Gemini provider", envGeminiAPIKey, envAPIKey)
+		}
+		if geminiAPIKey == "" {
+			geminiAPIKey = apiKey
+		}
+	} else {
+		if apiKey == "" {
+			return "", "", fmt.Errorf("%s environment variable is required", envAPIKey)
+		}
+	}
+	return apiKey, geminiAPIKey, nil
+}
+
+func resolveBaseURL(provider, model, baseURL string) string {
+	if baseURL != "" {
+		return baseURL
+	}
+	resolved := provider
+	if resolved == "auto" {
+		resolved = detectProviderName(model)
+	}
+	if resolved != "gemini" {
+		return defaultBaseURL
+	}
+	return ""
+}
+
+func parseEnvInt(key string, defaultVal int) (int, error) {
+	s := os.Getenv(key)
+	if s == "" {
+		return defaultVal, nil
+	}
+	v, err := parseInt(s)
+	if err != nil {
+		return 0, fmt.Errorf("invalid %s: %w", key, err)
+	}
+	return v, nil
+}
+
+func parseEnvIntWithBounds(key string, defaultVal, min, max int) (int, error) {
+	v, err := parseEnvInt(key, defaultVal)
+	if err != nil {
+		return 0, err
+	}
+	if min >= 0 && v < min {
+		return 0, fmt.Errorf("%s must be at least %d, got %d", key, min, v)
+	}
+	if max >= 0 && v > max {
+		return 0, fmt.Errorf("%s must not exceed %d, got %d", key, max, v)
+	}
+	return v, nil
 }
 
 func parseInt(s string) (int, error) {
-	var n int
-	_, err := fmt.Sscanf(s, "%d", &n)
-	return n, err
+	n, err := strconv.Atoi(s)
+	if err != nil {
+		return 0, fmt.Errorf("parse int: %w", err)
+	}
+	return n, nil
 }
 
 func (c *Config) Validate() error {
@@ -193,7 +216,7 @@ func (c *Config) Validate() error {
 		}
 	}
 	if c.Model == "" {
-		return fmt.Errorf("model is required")
+		return fmt.Errorf("%w", shared.ErrModelRequired)
 	}
 	if c.Timeout <= 0 {
 		return fmt.Errorf("timeout must be positive, got %v", c.Timeout)
@@ -201,12 +224,14 @@ func (c *Config) Validate() error {
 	if c.MaxRetries < 0 {
 		return fmt.Errorf("max retries must be non-negative, got %d", c.MaxRetries)
 	}
+	if c.MaxRetries > maxMaxRetries {
+		return fmt.Errorf("max retries must not exceed %d, got %d", maxMaxRetries, c.MaxRetries)
+	}
 	return nil
 }
 
 func (c *Config) GetProvider() (Provider, error) {
 	providerName := c.Provider
-
 	if providerName == "auto" {
 		providerName = detectProviderName(c.Model)
 	}
@@ -216,20 +241,7 @@ func (c *Config) GetProvider() (Provider, error) {
 		return nil, err
 	}
 
-	if orProvider, ok := provider.(*OpenRouterProvider); ok {
-		orProvider.HTTPReferer = c.HTTPReferer
-		orProvider.AppTitle = c.AppTitle
-		orProvider.ApplyProviderSettings(c.ProviderPriority, c.ProviderOnly, c.ProviderAllow)
-	}
-
-	if geminiProvider, ok := provider.(*GeminiProvider); ok {
-		if c.GeminiAPIKey != "" {
-			geminiProvider.APIKey = c.GeminiAPIKey
-		} else {
-			geminiProvider.APIKey = c.APIKey
-		}
-	}
-
+	provider.ApplyConfig(c)
 	return provider, nil
 }
 

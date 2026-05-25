@@ -516,10 +516,10 @@ Example fields:
 
 The session store uses a clone-before-mutate pattern for concurrent access:
 
-- All write methods (`UpdateStatus`, `UpdateFlowState`, `SaveCheckpoint`, `Save`) clone the session via JSON marshal/unmarshal before modifying.
+- All write methods (`UpdateStatus`, `UpdateFlowState`, `SaveCheckpoint`, `Save`) use a high-performance memory cloner (`session.Clone()`) before modifying.
 - The cloned session replaces the pointer in the internal map.
-- Read methods (`Get`, `List`) always return clones.
-- This prevents data races between concurrent goroutines reading and writing the same session object.
+- Read methods (`Get`, `List`) always return deep clones of the in-memory structs.
+- This prevents data races between concurrent goroutines reading and writing the same session object, while avoiding the CPU-heavy lock contention of JSON serialization in the TUI refresh loop.
 
 ### Trace store
 
@@ -628,13 +628,13 @@ The `llm` package provides a client abstraction over OpenRouter and Gemini provi
 - **Provider detection:** Configured via `LLM_PROVIDER` env var (`"auto"`, `"openrouter"`, or `"gemini"`). Auto-detection selects based on API key presence and model prefix.
 - **Reasoning support:** Native support for next-gen reasoning models via three mechanisms:
   - `reasoning_effort` (string) — passed for GPT-5, o1/o3/o4 series, and DeepSeek V4 models. OpenRouter-supported values: `"none"`, `"minimal"`, `"low"`, `"medium"`, `"high"`, `"xhigh"`. Configurable via `LLM_REASONING_EFFORT`.
-  - `thinking` (`ThinkingConfig` with `Type` and `BudgetTokens`) — used by DeepSeek for thinking mode. OpenRouter passes it through; Gemini maps it to `thinkingConfig.thinkingBudget`. Configurable via `LLM_THINKING_TYPE` and `LLM_THINKING_BUDGET`.
+  - `thinking` (`ThinkingConfig` with `Type` and `BudgetTokens`) — used by DeepSeek for thinking mode. OpenRouter passes it through; Gemini maps it to `thinkingConfig.thinkingBudget`. Configurable via `LLM_THINKING_TYPE` and `LLM_THINKING_BUDGET`. The budget is **optional** — setting `Type: "enabled"` alone activates thinking with the model's default budget.
   - **Temperature suppression:** For models that reject the temperature parameter (o1, o3, o4, gpt-5+), both OpenAI and OpenRouter providers omit `temperature` from the request. The `isReasoningModel()` helper strips provider prefixes (`openai/`, `google/`, etc.) before matching.
 - **Response reasoning extraction:** The `GenerateResponse.Reasoning` field captures the model's chain-of-thought from three sources:
   - OpenRouter's top-level `reasoning` field (highest priority)
   - DeepSeek's `choices[0].message.reasoning_content` field
   - Gemini's `candidates[0].content.parts[].thought` boolean parts
-- **MaxTokens behavior:** When a thinking budget is configured (via `Thinking.BudgetTokens` or `LLM_THINKING_BUDGET`), the 1024-token `MaxTokens` default is suppressed to avoid capping the model mid-thought.
+- **MaxTokens behavior:** By default `MaxTokens` defaults to 1024. This is **suppressed** when `Thinking.Type` is `"enabled"` (regardless of whether a budget is set) to avoid capping the model mid-thought. Reasoning models can easily exceed 1024 tokens in their thinking phase alone.
 
 ## Failure handling
 

@@ -2,6 +2,8 @@ package tools
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"strings"
 	"sync"
 	"testing"
@@ -124,9 +126,11 @@ func TestObserveUIJS_NoHasText(t *testing.T) {
 
 func TestObserveUI_404Detection_HeadingFirst(t *testing.T) {
 	tests := []struct {
-		name       string
-		title      string
-		heading    string
+		name        string
+		title       string
+		heading     string
+		headingErr  error
+		titleErr    error
 		wantWarning bool
 	}{
 		{
@@ -171,6 +175,20 @@ func TestObserveUI_404Detection_HeadingFirst(t *testing.T) {
 			heading:     "Example heading",
 			wantWarning: true,
 		},
+		{
+			name:        "heading evaluate error skips check",
+			title:       "Normal Page",
+			heading:     "Welcome",
+			headingErr:  fmt.Errorf("page closed"),
+			wantWarning: false,
+		},
+		{
+			name:        "title evaluate error skips check",
+			title:       "Page Not Found",
+			headingErr:  nil,
+			titleErr:    fmt.Errorf("page closed"),
+			wantWarning: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -188,10 +206,10 @@ func TestObserveUI_404Detection_HeadingFirst(t *testing.T) {
 					}
 					// Second call is heading check
 					if callCount == 2 {
-						return tt.heading, nil
+						return tt.heading, tt.headingErr
 					}
 					// Third call (if needed) is title check
-					return tt.title, nil
+					return tt.title, tt.titleErr
 				},
 			}
 			r.registerObserveUI(mock)
@@ -254,6 +272,55 @@ func TestCheckSelectorExists_JSInjectionPrevention(t *testing.T) {
 	}
 }
 
+func TestCheckSelectorExists_ErrorPaths(t *testing.T) {
+	tests := []struct {
+		name       string
+		evaluateFn func(expression string) (any, error)
+		wantErr    string
+	}{
+		{
+			name: "js eval failure",
+			evaluateFn: func(expression string) (any, error) {
+				return nil, fmt.Errorf("eval error")
+			},
+			wantErr: "selector check eval failed",
+		},
+		{
+			name: "type assertion failure",
+			evaluateFn: func(expression string) (any, error) {
+				return 42, nil
+			},
+			wantErr: "unexpected result type",
+		},
+		{
+			name: "json parse failure",
+			evaluateFn: func(expression string) (any, error) {
+				return `not json`, nil
+			},
+			wantErr: "failed to parse result",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &ToolRegistry{
+				tools: make(map[string]Tool),
+				meta:  make(map[string]ToolInfo),
+			}
+			mock := &mockRuntime{
+				evaluateFn: tt.evaluateFn,
+			}
+			err := r.checkSelectorExists(mock, "#test")
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+			if !strings.Contains(err.Error(), tt.wantErr) {
+				t.Errorf("error = %q, want substring %q", err.Error(), tt.wantErr)
+			}
+		})
+	}
+}
+
 func TestToolRegistryExecute_ValidatesRequiredAndType(t *testing.T) {
 	r := &ToolRegistry{
 		tools: make(map[string]Tool),
@@ -276,5 +343,88 @@ func TestToolRegistryExecute_ValidatesRequiredAndType(t *testing.T) {
 
 	if _, err := r.Execute("validate_me", map[string]any{"required_text": "x", "flag": true}); err != nil {
 		t.Fatalf("expected successful execution, got %v", err)
+	}
+}
+
+func TestMatchesType_AcceptsJSONNumberAsNumber(t *testing.T) {
+	tests := []struct {
+		name  string
+		typ   string
+		value any
+		want  bool
+	}{
+		{"json.Number", "number", json.Number("42"), true},
+		{"json.Number float", "number", json.Number("3.14"), true},
+		{"json.Number zero", "number", json.Number("0"), true},
+		{"json.Number negative", "number", json.Number("-5"), true},
+		{"int", "number", 42, true},
+		{"float64", "number", 3.14, true},
+		{"string is not number", "number", "42", false},
+		{"json.Number not a string", "string", json.Number("hello"), false},
+		{"json.Number not a bool", "bool", json.Number("1"), false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := matchesType(tt.typ, tt.value); got != tt.want {
+				t.Errorf("matchesType(%q, %T(%v)) = %v, want %v", tt.typ, tt.value, tt.value, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestObserveUIJS_DynamicAttrIteration(t *testing.T) {
+	if !strings.Contains(observeUIJS, "el.attributes") {
+		t.Error("observeUIJS should iterate el.attributes for dynamic attribute support")
+	}
+	if !strings.Contains(observeUIJS, "for (const attr of") {
+		t.Error("observeUIJS should use for...of for attribute iteration")
+	}
+}
+
+func TestObserveUIJS_SkipAttrs(t *testing.T) {
+	if !strings.Contains(observeUIJS, `"style"`) {
+		t.Error("observeUIJS should skip style attr for token efficiency")
+	}
+	if !strings.Contains(observeUIJS, `"srcdoc"`) {
+		t.Error("observeUIJS should skip srcdoc attr for token efficiency")
+	}
+}
+
+func TestObserveUIJS_ClassTruncation(t *testing.T) {
+	if !strings.Contains(observeUIJS, "slice(0, 5)") {
+		t.Error("observeUIJS should truncate class to first 5 tokens")
+	}
+}
+
+func TestObserveUIJS_LargeValueTruncation(t *testing.T) {
+	if !strings.Contains(observeUIJS, "300") {
+		t.Error("observeUIJS should truncate values >300 chars")
+	}
+}
+
+func TestObserveUIJS_RuntimeValueExtraction(t *testing.T) {
+	if !strings.Contains(observeUIJS, "el.value") {
+		t.Error("observeUIJS should extract runtime el.value for inputs")
+	}
+}
+
+func TestObserveUIJS_PasswordRedaction(t *testing.T) {
+	if !strings.Contains(observeUIJS, "********") {
+		t.Error("observeUIJS should redact password values")
+	}
+	if !strings.Contains(observeUIJS, "type === 'password'") {
+		t.Error("observeUIJS should check for password type")
+	}
+}
+
+func TestObserveUIJS_BooleanRuntimeProperties(t *testing.T) {
+	if !strings.Contains(observeUIJS, "el.checked") {
+		t.Error("observeUIJS should capture checked state")
+	}
+	if !strings.Contains(observeUIJS, "el.disabled") {
+		t.Error("observeUIJS should capture disabled state")
+	}
+	if !strings.Contains(observeUIJS, "el.selected") {
+		t.Error("observeUIJS should capture selected state")
 	}
 }

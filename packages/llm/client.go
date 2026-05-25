@@ -22,10 +22,9 @@ type Client interface {
 }
 
 type HTTPClient struct {
-	config      *Config
-	provider    Provider
-	httpClient  *http.Client
-	retryConfig *RetryConfig
+	config     *Config
+	provider   Provider
+	httpClient *http.Client
 }
 
 func NewClient(cfg *Config) (*HTTPClient, error) {
@@ -48,11 +47,14 @@ func NewClient(cfg *Config) (*HTTPClient, error) {
 		httpClient: &http.Client{
 			Timeout: cfg.Timeout,
 		},
-		retryConfig: &DefaultRetryConfig,
 	}, nil
 }
 
 func (c *HTTPClient) Generate(ctx context.Context, req *GenerateRequest) (*GenerateResponse, error) {
+	// Clone the request to prevent mutation side effects / data races on the caller's struct.
+	clone := *req
+	req = &clone
+
 	if req.Model == "" {
 		req.Model = c.config.Model
 	}
@@ -61,7 +63,6 @@ func (c *HTTPClient) Generate(ctx context.Context, req *GenerateRequest) (*Gener
 		req.Temperature = 0.7
 	}
 
-	// Apply reasoning config defaults before MaxTokens so we can check thinking budget.
 	if req.ReasoningEffort == "" {
 		req.ReasoningEffort = c.config.ReasoningEffort
 	}
@@ -73,31 +74,41 @@ func (c *HTTPClient) Generate(ctx context.Context, req *GenerateRequest) (*Gener
 		}
 	}
 
-	// Only default MaxTokens when there is no thinking budget and no MaxCompletionTokens.
-	// A thinking budget > 0 means the model needs room to think; capping at 1024 would
-	// truncate the thinking phase and produce a broken/incomplete response.
 	if req.MaxTokens == 0 && req.MaxCompletionTokens == 0 {
-		if req.Thinking == nil || req.Thinking.BudgetTokens == 0 {
+		if req.Thinking == nil || req.Thinking.Type == "" || req.Thinking.Type == "disabled" {
 			req.MaxTokens = 1024
 		}
 	}
 
-	models := []string{req.Model}
-	models = append(models, c.config.FallbackModels...)
+	filteredFallbacks := make([]string, 0, len(c.config.FallbackModels))
+	for _, fb := range c.config.FallbackModels {
+		if fb != req.Model {
+			filteredFallbacks = append(filteredFallbacks, fb)
+		}
+	}
+	models := append([]string{req.Model}, filteredFallbacks...)
 
 	var lastErr error
+	provider := c.provider
 	for modelIdx, model := range models {
 		req.Model = model
 
 		if modelIdx > 0 {
+			// Detect the correct provider for this fallback model
+			fallbackProvider := DetectProvider(model)
+			if fallbackProvider.Name() != provider.Name() {
+				if err := fallbackProvider.ValidateModel(model); err == nil {
+					provider = fallbackProvider
+				}
+			}
 			log.Warn().
-				Str("provider", c.provider.Name()).
+				Str("provider", provider.Name()).
 				Str("fallback_model", model).
 				Msg("falling back to alternative model")
 		}
 
 		for attempt := 0; attempt <= c.config.MaxRetries; attempt++ {
-			resp, err := c.doRequest(ctx, req)
+			resp, err := c.doRequestWithProvider(ctx, req, provider)
 			if err == nil {
 				return resp, nil
 			}
@@ -120,9 +131,6 @@ func (c *HTTPClient) Generate(ctx context.Context, req *GenerateRequest) (*Gener
 			}
 		}
 
-		// After exhausting retries for this model, try a fallback model.
-		// Non-retryable errors (auth, validation) are already returned early,
-		// so any error here (empty response, 502, 429, network) merits a fallback attempt.
 		if modelIdx < len(models)-1 {
 			continue
 		}
@@ -132,24 +140,28 @@ func (c *HTTPClient) Generate(ctx context.Context, req *GenerateRequest) (*Gener
 }
 
 func (c *HTTPClient) doRequest(ctx context.Context, req *GenerateRequest) (*GenerateResponse, error) {
-	body, err := c.provider.BuildRequest(ctx, req)
+	return c.doRequestWithProvider(ctx, req, c.provider)
+}
+
+func (c *HTTPClient) doRequestWithProvider(ctx context.Context, req *GenerateRequest, provider Provider) (*GenerateResponse, error) {
+	body, err := provider.BuildRequest(ctx, req)
 	if err != nil {
 		return nil, NewRetryableError(fmt.Errorf("building request: %w", err), true)
 	}
 
-	endpoint := c.provider.Endpoint(req.Model)
+	endpoint := provider.Endpoint(req.Model)
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewReader(body))
 	if err != nil {
 		return nil, NewRetryableError(fmt.Errorf("creating request: %w", err), true)
 	}
 
-	authHeaders := c.provider.AuthHeaders(c.config.GetAPIKey())
+	authHeaders := provider.AuthHeaders(c.config.GetAPIKey())
 	for key, value := range authHeaders {
 		httpReq.Header.Set(key, value)
 	}
 
 	log.Info().
-		Str("provider", c.provider.Name()).
+		Str("provider", provider.Name()).
 		Str("model", req.Model).
 		Str("endpoint", endpoint).
 		Msg("LLM request")
@@ -164,12 +176,12 @@ func (c *HTTPClient) doRequest(ctx context.Context, req *GenerateRequest) (*Gene
 		io.Copy(io.Discard, resp.Body)
 		retryAfter := parseRetryAfter(resp.Header.Get("Retry-After"))
 		log.Warn().
-			Str("provider", c.provider.Name()).
+			Str("provider", provider.Name()).
 			Str("model", req.Model).
 			Str("retry_after", retryAfter.String()).
 			Msg("LLM rate limited")
 		return nil, NewRetryableError(
-			fmt.Errorf("rate limited by %s (model: %s)", c.provider.Name(), req.Model),
+			fmt.Errorf("rate limited by %s (model: %s)", provider.Name(), req.Model),
 			true,
 			retryAfter,
 		)
@@ -179,44 +191,51 @@ func (c *HTTPClient) doRequest(ctx context.Context, req *GenerateRequest) (*Gene
 		bodyBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return nil, NewRetryableError(
-				fmt.Errorf("reading error response body: %w (status %d, provider: %s, model: %s)", err, resp.StatusCode, c.provider.Name(), req.Model),
+				fmt.Errorf("reading error response body: %w (status %d, provider: %s, model: %s)", err, resp.StatusCode, provider.Name(), req.Model),
 				IsRetryableStatusCode(resp.StatusCode),
 			)
 		}
 		log.Error().
-			Str("provider", c.provider.Name()).
+			Str("provider", provider.Name()).
 			Str("model", req.Model).
 			Int("status", resp.StatusCode).
 			Msg("LLM error response")
-		return nil, c.provider.ParseError(resp.StatusCode, bodyBytes)
+		return nil, provider.ParseError(resp.StatusCode, bodyBytes)
 	}
 
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("reading response body: %w", err)
+		return nil, NewRetryableError(fmt.Errorf("reading response body: %w", err), true)
 	}
 
-	generateResp, err := c.provider.ParseResponse(bodyBytes)
+	generateResp, err := provider.ParseResponse(bodyBytes)
 	if err != nil {
 		return nil, NewRetryableError(fmt.Errorf("parsing response: %w", err), true)
 	}
 
 	log.Info().
-		Str("provider", c.provider.Name()).
+		Str("provider", provider.Name()).
 		Str("model_requested", req.Model).
 		Str("model_used", generateResp.Model).
 		Msg("LLM response received")
 
 	if generateResp.Reasoning != "" {
 		log.Debug().
-			Str("provider", c.provider.Name()).
+			Str("provider", provider.Name()).
 			Str("model", generateResp.Model).
 			Int("reasoning_len", len(generateResp.Reasoning)).
 			Msg("LLM reasoning content present")
 	}
 
 	if len(generateResp.Content) == 0 {
-		return nil, NewRetryableError(fmt.Errorf("%w: provider=%s model=%s", ErrEmptyResponse, c.provider.Name(), req.Model), true)
+		finishReason := ""
+		if len(generateResp.Choices) > 0 {
+			finishReason = generateResp.Choices[0].FinishReason
+		}
+		if finishReason == "content_filter" {
+			return nil, NewNonRetryableError(fmt.Errorf("%w: provider=%s model=%s finish_reason=content_filter", ErrEmptyResponse, provider.Name(), req.Model))
+		}
+		return nil, NewRetryableError(fmt.Errorf("%w: provider=%s model=%s", ErrEmptyResponse, provider.Name(), req.Model), true)
 	}
 
 	if len(generateResp.Choices) > 0 {
@@ -285,6 +304,8 @@ func NewSimpleClient(apiKey string) (*SimpleClient, error) {
 			Timeout:    defaultTimeout * time.Second,
 			MaxRetries: defaultMaxRetries,
 		}
+	} else if apiKey != "" {
+		cfg.APIKey = apiKey
 	}
 	client, err := NewClient(cfg)
 	if err != nil {

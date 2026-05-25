@@ -21,6 +21,7 @@ import (
 	browsertools "qa-orchestrator/packages/browser-runtime/tools"
 	"qa-orchestrator/packages/llm"
 	"qa-orchestrator/packages/runtime"
+	"qa-orchestrator/packages/shared"
 	sharedtypes "qa-orchestrator/packages/shared/types"
 	"qa-orchestrator/packages/storage/artifact"
 	"qa-orchestrator/packages/storage/session"
@@ -62,12 +63,104 @@ type ExecutionResult struct {
 	IsAutonomous bool
 }
 
+type (
+	Planner interface {
+		CreatePlan(ctx *agentstypes.ExecutionContext) (*agentstypes.Plan, error)
+		UpdatePlan(plan *agentstypes.Plan, stepIdx int, skip bool, reason string)
+		GetNextStep(plan *agentstypes.Plan) *agentstypes.PlanStep
+		Advance(plan *agentstypes.Plan)
+		ShouldStop(plan *agentstypes.Plan) bool
+		GetProgress(plan *agentstypes.Plan) (completed, total int)
+		CreateAutonomousPlan(ctx *agentstypes.ExecutionContext) (*agentstypes.Plan, error)
+		GenerateNextStep(ctx context.Context, execCtx *agentstypes.ExecutionContext) (*agentstypes.PlanStep, error)
+		AddStepToPlan(plan *agentstypes.Plan, step *agentstypes.PlanStep)
+		IsAutonomousMode(ctx *agentstypes.ExecutionContext) bool
+	}
+
+	Executor interface {
+		ExecuteStep(step *agentstypes.PlanStep) *agentstypes.StepResult
+	}
+
+	Validator interface {
+		ValidateStep(step *agentstypes.Step, result *agentstypes.StepResult) *validator.ValidationResult
+		CreateObservation(result *agentstypes.StepResult) *agentstypes.Observation
+	}
+
+	Recovery interface {
+		Decide(err error, stepResult *agentstypes.StepResult, ctx *agentstypes.ExecutionContext) *agentstypes.RecoveryDecision
+		ShouldRetry(decision *agentstypes.RecoveryDecision, retryCount int) bool
+		ShouldEscalate(decision *agentstypes.RecoveryDecision, retryCount int) bool
+		Has404Warning(ctx *agentstypes.ExecutionContext) bool
+		CreateRetryObservation(err error, retryCount int) *agentstypes.Observation
+	}
+
+	EngineOption func(*AgentEngine)
+)
+
+func WithPlanner(p Planner) EngineOption {
+	return func(e *AgentEngine) { e.planner = p }
+}
+
+func WithExecutor(ex Executor) EngineOption {
+	return func(e *AgentEngine) { e.executor = ex }
+}
+
+func WithValidator(v Validator) EngineOption {
+	return func(e *AgentEngine) { e.validator = v }
+}
+
+func WithRecovery(r Recovery) EngineOption {
+	return func(e *AgentEngine) { e.recovery = r }
+}
+
+func WithSessionStore(s *session.SessionStore) EngineOption {
+	return func(e *AgentEngine) { e.sessionStore = s }
+}
+
+func WithTraceStore(t *trace.TraceStore) EngineOption {
+	return func(e *AgentEngine) { e.traceStore = t }
+}
+
+func WithArtifactStore(a *artifact.ArtifactStore) EngineOption {
+	return func(e *AgentEngine) { e.artifactStore = a }
+}
+
+func WithLLMClient(c planner.LLMClient) EngineOption {
+	return func(e *AgentEngine) { e.llmClient = c }
+}
+
+func WithLifecycle(lc *runtime.LifecycleController) EngineOption {
+	return func(e *AgentEngine) {
+		e.lifecycle = lc
+		if lc != nil {
+			e.initLifecycleCtx()
+		}
+	}
+}
+
+func WithToolRegistry(reg executor.ToolRegistry) EngineOption {
+	return func(e *AgentEngine) {
+		e.toolRegistry = reg
+		e.executor = executor.NewExecutor(reg)
+	}
+}
+
+func WithBrowserTools(bt interface {
+	ListToolsWithDocs() []browsertools.ToolInfo
+}) EngineOption {
+	return func(e *AgentEngine) { e.browserTools = bt }
+}
+
+func WithDependencyContext(ctx string) EngineOption {
+	return func(e *AgentEngine) { e.dependencyContext = ctx }
+}
+
 type AgentEngine struct {
 	mu            sync.RWMutex
-	planner       *planner.Planner
-	executor      *executor.Executor
-	validator     *validator.Validator
-	recovery      *recovery.Recovery
+	planner       Planner
+	executor      Executor
+	validator     Validator
+	recovery      Recovery
 	traceStore    *trace.TraceStore
 	artifactStore *artifact.ArtifactStore
 	sessionStore  *session.SessionStore
@@ -78,67 +171,86 @@ type AgentEngine struct {
 		ListToolsWithDocs() []browsertools.ToolInfo
 	}
 	dependencyContext string
+	lifecycleCtx      context.Context
+	lifecycleCancel   context.CancelFunc
 }
 
-func NewAgentEngine() *AgentEngine {
-	return &AgentEngine{
+func NewAgentEngine(opts ...EngineOption) *AgentEngine {
+	e := &AgentEngine{
 		planner:   planner.NewPlanner(),
 		executor:  executor.NewExecutor(executor.NewMockToolRegistry()),
 		validator: validator.NewValidator(),
 		recovery:  recovery.NewRecovery(nil),
 	}
+	for _, opt := range opts {
+		opt(e)
+	}
+	return e
 }
 
 func NewAgentEngineWithRegistry(registry executor.ToolRegistry) *AgentEngine {
-	return &AgentEngine{
-		planner:      planner.NewPlanner(),
-		executor:     executor.NewExecutor(registry),
-		validator:    validator.NewValidator(),
-		recovery:     recovery.NewRecovery(nil),
-		toolRegistry: registry,
-	}
+	return NewAgentEngine(WithToolRegistry(registry))
 }
 
 func NewAgentEngineWithStores(registry executor.ToolRegistry, sessionStore *session.SessionStore, traceStore *trace.TraceStore, artifactStore *artifact.ArtifactStore) *AgentEngine {
-	return &AgentEngine{
-		planner:       planner.NewPlanner(),
-		executor:      executor.NewExecutor(registry),
-		validator:     validator.NewValidator(),
-		recovery:      recovery.NewRecovery(nil),
-		sessionStore:  sessionStore,
-		traceStore:    traceStore,
-		artifactStore: artifactStore,
-		lifecycle:     runtime.NewLifecycleController(""),
-		toolRegistry:  registry,
-	}
+	return NewAgentEngine(
+		WithToolRegistry(registry),
+		WithSessionStore(sessionStore),
+		WithTraceStore(traceStore),
+		WithArtifactStore(artifactStore),
+		WithLifecycle(runtime.NewLifecycleController("")),
+	)
 }
 
 func NewAgentEngineWithLLM(registry executor.ToolRegistry, sessionStore *session.SessionStore, traceStore *trace.TraceStore, artifactStore *artifact.ArtifactStore, llmClient planner.LLMClient, browserTools interface {
 	ListToolsWithDocs() []browsertools.ToolInfo
 }) *AgentEngine {
-	return &AgentEngine{
-		planner:       planner.NewPlanner(),
-		executor:      executor.NewExecutor(registry),
-		validator:     validator.NewValidator(),
-		recovery:      recovery.NewRecovery(nil),
-		sessionStore:  sessionStore,
-		traceStore:    traceStore,
-		artifactStore: artifactStore,
-		llmClient:     llmClient,
-		toolRegistry:  registry,
-		browserTools:  browserTools,
-		lifecycle:     runtime.NewLifecycleController(""),
+	return NewAgentEngine(
+		WithToolRegistry(registry),
+		WithSessionStore(sessionStore),
+		WithTraceStore(traceStore),
+		WithArtifactStore(artifactStore),
+		WithLLMClient(llmClient),
+		WithBrowserTools(browserTools),
+		WithLifecycle(runtime.NewLifecycleController("")),
+	)
+}
+
+func (e *AgentEngine) initLifecycleCtx() {
+	if e.lifecycleCancel != nil {
+		e.lifecycleCancel()
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancelCh := e.lifecycle.CancelCh()
+	go func() {
+		select {
+		case <-cancelCh:
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
+	e.lifecycleCtx = ctx
+	e.lifecycleCancel = cancel
+}
+
+func (e *AgentEngine) Close() {
+	if e.lifecycleCancel != nil {
+		e.lifecycleCancel()
 	}
 }
 
 func (e *AgentEngine) SetLLMClient(client planner.LLMClient) {
+	e.mu.Lock()
 	e.llmClient = client
+	e.mu.Unlock()
 }
 
 func (e *AgentEngine) SetBrowserTools(tools interface {
 	ListToolsWithDocs() []browsertools.ToolInfo
 }) {
+	e.mu.Lock()
 	e.browserTools = tools
+	e.mu.Unlock()
 }
 
 func (e *AgentEngine) RunFlow(runID string, flow sharedtypes.Flow) *ExecutionResult {
@@ -181,20 +293,27 @@ func (e *AgentEngine) RunFlow(runID string, flow sharedtypes.Flow) *ExecutionRes
 	}
 
 	if e.lifecycle != nil {
-		e.lifecycle.SetStatus(sharedtypes.RunStateRunning)
+		cancelCh, ok := e.lifecycle.BeginExecution()
+		if !ok {
+			result.Outcome = OutcomeSkip
+			result.Errors = append(result.Errors, shared.ErrCancelled.Error())
+			e.finalizeFlowState(runID, flow.ID, result)
+			return result
+		}
+		select {
+		case <-cancelCh:
+			result.Outcome = OutcomeSkip
+			result.Errors = append(result.Errors, shared.ErrCancelled.Error())
+			e.finalizeFlowState(runID, flow.ID, result)
+			return result
+		default:
+		}
 	}
 
 	trace.EmitLifecycleEvent(e.traceStore, runID, flow.ID, sharedtypes.RunStateRunning, map[string]any{
 		"goal": flow.Goal,
 		"mode": string(flow.Mode),
 	})
-
-	if e.lifecycle != nil && e.lifecycle.GetStatus() == sharedtypes.RunStateCancelling {
-		result.Outcome = OutcomeSkip
-		result.Errors = append(result.Errors, "cancelled before execution")
-		e.finalizeFlowState(runID, flow.ID, result)
-		return result
-	}
 
 	if flow.Mode == sharedtypes.FlowModeAutonomous {
 		return e.runAutonomousFlow(runID, flow, ctx, result, start)
@@ -219,6 +338,8 @@ func (e *AgentEngine) runGuidedFlow(runID string, flow sharedtypes.Flow, ctx *ag
 	trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "plan_created", fmt.Sprintf("created plan with %d steps", len(plan.Steps)))
 
 	for !e.planner.ShouldStop(plan) {
+		e.drainSteeringEvents(ctx, ctx.RunID, flow.ID)
+
 		switch e.handlePauseResume(ctx.RunID, ctx) {
 		case pauseFail:
 			result.Outcome = OutcomeFail
@@ -231,14 +352,9 @@ func (e *AgentEngine) runGuidedFlow(runID string, flow sharedtypes.Flow, ctx *ag
 			goto done
 		}
 
-		e.drainSteeringEvents(ctx, ctx.RunID, flow.ID)
-
 		if ctx.SteeringRetryRequested {
 			ctx.SteeringRetryRequested = false
-			if plan.CurrentIdx > 0 {
-				plan.CurrentIdx--
-				plan.Steps[plan.CurrentIdx].Skip = false
-				plan.InvalidateHistoryCache()
+			if plan.Retreat() {
 				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "steering", "retrying_step", fmt.Sprintf("step %d", plan.CurrentIdx))
 			}
 		} else if ctx.SteeringSkipRequested {
@@ -261,6 +377,9 @@ func (e *AgentEngine) runGuidedFlow(runID string, flow sharedtypes.Flow, ctx *ag
 		stepResult := e.executeAndValidate(ctx, planStep)
 		result.Steps = append(result.Steps, stepResult)
 		planStep.Result = stepResult
+		if plan != nil {
+			plan.UpdateStepResult(planStep.StepIndex, stepResult)
+		}
 
 		if !stepResult.Success {
 			e.setCurrentAgent(runID, "recovery")
@@ -268,7 +387,7 @@ func (e *AgentEngine) runGuidedFlow(runID string, flow sharedtypes.Flow, ctx *ag
 			decision := e.handleFailure(ctx, stepResult, result)
 			trace.EmitRecoveryAction(e.traceStore, runID, flow.ID, decision, stepResult)
 
-	switch decision.Action {
+		switch decision.Action {
 		case agentstypes.RecoveryActionRetry:
 			result.Retries++
 			trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "recovery", "retry", decision.Reason)
@@ -306,6 +425,19 @@ done:
 	return result
 }
 
+type autonomousFlowState struct {
+	plan                   *agentstypes.Plan
+	planner                *planner.Planner
+	maxSteps               int
+	stepCount              int
+	consecutiveFailures    int
+	consecutiveRepeats     int
+	blockedFinishSuccessCount int
+	rootNavCount           int
+	backoffCtx             context.Context
+	backoffCancel          context.CancelFunc
+}
+
 func (e *AgentEngine) runAutonomousFlow(runID string, flow sharedtypes.Flow, ctx *agentstypes.ExecutionContext, result *ExecutionResult, start time.Time) *ExecutionResult {
 	if e.llmClient == nil {
 		result.Outcome = OutcomeFail
@@ -319,48 +451,25 @@ func (e *AgentEngine) runAutonomousFlow(runID string, flow sharedtypes.Flow, ctx
 	llmTools := convertToLLMTools(e.browserTools)
 	autonomousPlanner := planner.NewAutonomousPlanner(e.llmClient, llmTools)
 
-	e.setCurrentAgent(runID, "planner (init)")
-	plan, err := autonomousPlanner.CreatePlan(ctx)
-	if err != nil {
-		result.Outcome = OutcomeFail
-		result.Errors = append(result.Errors, fmt.Sprintf("failed to create autonomous plan: %v", err))
-		trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "failed", err.Error())
+	backoffCtx, backoffCancel := e.autonomousLLMContext(context.Background())
+	defer backoffCancel()
+
+	if !e.createInitialAutonomousPlan(runID, flow, ctx, result, autonomousPlanner) {
 		return result
 	}
-	ctx.Plan = plan
 
-	trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "autonomous_plan_created", "starting iterative step generation")
+	e.autoNavigateIfNeeded(runID, flow, ctx, autonomousPlanner, result)
 
-	// Auto-navigate to start_url if configured (before LLM step generation)
-	if ctx.StartURL != "" {
-		navStep := &agentstypes.PlanStep{
-			StepIndex: -1,
-			StepID:    "auto-navigate",
-			Tool:      "navigate",
-			Params:    map[string]any{"url": ctx.StartURL},
-			Skip:      false,
-			Reason:    "auto-navigate to configured start_url before LLM generates any steps",
-		}
-		stepResult := e.executeAndValidate(ctx, navStep)
-		result.Steps = append(result.Steps, stepResult)
-		if stepResult.Success {
-			ctx.CurrentURL = ctx.StartURL
-			e.injectObserveStep(runID, flow.ID, ctx, plan, autonomousPlanner, result)
-		} else {
-			trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "engine", "auto_navigate_failed",
-				fmt.Sprintf("auto-navigate to %s failed: %v", ctx.StartURL, stepResult.Error))
-		}
+	state := &autonomousFlowState{
+		plan:      ctx.Plan,
+		planner:   autonomousPlanner,
+		backoffCtx:   backoffCtx,
+		backoffCancel: backoffCancel,
 	}
-
-	maxSteps := flow.Config.MaxAutonomousSteps
-	if maxSteps == 0 {
-		maxSteps = 20
+	state.maxSteps = flow.Config.MaxAutonomousSteps
+	if state.maxSteps == 0 {
+		state.maxSteps = 20
 	}
-	stepCount := 0
-	consecutiveFailures := 0
-	consecutiveRepeats := 0
-	blockedFinishSuccessCount := 0
-	rootNavCount := 0
 	if ctx.VisitedURLs == nil {
 		ctx.VisitedURLs = make(map[string]bool)
 	}
@@ -368,7 +477,9 @@ func (e *AgentEngine) runAutonomousFlow(runID string, flow sharedtypes.Flow, ctx
 		ctx.VisitedURLs[ctx.CurrentURL] = true
 	}
 
-	for stepCount < maxSteps {
+	for state.stepCount < state.maxSteps {
+		e.drainSteeringEvents(ctx, runID, flow.ID)
+
 		switch e.handlePauseResume(runID, ctx) {
 		case pauseFail:
 			result.Outcome = OutcomeFail
@@ -382,201 +493,52 @@ func (e *AgentEngine) runAutonomousFlow(runID string, flow sharedtypes.Flow, ctx
 			goto done
 		}
 
-		e.drainSteeringEvents(ctx, runID, flow.ID)
-
-		if ctx.SteeringRetryRequested {
-			ctx.SteeringRetryRequested = false
-			msg := "⚠ USER RETRY REQUESTED: The user wants a retry. Try a completely different approach or navigation path."
-			if len(ctx.SteeringInstructions) >= 20 {
-				ctx.SteeringInstructions = ctx.SteeringInstructions[1:]
-			}
-			ctx.SteeringInstructions = append(ctx.SteeringInstructions, msg)
-			trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "steering", "retry_injected", msg)
-		} else if ctx.SteeringSkipRequested {
-			ctx.SteeringSkipRequested = false
-			result.Outcome = OutcomeSkip
-			result.Errors = append(result.Errors, "user requested skip via steering")
-			trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "steering", "skip_executed", "autonomous flow skipped by user")
+		if e.handleSteeringCommands(ctx, runID, flow, result) {
 			goto done
 		}
 
-		trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "generating_step", fmt.Sprintf("step %d", stepCount+1))
-		e.setCurrentAgent(runID, fmt.Sprintf("planner (step %d)", stepCount+1))
-
-		obsSummary := buildObservationSummary(ctx)
-		trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "observation_context", obsSummary)
-
-		llmCtx, llmCancel := e.autonomousLLMContext(context.Background())
-		planStep, err := autonomousPlanner.GenerateNextStep(llmCtx, ctx)
-		llmCancel()
-		if err != nil {
-			if errors.Is(err, context.Canceled) {
-				result.Outcome = OutcomeSkip
-				result.Errors = append(result.Errors, "cancelled during step generation")
-				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "step_generation_cancelled", "context cancelled")
-				break
-			}
-			result.Outcome = OutcomeFail
-			result.Errors = append(result.Errors, fmt.Sprintf("failed to generate step: %v", err))
-			trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "step_generation_failed", err.Error())
-			break
-		}
-
-		trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "step_generated",
-			fmt.Sprintf("tool=%s params=%v reason=%s", planStep.Tool, planStep.Params, planStep.Reason))
-
-		// Safety net 3: finish/fail — handle BEFORE repeat detection so that
-		// early-exit blocking does not create a permanent repeat-lock on the
-		// "finish" signature.
-		if planStep.Tool == "finish" {
-			status, _ := planStep.Params["status"].(string)
-			if status == "success" && consecutiveRepeats > 0 {
-				blockedFinishSuccessCount++
-				if blockedFinishSuccessCount >= 3 {
-					trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "engine", "blocked_finish_success_limit",
-						"LLM blocked finish(success) 3+ times after loop detection; failing flow")
-					result.Outcome = OutcomeFail
-					result.Errors = append(result.Errors, "LLM attempted finish(success) 3+ times after loop detection without making progress")
-					goto done
-				}
-				msg := "⚠ BLOCKED: finish(success) immediately after a loop detection. The goal may not be met. Either try a different approach or use finish(fail)."
-				if len(ctx.SteeringInstructions) >= 5 {
-					ctx.SteeringInstructions = ctx.SteeringInstructions[1:]
-				}
-				ctx.SteeringInstructions = append(ctx.SteeringInstructions, msg)
-				ctx.RepetitionBlockedSuccess = true
-				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "engine", "blocked_finish_success_after_loop", msg)
-				stepCount++
+		planStep, shouldCont := e.generateAutonomousStep(runID, flow, ctx, result, state)
+		if planStep == nil {
+			if shouldCont {
 				continue
 			}
-			if status == "fail" {
-				// Safety-net: prevent LLM from giving up too early
-				if stepCount < 3 {
-					msg := fmt.Sprintf("⚠ EARLY EXIT: finish(fail) at step %d is too soon. The LLM should make at least 3 attempts before giving up. Observations so far: %d.", stepCount+1, len(ctx.Observations))
-					if len(ctx.SteeringInstructions) >= 5 {
-						ctx.SteeringInstructions = ctx.SteeringInstructions[1:]
-					}
-					ctx.SteeringInstructions = append(ctx.SteeringInstructions, msg)
-					trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "engine", "early_exit_prevented", msg)
-					stepCount++
-					continue
-				}
-				result.Outcome = OutcomeFail
-				errMsg := "LLM signaled that the goal is unachievable"
-				if planStep.Reason != "" {
-					errMsg += ": " + planStep.Reason
-				}
-				result.Errors = append(result.Errors, errMsg)
-				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "finish_signal_fail", planStep.Reason)
-			} else {
-				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "finish_signal", "LLM signaled completion")
+			break
+		}
+
+		if isFinish, shouldContinue := e.handleFinishStep(runID, flow.ID, planStep, ctx, result, state); isFinish {
+			if shouldContinue {
+				continue
 			}
 			break
 		}
 
-		// Safety net 1: repeat detection — same tool+params as last step
-		sig := stepSignature(planStep)
-		if sig != "" && sig == ctx.LastStepSignature {
-			consecutiveRepeats++
-			if consecutiveRepeats >= 3 {
-				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "engine", "loop_hard_break",
-					fmt.Sprintf("LLM repeated same step %d times; aborting", consecutiveRepeats))
-				result.Outcome = OutcomeFail
-				result.Errors = append(result.Errors, "LLM stuck in loop — repeated same step 3+ times despite steering")
-				goto done
-			}
-			msg := fmt.Sprintf("⚠ LOOP DETECTED: step %s %v repeated. Try a different approach. Do NOT finish with success unless observations confirm the goal is met.", planStep.Tool, planStep.Params)
-			if len(ctx.SteeringInstructions) >= 5 {
-				ctx.SteeringInstructions = ctx.SteeringInstructions[1:]
-			}
-			ctx.SteeringInstructions = append(ctx.SteeringInstructions, msg)
-			trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "engine", "loop_detected", msg)
-			stepCount++
+		if e.handleRepeatDetection(runID, flow.ID, planStep, ctx, result, state) {
 			continue
 		}
-		ctx.LastStepSignature = sig
-		consecutiveRepeats = 0
-		blockedFinishSuccessCount = 0
 
-		// Alternation detection: prevent re-visiting already-navigated URLs
-		if planStep.Tool == "navigate" {
-			if url, ok := planStep.Params["url"].(string); ok && url != "" {
-				if ctx.VisitedURLs != nil && ctx.VisitedURLs[url] {
-					msg := fmt.Sprintf("⚠ URL ALREADY VISITED: '%s' was already navigated to. Do not revisit. Try a different approach.", url)
-					if len(ctx.SteeringInstructions) >= 5 {
-						ctx.SteeringInstructions = ctx.SteeringInstructions[1:]
-					}
-					ctx.SteeringInstructions = append(ctx.SteeringInstructions, msg)
-					trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "engine", "url_alternation_detected", msg)
-					stepCount++
-					continue
-				}
-			}
+		if e.handleAlternationDetection(runID, flow.ID, planStep, ctx, result, state) {
+			continue
 		}
 
-		// Safety net 2: observe_ui loop — too many consecutive observe calls
-		if planStep.Tool == "observe_ui" {
-			ctx.ConsecutiveObserveCount++
-			if ctx.ConsecutiveObserveCount > 3 {
-				msg := "⚠ OBSERVE LOOP: observe_ui called 4+ times without progress. Try a different tool. Do NOT finish with success unless observations confirm the goal is met."
-				if len(ctx.SteeringInstructions) >= 5 {
-					ctx.SteeringInstructions = ctx.SteeringInstructions[1:]
-				}
-				ctx.SteeringInstructions = append(ctx.SteeringInstructions, msg)
-				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "engine", "observe_loop", msg)
-				stepCount++
-				ctx.ConsecutiveObserveCount = 0
-				continue
-			}
-		} else {
-			ctx.ConsecutiveObserveCount = 0
+		if e.handleObserveLoop(runID, flow.ID, planStep, ctx, result, state) {
+			continue
 		}
 
-		// Safety net 4: selector validation — block hallucinated selectors
-		// Skip validation for read-only DOM queries (get_html, get_text, etc.)
-		// since they cannot timeout and work on any valid selector.
-		skipValidation := false
-		switch planStep.Tool {
-		case "get_html", "get_text", "evaluate":
-			skipValidation = true
-		}
-		if !skipValidation {
-			if selector, ok := planStep.Params["selector"].(string); ok && selector != "" && !isSafeGenericSelector(selector) {
-				valid := observedSelectors(ctx.Observations)
-				if len(valid) > 0 && !containsSelector(valid, selector) {
-					autoReplaced := false
-					if text := extractTextFromSelector(selector); text != "" {
-						if elements := observedElements(ctx.Observations); len(elements) > 0 {
-							if best, ok := findBestMatchSelector(text, elements); ok {
-								trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "engine", "selector_auto_replaced",
-									fmt.Sprintf("auto-replaced '%s' → '%s' (text='%s')", selector, best, text))
-								planStep.Params["selector"] = best
-								autoReplaced = true
-							}
-						}
-					}
-					if !autoReplaced {
-						msg := fmt.Sprintf("⚠ INVALID SELECTOR: '%s' was not found in the observed page elements. Use only selectors from the observation. Valid selectors: %s", selector, strings.Join(valid, ", "))
-						if len(ctx.SteeringInstructions) >= 5 {
-							ctx.SteeringInstructions = ctx.SteeringInstructions[1:]
-						}
-						ctx.SteeringInstructions = append(ctx.SteeringInstructions, msg)
-						trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "engine", "invalid_selector", msg)
-						stepCount++
-						continue
-					}
-				}
-			}
+		if e.handleSelectorValidation(runID, flow.ID, planStep, ctx, result, state) {
+			continue
 		}
 
-		autonomousPlanner.AddStepToPlan(plan, planStep)
-		ctx.Plan = plan
+		state.planner.AddStepToPlan(state.plan, planStep)
+		ctx.Plan = state.plan
 
 		e.saveCheckpoint(runID, ctx, planStep)
 		e.setCurrentAgent(runID, "executor")
 		stepResult := e.executeAndValidate(ctx, planStep)
 		result.Steps = append(result.Steps, stepResult)
 		planStep.Result = stepResult
+		if state.plan != nil && planStep.StepIndex >= 0 && planStep.StepIndex < len(state.plan.Steps) {
+			state.plan.UpdateStepResult(planStep.StepIndex, stepResult)
+		}
 
 		if stepResult.Success && planStep.Tool == "navigate" {
 			if url, ok := planStep.Params["url"].(string); ok && url != "" {
@@ -585,122 +547,367 @@ func (e *AgentEngine) runAutonomousFlow(runID string, flow sharedtypes.Flow, ctx
 					ctx.VisitedURLs[url] = true
 				}
 			}
-			e.injectObserveStep(runID, flow.ID, ctx, plan, autonomousPlanner, result)
+			e.injectObserveStep(runID, flow.ID, ctx, state.plan, state.planner, result)
 		}
 
-		// Engine-level 404 intercept: if autoObserve or injected observe detected a
-		// 404 warning, perform root navigation immediately — bypass the LLM entirely.
-		if e.recovery.Has404Warning(ctx) {
-			rootNavCount++
-			if rootNavCount > 2 {
-				result.Outcome = OutcomeFail
-				result.Errors = append(result.Errors, "root navigation attempted 3+ times — likely invalid target URL")
-				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "engine", "root_nav_limit", "root navigation retry limit reached")
-				goto done
-			}
-			trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "engine", "404_intercept", "intercepted 404 warning, forcing root navigation")
-			e.performRootNav(ctx, runID, flow.ID, result)
-			result.Retries++
-			consecutiveFailures = 0
-			stepCount++
+		if e.handle404Intercept(ctx, runID, flow, result, state) {
 			continue
 		}
 
-		if !stepResult.Success {
-			consecutiveFailures++
-			e.setCurrentAgent(runID, "recovery")
-			trace.EmitRecoveryAction(e.traceStore, runID, flow.ID, nil, stepResult)
-			decision := e.handleFailure(ctx, stepResult, result)
-			trace.EmitRecoveryAction(e.traceStore, runID, flow.ID, decision, stepResult)
-
-			switch decision.Action {
-			case agentstypes.RecoveryActionRootNav:
-				rootNavCount++
-				if rootNavCount > 2 {
-					result.Outcome = OutcomeFail
-					result.Errors = append(result.Errors, "root navigation attempted 3+ times — likely invalid target URL")
-					trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "engine", "root_nav_limit", "root navigation retry limit reached")
-					goto done
-				}
-				e.performRootNav(ctx, runID, flow.ID, result)
-				result.Retries++
-				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "recovery", "root_nav", decision.Reason)
-				consecutiveFailures = 0
-				stepCount++
-				continue
-			case agentstypes.RecoveryActionRetry:
-				result.Retries++
-				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "recovery", "retry", decision.Reason)
-				e.injectObserveStep(runID, flow.ID, ctx, plan, autonomousPlanner, result)
-				autonomousPlanner.Advance(plan)
-				stepCount++
-
-				backoff := time.Duration(1<<consecutiveFailures) * time.Second
-				if backoff > 15*time.Second {
-					backoff = 15 * time.Second
-				}
-				select {
-				case <-llmCtx.Done():
-					result.Outcome = OutcomeSkip
-					result.Errors = append(result.Errors, "cancelled during backoff")
-					goto done
-				case <-time.After(backoff):
-				}
-				continue
-			case agentstypes.RecoveryActionReplan:
-				// NOTE: RecoveryActionReplan does NOT actually replan — it's a retry
-				// with a fresh observation injected. The name is historical. The recovery
-				// agent returns this when selector timeouts suggest the LLM hallucinated
-				// selectors, so we inject observe_ui to ground the next LLM call.
-				result.Retries++
-				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "recovery", "replan", decision.Reason)
-				e.injectObserveStep(runID, flow.ID, ctx, plan, autonomousPlanner, result)
-				autonomousPlanner.Advance(plan)
-				stepCount++
-
-				backoff := time.Duration(1<<consecutiveFailures) * time.Second
-				if backoff > 15*time.Second {
-					backoff = 15 * time.Second
-				}
-				select {
-				case <-llmCtx.Done():
-					result.Outcome = OutcomeSkip
-					result.Errors = append(result.Errors, "cancelled during backoff")
-					goto done
-				case <-time.After(backoff):
-				}
-				continue
-			case agentstypes.RecoveryActionSkip:
-				autonomousPlanner.UpdatePlan(plan, planStep.StepIndex, true, decision.Reason)
-				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "recovery", "skip", decision.Reason)
-			case agentstypes.RecoveryActionFail:
-				result.Outcome = OutcomeFail
-				result.Errors = append(result.Errors, decision.Reason)
-				trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "recovery", "fail", decision.Reason)
-				goto done
-			}
-		} else {
-			consecutiveFailures = 0
+		if e.handleStepFailure(ctx, runID, flow, planStep, stepResult, result, state) {
+			continue
 		}
 
-		stepCount++
-		autonomousPlanner.Advance(plan)
+		state.stepCount++
+		state.planner.Advance(state.plan)
 
-		if autonomousPlanner.ShouldStop(plan) {
-			trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "plan_completed", fmt.Sprintf("generated %d steps", stepCount))
+		if state.planner.ShouldStop(state.plan) {
+			trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "plan_completed", fmt.Sprintf("generated %d steps", state.stepCount))
 			break
 		}
 	}
 
-	if stepCount >= maxSteps {
+	if state.stepCount >= state.maxSteps {
 		result.Outcome = OutcomeFail
 		result.Errors = append(result.Errors, "max autonomous steps reached without finishing")
-		trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "max_steps_reached", fmt.Sprintf("reached max %d steps", maxSteps))
+		trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "max_steps_reached", fmt.Sprintf("reached max %d steps", state.maxSteps))
 	}
 
 done:
-	e.finalizeRunResult(runID, flow.ID, result, start, map[string]any{"autonomous_steps": stepCount})
+	e.finalizeRunResult(runID, flow.ID, result, start, map[string]any{"autonomous_steps": state.stepCount})
 	return result
+}
+
+func (e *AgentEngine) createInitialAutonomousPlan(runID string, flow sharedtypes.Flow, ctx *agentstypes.ExecutionContext, result *ExecutionResult, autonomousPlanner *planner.Planner) bool {
+	e.setCurrentAgent(runID, "planner (init)")
+	plan, err := autonomousPlanner.CreatePlan(ctx)
+	if err != nil {
+		result.Outcome = OutcomeFail
+		result.Errors = append(result.Errors, fmt.Sprintf("failed to create autonomous plan: %v", err))
+		trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "failed", err.Error())
+		return false
+	}
+	ctx.Plan = plan
+	trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "autonomous_plan_created", "starting iterative step generation")
+	return true
+}
+
+func (e *AgentEngine) autoNavigateIfNeeded(runID string, flow sharedtypes.Flow, ctx *agentstypes.ExecutionContext, autonomousPlanner *planner.Planner, result *ExecutionResult) {
+	if ctx.StartURL == "" {
+		return
+	}
+	navStep := &agentstypes.PlanStep{
+		StepIndex: -1, StepID: "auto-navigate", Tool: "navigate",
+		Params: map[string]any{"url": ctx.StartURL},
+		Skip:   false, Reason: "auto-navigate to configured start_url before LLM generates any steps",
+	}
+	stepResult := e.executeAndValidate(ctx, navStep)
+	result.Steps = append(result.Steps, stepResult)
+	if stepResult.Success {
+		ctx.CurrentURL = ctx.StartURL
+		e.injectObserveStep(runID, flow.ID, ctx, ctx.Plan, autonomousPlanner, result)
+	} else {
+		trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "engine", "auto_navigate_failed",
+			fmt.Sprintf("auto-navigate to %s failed: %v", ctx.StartURL, stepResult.Error))
+	}
+}
+
+func (e *AgentEngine) handleSteeringCommands(ctx *agentstypes.ExecutionContext, runID string, flow sharedtypes.Flow, result *ExecutionResult) bool {
+	if ctx.SteeringRetryRequested {
+		ctx.SteeringRetryRequested = false
+		msg := "⚠ USER RETRY REQUESTED: The user wants a retry. Try a completely different approach or navigation path."
+		if len(ctx.SteeringInstructions) >= 20 {
+			ctx.SteeringInstructions = ctx.SteeringInstructions[1:]
+		}
+		ctx.SteeringInstructions = append(ctx.SteeringInstructions, msg)
+		trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "steering", "retry_injected", msg)
+		return false
+	}
+	if ctx.SteeringSkipRequested {
+		ctx.SteeringSkipRequested = false
+		result.Outcome = OutcomeSkip
+		result.Errors = append(result.Errors, "user requested skip via steering")
+		trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "steering", "skip_executed", "autonomous flow skipped by user")
+		return true
+	}
+	return false
+}
+
+func (e *AgentEngine) generateAutonomousStep(runID string, flow sharedtypes.Flow, ctx *agentstypes.ExecutionContext, result *ExecutionResult, state *autonomousFlowState) (*agentstypes.PlanStep, bool) {
+	trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "generating_step", fmt.Sprintf("step %d", state.stepCount+1))
+	e.setCurrentAgent(runID, fmt.Sprintf("planner (step %d)", state.stepCount+1))
+
+	obsSummary := buildObservationSummary(ctx)
+	trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "observation_context", obsSummary)
+
+	llmCtx, llmCancel := e.autonomousLLMContext(context.Background())
+	defer llmCancel()
+	planStep, err := state.planner.GenerateNextStep(llmCtx, ctx)
+	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			result.Outcome = OutcomeSkip
+			result.Errors = append(result.Errors, "cancelled during step generation")
+			trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "step_generation_cancelled", "context cancelled")
+			return nil, false
+		}
+		if strings.Contains(err.Error(), "parsing") {
+			msg := "Your previous response was not valid JSON. Please return ONLY a valid JSON array with no surrounding text, markdown, or explanation."
+			if len(ctx.SteeringInstructions) >= 20 {
+				ctx.SteeringInstructions = ctx.SteeringInstructions[1:]
+			}
+			ctx.SteeringInstructions = append(ctx.SteeringInstructions, msg)
+			trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "engine", "json_parse_error", msg)
+			state.stepCount++
+			return nil, true
+		}
+		result.Outcome = OutcomeFail
+		result.Errors = append(result.Errors, fmt.Sprintf("failed to generate step: %v", err))
+		trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "step_generation_failed", err.Error())
+		return nil, false
+	}
+
+	trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "planner", "step_generated",
+		fmt.Sprintf("tool=%s params=%v reason=%s", planStep.Tool, planStep.Params, planStep.Reason))
+	return planStep, false
+}
+
+func (e *AgentEngine) handleFinishStep(runID string, flowID string, planStep *agentstypes.PlanStep, ctx *agentstypes.ExecutionContext, result *ExecutionResult, state *autonomousFlowState) (isFinish bool, shouldContinue bool) {
+	if planStep.Tool != "finish" {
+		return false, false
+	}
+	status, _ := planStep.Params["status"].(string)
+	if status == "success" && state.consecutiveRepeats > 0 {
+		state.blockedFinishSuccessCount++
+		if state.blockedFinishSuccessCount >= 3 {
+			trace.EmitAgentDecision(e.traceStore, runID, flowID, "engine", "blocked_finish_success_limit",
+				"LLM blocked finish(success) 3+ times after loop detection; failing flow")
+			result.Outcome = OutcomeFail
+			result.Errors = append(result.Errors, "LLM attempted finish(success) 3+ times after loop detection without making progress")
+			return true, false
+		}
+		msg := "⚠ BLOCKED: finish(success) immediately after a loop detection. The goal may not be met. Either try a different approach or use finish(fail)."
+		if len(ctx.SteeringInstructions) >= 5 {
+			ctx.SteeringInstructions = ctx.SteeringInstructions[1:]
+		}
+		ctx.SteeringInstructions = append(ctx.SteeringInstructions, msg)
+		ctx.RepetitionBlockedSuccess = true
+		trace.EmitAgentDecision(e.traceStore, runID, flowID, "engine", "blocked_finish_success_after_loop", msg)
+		state.stepCount++
+		return true, true
+	}
+	if status == "fail" {
+		if state.stepCount < 3 {
+			msg := fmt.Sprintf("⚠ EARLY EXIT: finish(fail) at step %d is too soon. The LLM should make at least 3 attempts before giving up. Observations so far: %d.", state.stepCount+1, len(ctx.Observations))
+			if len(ctx.SteeringInstructions) >= 5 {
+				ctx.SteeringInstructions = ctx.SteeringInstructions[1:]
+			}
+			ctx.SteeringInstructions = append(ctx.SteeringInstructions, msg)
+			trace.EmitAgentDecision(e.traceStore, runID, flowID, "engine", "early_exit_prevented", msg)
+			state.stepCount++
+			return true, true
+		}
+		result.Outcome = OutcomeFail
+		errMsg := "LLM signaled that the goal is unachievable"
+		if planStep.Reason != "" {
+			errMsg += ": " + planStep.Reason
+		}
+		result.Errors = append(result.Errors, errMsg)
+		trace.EmitAgentDecision(e.traceStore, runID, flowID, "planner", "finish_signal_fail", planStep.Reason)
+	} else {
+		trace.EmitAgentDecision(e.traceStore, runID, flowID, "planner", "finish_signal", "LLM signaled completion")
+	}
+	return true, false
+}
+
+func (e *AgentEngine) handleRepeatDetection(runID string, flowID string, planStep *agentstypes.PlanStep, ctx *agentstypes.ExecutionContext, result *ExecutionResult, state *autonomousFlowState) bool {
+	sig := stepSignature(planStep)
+	if sig == "" || sig != ctx.LastStepSignature {
+		ctx.LastStepSignature = sig
+		state.consecutiveRepeats = 0
+		state.blockedFinishSuccessCount = 0
+		return false
+	}
+	state.consecutiveRepeats++
+	if state.consecutiveRepeats >= 2 {
+		trace.EmitAgentDecision(e.traceStore, runID, flowID, "engine", "loop_hard_break",
+			fmt.Sprintf("LLM repeated same step %d times; aborting", state.consecutiveRepeats))
+		result.Outcome = OutcomeFail
+		result.Errors = append(result.Errors, "LLM stuck in loop — repeated same step 2+ times despite steering")
+		return true
+	}
+	msg := fmt.Sprintf("⚠ LOOP DETECTED: step %s %v repeated. Try a different approach. Do NOT finish with success unless observations confirm the goal is met.", planStep.Tool, planStep.Params)
+	if len(ctx.SteeringInstructions) >= 5 {
+		ctx.SteeringInstructions = ctx.SteeringInstructions[1:]
+	}
+	ctx.SteeringInstructions = append(ctx.SteeringInstructions, msg)
+	trace.EmitAgentDecision(e.traceStore, runID, flowID, "engine", "loop_detected", msg)
+	state.stepCount++
+	return true
+}
+
+func (e *AgentEngine) handleAlternationDetection(runID string, flowID string, planStep *agentstypes.PlanStep, ctx *agentstypes.ExecutionContext, result *ExecutionResult, state *autonomousFlowState) bool {
+	_ = result
+	if planStep.Tool != "navigate" {
+		return false
+	}
+	url, ok := planStep.Params["url"].(string)
+	if !ok || url == "" || ctx.VisitedURLs == nil || !ctx.VisitedURLs[url] {
+		return false
+	}
+	msg := fmt.Sprintf("⚠ URL ALREADY VISITED: '%s' was already navigated to. Do not revisit. Try a different approach.", url)
+	if len(ctx.SteeringInstructions) >= 5 {
+		ctx.SteeringInstructions = ctx.SteeringInstructions[1:]
+	}
+	ctx.SteeringInstructions = append(ctx.SteeringInstructions, msg)
+	trace.EmitAgentDecision(e.traceStore, runID, flowID, "engine", "url_alternation_detected", msg)
+	state.stepCount++
+	return true
+}
+
+func (e *AgentEngine) handleObserveLoop(runID string, flowID string, planStep *agentstypes.PlanStep, ctx *agentstypes.ExecutionContext, result *ExecutionResult, state *autonomousFlowState) bool {
+	_ = result
+	if planStep.Tool != "observe_ui" {
+		ctx.ConsecutiveObserveCount = 0
+		return false
+	}
+	ctx.ConsecutiveObserveCount++
+	if ctx.ConsecutiveObserveCount <= 3 {
+		return false
+	}
+	msg := "⚠ OBSERVE LOOP: observe_ui called 4+ times without progress. Try a different tool. Do NOT finish with success unless observations confirm the goal is met."
+	if len(ctx.SteeringInstructions) >= 5 {
+		ctx.SteeringInstructions = ctx.SteeringInstructions[1:]
+	}
+	ctx.SteeringInstructions = append(ctx.SteeringInstructions, msg)
+	trace.EmitAgentDecision(e.traceStore, runID, flowID, "engine", "observe_loop", msg)
+	state.stepCount++
+	ctx.ConsecutiveObserveCount = 0
+	return true
+}
+
+func (e *AgentEngine) handleSelectorValidation(runID string, flowID string, planStep *agentstypes.PlanStep, ctx *agentstypes.ExecutionContext, result *ExecutionResult, state *autonomousFlowState) bool {
+	_ = result
+	switch planStep.Tool {
+	case "get_html", "get_text", "evaluate":
+		return false
+	}
+	selector, ok := planStep.Params["selector"].(string)
+	if !ok || selector == "" || isSafeGenericSelector(selector) {
+		return false
+	}
+	valid := observedSelectors(ctx.Observations)
+	if len(valid) == 0 || containsSelector(valid, selector) {
+		return false
+	}
+	if text := extractTextFromSelector(selector); text != "" {
+		if elements := observedElements(ctx.Observations); len(elements) > 0 {
+			if best, ok := findBestMatchSelector(text, elements); ok {
+				trace.EmitAgentDecision(e.traceStore, runID, flowID, "engine", "selector_auto_replaced",
+					fmt.Sprintf("auto-replaced '%s' → '%s' (text='%s')", selector, best, text))
+				planStep.Params["selector"] = best
+				return false
+			}
+		}
+	}
+	msg := fmt.Sprintf("⚠ INVALID SELECTOR: '%s' was not found in the observed page elements. Use only selectors from the observation. Valid selectors: %s", selector, strings.Join(valid, ", "))
+	if len(ctx.SteeringInstructions) >= 5 {
+		ctx.SteeringInstructions = ctx.SteeringInstructions[1:]
+	}
+	ctx.SteeringInstructions = append(ctx.SteeringInstructions, msg)
+	trace.EmitAgentDecision(e.traceStore, runID, flowID, "engine", "invalid_selector", msg)
+	state.stepCount++
+	return true
+}
+
+func (e *AgentEngine) handle404Intercept(ctx *agentstypes.ExecutionContext, runID string, flow sharedtypes.Flow, result *ExecutionResult, state *autonomousFlowState) bool {
+	if !e.recovery.Has404Warning(ctx) {
+		return false
+	}
+	state.rootNavCount++
+	if state.rootNavCount > 2 {
+		result.Outcome = OutcomeFail
+		result.Errors = append(result.Errors, "root navigation attempted 3+ times — likely invalid target URL")
+		trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "engine", "root_nav_limit", "root navigation retry limit reached")
+		return true
+	}
+	trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "engine", "404_intercept", "intercepted 404 warning, forcing root navigation")
+	e.performRootNav(ctx, runID, flow.ID, result)
+	result.Retries++
+	state.consecutiveFailures = 0
+	state.stepCount++
+	return true
+}
+
+func (e *AgentEngine) handleStepFailure(ctx *agentstypes.ExecutionContext, runID string, flow sharedtypes.Flow, planStep *agentstypes.PlanStep, stepResult *agentstypes.StepResult, result *ExecutionResult, state *autonomousFlowState) bool {
+	if stepResult.Success {
+		state.consecutiveFailures = 0
+		return false
+	}
+
+	state.consecutiveFailures++
+	e.setCurrentAgent(runID, "recovery")
+	trace.EmitRecoveryAction(e.traceStore, runID, flow.ID, nil, stepResult)
+	decision := e.handleFailure(ctx, stepResult, result)
+	trace.EmitRecoveryAction(e.traceStore, runID, flow.ID, decision, stepResult)
+
+	switch decision.Action {
+	case agentstypes.RecoveryActionRootNav:
+		state.rootNavCount++
+		if state.rootNavCount > 2 {
+			result.Outcome = OutcomeFail
+			result.Errors = append(result.Errors, "root navigation attempted 3+ times — likely invalid target URL")
+			trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "engine", "root_nav_limit", "root navigation retry limit reached")
+			return true
+		}
+		e.performRootNav(ctx, runID, flow.ID, result)
+		result.Retries++
+		trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "recovery", "root_nav", decision.Reason)
+		state.consecutiveFailures = 0
+		state.stepCount++
+
+	case agentstypes.RecoveryActionRetry:
+		result.Retries++
+		trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "recovery", "retry", decision.Reason)
+		e.injectObserveStep(runID, flow.ID, ctx, state.plan, state.planner, result)
+		e.backoffAndCheck(state)
+		if result.Outcome != "" {
+			return true
+		}
+
+	case agentstypes.RecoveryActionReplan:
+		result.Retries++
+		trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "recovery", "replan", decision.Reason)
+		e.injectObserveStep(runID, flow.ID, ctx, state.plan, state.planner, result)
+		e.backoffAndCheck(state)
+		if result.Outcome != "" {
+			return true
+		}
+
+	case agentstypes.RecoveryActionSkip:
+		state.planner.UpdatePlan(state.plan, planStep.StepIndex, true, decision.Reason)
+		trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "recovery", "skip", decision.Reason)
+
+	case agentstypes.RecoveryActionFail:
+		result.Outcome = OutcomeFail
+		result.Errors = append(result.Errors, decision.Reason)
+		trace.EmitAgentDecision(e.traceStore, runID, flow.ID, "recovery", "fail", decision.Reason)
+		return true
+	}
+	return true
+}
+
+func (e *AgentEngine) backoffAndCheck(state *autonomousFlowState) {
+	if state == nil {
+		return
+	}
+	backoff := time.Duration(1<<state.consecutiveFailures) * time.Second
+	if backoff > 15*time.Second {
+		backoff = 15 * time.Second
+	}
+	select {
+	case <-state.backoffCtx.Done():
+	case <-time.After(backoff):
+	}
 }
 
 func (e *AgentEngine) setCurrentAgent(runID, agent string) {
@@ -725,9 +932,9 @@ func (e *AgentEngine) executeAndValidate(ctx *agentstypes.ExecutionContext, plan
 
 	trace.EmitStepExecution(e.traceStore, ctx.RunID, ctx.FlowID, stepResult)
 
-	step := findStepByID(ctx.Steps, planStep.StepID)
-	if step != nil && len(step.Assertions) > 0 {
-		validation := e.validator.ValidateStep(step, stepResult)
+	step, found := findStepByID(ctx.Steps, planStep.StepID)
+	if found && len(step.Assertions) > 0 {
+		validation := e.validator.ValidateStep(&step, stepResult)
 		if !validation.Passed {
 			stepResult.Success = false
 			stepResult.Error = fmt.Errorf("%v", validation.Errors)
@@ -751,18 +958,16 @@ func (e *AgentEngine) autoObserve(ctx *agentstypes.ExecutionContext, stepResult 
 	if e.toolRegistry == nil {
 		return
 	}
-	hasTool := false
 	if reg, ok := e.toolRegistry.(interface{ HasTool(string) bool }); ok {
-		hasTool = reg.HasTool("observe_ui")
-	} else {
-		_, err := e.toolRegistry.Execute("observe_ui", nil)
-		hasTool = err == nil || !strings.Contains(err.Error(), "unknown tool")
-	}
-	if !hasTool {
-		return
+		if !reg.HasTool("observe_ui") {
+			return
+		}
 	}
 	result, err := e.toolRegistry.Execute("observe_ui", nil)
 	if err != nil {
+		if strings.Contains(err.Error(), "unknown tool") {
+			return
+		}
 		trace.EmitAgentDecision(e.traceStore, ctx.RunID, ctx.FlowID, "engine", "auto_observe_failed", fmt.Sprintf("observe_ui error: %v", err))
 		return
 	}
@@ -812,6 +1017,10 @@ func (e *AgentEngine) injectObserveStep(runID, flowID string, ctx *agentstypes.E
 	// Make sure the observation has "data" mapped to the output so planner can parse it
 	obs.State["data"] = stepResult.Output
 	ctx.Observations = append(ctx.Observations, *obs)
+	const maxObservations = 10
+	if len(ctx.Observations) > maxObservations {
+		ctx.Observations = ctx.Observations[len(ctx.Observations)-maxObservations:]
+	}
 
 	trace.EmitStepExecution(e.traceStore, runID, flowID, stepResult)
 	trace.EmitAgentDecision(e.traceStore, runID, flowID, "engine", "injected_observe", fmt.Sprintf("observe_ui step %s injected", obsStepID))
@@ -921,13 +1130,13 @@ func buildObservationSummary(ctx *agentstypes.ExecutionContext) string {
 	return summary
 }
 
-func findStepByID(steps []sharedtypes.Step, stepID string) *sharedtypes.Step {
+func findStepByID(steps []sharedtypes.Step, stepID string) (sharedtypes.Step, bool) {
 	for i := range steps {
 		if steps[i].ID == stepID {
-			return &steps[i]
+			return steps[i], true
 		}
 	}
-	return nil
+	return sharedtypes.Step{}, false
 }
 
 func (e *AgentEngine) handleFailure(ctx *agentstypes.ExecutionContext, stepResult *agentstypes.StepResult, result *ExecutionResult) *agentstypes.RecoveryDecision {
@@ -948,7 +1157,7 @@ func (e *AgentEngine) RunFlowWithRetry(runID string, flow sharedtypes.Flow, maxR
 
 	var lastResult *ExecutionResult
 
-	for attempt := 0; attempt < maxRetries; attempt++ {
+	for attempt := 0; attempt <= maxRetries; attempt++ {
 		result := e.RunFlow(runID, flow)
 		lastResult = result
 
@@ -956,7 +1165,7 @@ func (e *AgentEngine) RunFlowWithRetry(runID string, flow sharedtypes.Flow, maxR
 			return result
 		}
 
-		if attempt < maxRetries-1 {
+		if attempt < maxRetries {
 			time.Sleep(time.Duration(retryBackoffBaseMs*(attempt+1)) * time.Millisecond)
 		}
 	}
@@ -964,41 +1173,50 @@ func (e *AgentEngine) RunFlowWithRetry(runID string, flow sharedtypes.Flow, maxR
 	return lastResult
 }
 
-func (e *AgentEngine) GetPlanner() *planner.Planner {
+func (e *AgentEngine) GetPlanner() Planner {
 	return e.planner
 }
 
-func (e *AgentEngine) GetExecutor() *executor.Executor {
+func (e *AgentEngine) GetExecutor() Executor {
 	return e.executor
 }
 
-func (e *AgentEngine) GetValidator() *validator.Validator {
+func (e *AgentEngine) GetValidator() Validator {
 	return e.validator
 }
 
-func (e *AgentEngine) GetRecovery() *recovery.Recovery {
+func (e *AgentEngine) GetRecovery() Recovery {
 	return e.recovery
 }
 
 func (e *AgentEngine) SetTraceStore(store *trace.TraceStore) {
+	e.mu.Lock()
 	e.traceStore = store
+	e.mu.Unlock()
 }
 
 func (e *AgentEngine) SetArtifactStore(store *artifact.ArtifactStore) {
+	e.mu.Lock()
 	e.artifactStore = store
+	e.mu.Unlock()
 }
 
 func (e *AgentEngine) saveCheckpoint(runID string, ctx *agentstypes.ExecutionContext, planStep *agentstypes.PlanStep) {
 	if ctx.Plan == nil {
 		return
 	}
+	visitedURLs := make(map[string]bool)
+	for k, v := range ctx.VisitedURLs {
+		visitedURLs[k] = v
+	}
 	payload := map[string]any{
-		"current_step":              planStep.StepID,
-		"step_index":                planStep.StepIndex,
-		"current_url":               ctx.CurrentURL,
-		"last_step_signature":       ctx.LastStepSignature,
-		"consecutive_observe_count": ctx.ConsecutiveObserveCount,
-		"visited_urls":              ctx.VisitedURLs,
+		"current_step":               planStep.StepID,
+		"step_index":                 planStep.StepIndex,
+		"current_url":                ctx.CurrentURL,
+		"last_step_signature":        ctx.LastStepSignature,
+		"consecutive_observe_count":  ctx.ConsecutiveObserveCount,
+		"visited_urls":               visitedURLs,
+		"repetition_blocked_success": ctx.RepetitionBlockedSuccess,
 	}
 	for i, obs := range ctx.Observations {
 		payload[fmt.Sprintf("obs_%d", i)] = obs.State
@@ -1034,18 +1252,28 @@ func (e *AgentEngine) EmitArtifact(runID, flowID string, artifactType artifact.A
 }
 
 func (e *AgentEngine) SetLifecycleController(lc *runtime.LifecycleController) {
+	e.mu.Lock()
 	e.lifecycle = lc
+	e.mu.Unlock()
+	if lc != nil {
+		e.initLifecycleCtx()
+	}
 }
 
 func (e *AgentEngine) SetLifecycleRunID(runID string) {
-	if e.lifecycle != nil {
-		e.lifecycle.SetRunID(runID)
+	e.mu.RLock()
+	lc := e.lifecycle
+	e.mu.RUnlock()
+	if lc != nil {
+		lc.SetRunID(runID)
 	}
 }
 
 func (e *AgentEngine) SetToolRegistry(registry executor.ToolRegistry) {
+	e.mu.Lock()
 	e.toolRegistry = registry
 	e.executor = executor.NewExecutor(registry)
+	e.mu.Unlock()
 }
 
 func (e *AgentEngine) SetDependencyContext(ctx string) {
@@ -1100,13 +1328,21 @@ func (e *AgentEngine) handlePauseResume(runID string, ctx *agentstypes.Execution
 	}
 	switch pauseStatus {
 	case sharedtypes.RunStatePausing:
+		// Re-check to avoid race with RequestCancel: if cancel fired
+		// between checkPauseState above and this write, don't overwrite it.
+		if currentStatus, _ := e.checkPauseState(runID); currentStatus == sharedtypes.RunStateCancelling || currentStatus == sharedtypes.RunStateCancelled {
+			return pauseSkip
+		}
 		e.syncSessionStore(runID, ctx.FlowID, "transition_to_paused", func() error {
 			return e.sessionStore.UpdateStatus(runID, sharedtypes.RunStatePaused)
 		})
 		e.setCurrentAgent(runID, "idle (paused)")
 		e.waitForResume(runID)
 		e.restoreCheckpoint(ctx)
-		cancelStatus, _ := e.checkPauseState(runID)
+		cancelStatus, exists := e.checkPauseState(runID)
+		if !exists {
+			return pauseFail
+		}
 		if cancelStatus == sharedtypes.RunStateCancelling || cancelStatus == sharedtypes.RunStateCancelled {
 			return pauseSkip
 		}
@@ -1114,7 +1350,10 @@ func (e *AgentEngine) handlePauseResume(runID string, ctx *agentstypes.Execution
 	case sharedtypes.RunStatePaused:
 		e.waitForResume(runID)
 		e.restoreCheckpoint(ctx)
-		cancelStatus, _ := e.checkPauseState(runID)
+		cancelStatus, exists := e.checkPauseState(runID)
+		if !exists {
+			return pauseFail
+		}
 		if cancelStatus == sharedtypes.RunStateCancelling || cancelStatus == sharedtypes.RunStateCancelled {
 			return pauseSkip
 		}
@@ -1133,7 +1372,6 @@ func (e *AgentEngine) drainSteeringEvents(ctx *agentstypes.ExecutionContext, run
 	events := e.lifecycle.DrainSteeringEvents()
 	for _, evt := range events {
 		if evt.FlowID != "" && evt.FlowID != flowID {
-			e.lifecycle.SubmitSteering(evt)
 			continue
 		}
 		switch evt.Command {
@@ -1153,12 +1391,20 @@ func (e *AgentEngine) drainSteeringEvents(ctx *agentstypes.ExecutionContext, run
 			trace.EmitAgentDecision(e.traceStore, runID, flowID, "steering", "skip_requested", evt.Reason)
 		case sharedtypes.SteerApprove:
 			e.lifecycle.AcknowledgeInput()
+			if currentStatus, _ := e.checkPauseState(runID); currentStatus == sharedtypes.RunStateCancelling || currentStatus == sharedtypes.RunStateCancelled {
+				trace.EmitAgentDecision(e.traceStore, runID, flowID, "steering", "approve_cancel_race", "cancel fired before approve; not overwriting with Running")
+				break
+			}
 			e.syncSessionStore(runID, flowID, "approve_resume", func() error {
 				return e.sessionStore.UpdateStatus(runID, sharedtypes.RunStateRunning)
 			})
 			trace.EmitAgentDecision(e.traceStore, runID, flowID, "steering", "approved", evt.Reason)
 		case sharedtypes.SteerContinue:
 			e.lifecycle.AcknowledgeInput()
+			if currentStatus, _ := e.checkPauseState(runID); currentStatus == sharedtypes.RunStateCancelling || currentStatus == sharedtypes.RunStateCancelled {
+				trace.EmitAgentDecision(e.traceStore, runID, flowID, "steering", "continue_cancel_race", "cancel fired before continue; not overwriting with Running")
+				break
+			}
 			e.syncSessionStore(runID, flowID, "continue_resume", func() error {
 				return e.sessionStore.UpdateStatus(runID, sharedtypes.RunStateRunning)
 			})
@@ -1174,9 +1420,6 @@ func (e *AgentEngine) drainSteeringEvents(ctx *agentstypes.ExecutionContext, run
 
 func (e *AgentEngine) finalizeRunResult(runID, flowID string, result *ExecutionResult, start time.Time, extraDetails map[string]any) {
 	result.DurationMs = time.Since(start).Milliseconds()
-	if result.Outcome == OutcomePass && len(result.Errors) > 0 {
-		result.Outcome = OutcomeFail
-	}
 
 	if e.sessionStore != nil {
 		e.finalizeFlowState(runID, flowID, result)
@@ -1231,31 +1474,10 @@ func convertToLLMTools(tools interface {
 }
 
 func (e *AgentEngine) autonomousLLMContext(parent context.Context) (context.Context, context.CancelFunc) {
-	ctx, cancel := context.WithCancel(parent)
-
-	e.mu.RLock()
-	lc := e.lifecycle
-	e.mu.RUnlock()
-
-	if lc == nil {
-		return ctx, cancel
+	if e.lifecycleCtx != nil {
+		return context.WithCancel(e.lifecycleCtx)
 	}
-
-	cancelCh := lc.CancelCh()
-	done := make(chan struct{})
-	go func() {
-		select {
-		case <-cancelCh:
-			cancel()
-		case <-ctx.Done():
-		case <-done:
-		}
-	}()
-	wrappedCancel := func() {
-		cancel()
-		close(done)
-	}
-	return ctx, wrappedCancel
+	return context.WithCancel(parent)
 }
 
 func getDefaultLLMTools() []llm.ToolInfo {
@@ -1368,12 +1590,7 @@ func isSafeGenericSelector(selector string) bool {
 }
 
 func containsSelector(list []string, target string) bool {
-	for _, s := range list {
-		if s == target {
-			return true
-		}
-	}
-	return false
+	return shared.Contains(list, target)
 }
 
 // extractTextFromSelector parses `tag:has-text("Some text")` and returns the text.
@@ -1518,8 +1735,10 @@ func (e *AgentEngine) restoreCheckpoint(ctx *agentstypes.ExecutionContext) {
 	if sig, ok := cp["last_step_signature"].(string); ok {
 		ctx.LastStepSignature = sig
 	}
-	if count, ok := cp["consecutive_observe_count"].(float64); ok {
-		ctx.ConsecutiveObserveCount = int(count)
+	if countFloat, ok := cp["consecutive_observe_count"].(float64); ok {
+		ctx.ConsecutiveObserveCount = int(countFloat)
+	} else if countInt, ok := cp["consecutive_observe_count"].(int); ok {
+		ctx.ConsecutiveObserveCount = countInt
 	}
 	if v, ok := cp["visited_urls"].(map[string]any); ok {
 		if ctx.VisitedURLs == nil {
@@ -1528,6 +1747,16 @@ func (e *AgentEngine) restoreCheckpoint(ctx *agentstypes.ExecutionContext) {
 		for url := range v {
 			ctx.VisitedURLs[url] = true
 		}
+	} else if v, ok := cp["visited_urls"].(map[string]bool); ok {
+		if ctx.VisitedURLs == nil {
+			ctx.VisitedURLs = make(map[string]bool)
+		}
+		for url, val := range v {
+			ctx.VisitedURLs[url] = val
+		}
+	}
+	if v, ok := cp["repetition_blocked_success"].(bool); ok {
+		ctx.RepetitionBlockedSuccess = v
 	}
 
 	if ctx.Plan != nil && sess.Checkpoint.StepIndex > 0 {

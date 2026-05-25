@@ -8,9 +8,16 @@ type GenerateRequest struct {
 	MaxCompletionTokens int              `json:"max_completion_tokens,omitempty"`
 	TopP                float64          `json:"top_p,omitempty"`
 	Stop                []string         `json:"stop,omitempty"`
-	ReasoningEffort     string           `json:"reasoning_effort,omitempty"` // For GPT-5 reasoning models
-	Thinking            *ThinkingConfig  `json:"thinking,omitempty"`         // For DeepSeek models
+	ReasoningEffort     string           `json:"reasoning_effort,omitempty"`
+	Thinking            *ThinkingConfig  `json:"thinking,omitempty"`
 	Timeout             int              `json:"-"`
+}
+
+func (r *GenerateRequest) EffectiveMaxTokens() int {
+	if r.MaxCompletionTokens > 0 {
+		return r.MaxCompletionTokens
+	}
+	return r.MaxTokens
 }
 
 type ThinkingConfig struct {

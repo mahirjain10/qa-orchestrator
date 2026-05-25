@@ -80,23 +80,42 @@ const observeUIJS = `(() => {
 		collected.push(walker.currentNode);
 	}
 
-	collected.sort(function(a, b) {
-		return (priorityOrder[a.tagName] || 99) - (priorityOrder[b.tagName] || 99);
-	});
+	// Tag priority sort removed to preserve visual DOM order
+	// Filter noisy attributes that destroy token efficiency (inline styles, iframe srcdoc, etc.)
+	const SKIP_ATTRS = new Set(["style", "srcdoc"]);
 
 	const elements = [];
 	for (let i = 0; i < collected.length && i < maxElements; i++) {
 		const el = collected[i];
-		const tag = el.tagName.toLowerCase();
-		elements.push({
-			tag: tag,
-			text: (el.textContent || '').trim().substring(0, 100),
-			id: el.id || '',
-			name: el.getAttribute('name') || '',
-			class: el.getAttribute('class') || '',
-			placeholder: el.placeholder || '',
-			selector: buildSelector(el)
-		});
+		const elem = { tag: el.tagName.toLowerCase() };
+
+		// Dynamically collect all HTML attributes — no schema coupling between DOM and planner
+		for (const attr of el.attributes) {
+			if (SKIP_ATTRS.has(attr.name)) continue;
+			let val = attr.value;
+			if (val === "") continue;
+			if (attr.name === "class") {
+				// Keep only first 5 classes — large Tailwind/etc strings destroy token budget
+				val = val.split(/\s+/).slice(0, 5).join(" ");
+			}
+			if (val.length > 300) val = val.substring(0, 300);
+			elem[attr.name] = val;
+		}
+
+		// Runtime state intentionally overrides static HTML attributes
+		// (e.g. el.value reflects current input, not the HTML value="..." default)
+		if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT') {
+			elem.value = el.type === 'password' ? (el.value.length > 0 ? '********' : '') : (el.value || '');
+		}
+		// Boolean runtime properties — only included when true by planner rendering
+		elem.checked = !!el.checked;
+		elem.disabled = !!el.disabled;
+		elem.selected = !!el.selected;
+
+		// Computed fields (not native HTML attributes)
+		elem.text = (el.textContent || '').trim().substring(0, 100);
+		elem.selector = buildSelector(el);
+		elements.push(elem);
 	}
 	return JSON.stringify({
 		page_state: elements.length > 0 ? 'loaded' : 'empty',
@@ -155,11 +174,11 @@ func (r *ToolRegistry) checkSelectorExists(runtime browserruntime.BrowserRuntime
 	js := selectorExistsJS + `(` + string(selectorJSON) + `)`
 	result, err := runtime.Evaluate(r.ctx, js)
 	if err != nil {
-		return nil
+		return fmt.Errorf("selector check eval failed: %w", err)
 	}
 	str, ok := result.(string)
 	if !ok {
-		return nil
+		return fmt.Errorf("selector check: unexpected result type %T", result)
 	}
 	var check struct {
 		Exists  bool   `json:"exists"`
@@ -167,7 +186,7 @@ func (r *ToolRegistry) checkSelectorExists(runtime browserruntime.BrowserRuntime
 		Error   string `json:"error"`
 	}
 	if err := json.Unmarshal([]byte(str), &check); err != nil {
-		return nil
+		return fmt.Errorf("selector check: failed to parse result: %w", err)
 	}
 	if !check.Exists {
 		if check.Error != "" {
@@ -260,9 +279,6 @@ func (r *ToolRegistry) registerWaitFor(runtime browserruntime.BrowserRuntimeInte
 		state := "visible"
 		if s, ok := params["state"].(string); ok {
 			state = s
-		}
-		if err := r.checkSelectorExists(runtime, selector); err != nil {
-			return nil, err
 		}
 		err := runtime.WaitForSelector(r.ctx, selector, &browserruntime.WaitForOptions{State: state})
 		if err != nil {
@@ -372,27 +388,31 @@ func (r *ToolRegistry) registerObserveUI(runtime browserruntime.BrowserRuntimeIn
 		}
 
 		// Check heading first (more targeted — h1/h2 with 404 content)
-		headingResult, _ := runtime.Evaluate(r.ctx, `
+		headingResult, headingErr := runtime.Evaluate(r.ctx, `
 			(() => {
 				const el = document.querySelector('h1, h2, .error, .not-found, .page-not-found, .error-page');
 				return el ? el.textContent.substring(0, 100) : '';
 			})()
 		`)
-		if headingStr, ok := headingResult.(string); ok {
-			headingLower := strings.ToLower(headingStr)
-			if strings.Contains(headingLower, "404") || strings.Contains(headingLower, "not found") {
-				parsed["warning"] = "⚠️ WARNING: Page appears to be a 404 or error page."
+		if headingErr == nil {
+			if headingStr, ok := headingResult.(string); ok {
+				headingLower := strings.ToLower(headingStr)
+				if strings.Contains(headingLower, "404") || strings.Contains(headingLower, "not found") {
+					parsed["warning"] = "⚠️ WARNING: Page appears to be a 404 or error page."
+				}
 			}
 		}
 
 		// Only check title if heading didn't trigger — require prefix match to avoid
 		// flagging legitimate pages whose titles mention "404" or "not found" in passing.
 		if _, exists := parsed["warning"]; !exists {
-			titleResult, _ := runtime.Evaluate(r.ctx, "document.title")
-			title, _ := titleResult.(string)
-			titleLower := strings.ToLower(title)
-			if strings.HasPrefix(titleLower, "404") || strings.HasPrefix(titleLower, "not found") {
-				parsed["warning"] = "⚠️ WARNING: Page appears to be a 404 or error page."
+			titleResult, titleErr := runtime.Evaluate(r.ctx, "document.title")
+			if titleErr == nil {
+				title, _ := titleResult.(string)
+				titleLower := strings.ToLower(title)
+				if strings.HasPrefix(titleLower, "404") || strings.HasPrefix(titleLower, "not found") {
+					parsed["warning"] = "⚠️ WARNING: Page appears to be a 404 or error page."
+				}
 			}
 		}
 
@@ -532,6 +552,11 @@ func validateToolParams(info ToolInfo, params map[string]any) error {
 			return fmt.Errorf("%s must be %s", name, spec.Type)
 		}
 	}
+	for name := range params {
+		if _, known := info.Parameters[name]; !known {
+			return fmt.Errorf("unknown parameter: %s", name)
+		}
+	}
 	return nil
 }
 
@@ -545,7 +570,7 @@ func matchesType(expected string, value any) bool {
 		return ok
 	case "number":
 		switch value.(type) {
-		case int, int8, int16, int32, int64, float32, float64:
+		case int, int8, int16, int32, int64, float32, float64, json.Number:
 			return true
 		default:
 			return false

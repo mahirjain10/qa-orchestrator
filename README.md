@@ -126,3 +126,7 @@ Useful targets:
 ## Current delivery status
 
 See [docs/CURRENT.md](docs/CURRENT.md) for the latest phase status and run history.
+
+## Performance & Stability Enhancements
+- **Dynamic React Sync:** The framework uses Playwright's `WaitForFunction` to dynamically poll UI state updates after interactions, eliminating infinite observation loops on modern frontend frameworks (React, Vue, Angular).
+- **High-Performance Deep Cloning:** The session store implements custom native struct copying instead of `json.Marshal`, radically reducing CPU overhead and global lock contention when streaming massive DOM payloads to the TUI.

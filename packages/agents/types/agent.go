@@ -53,6 +53,27 @@ type Plan struct {
 	historyDirty bool
 }
 
+func (p *Plan) Lock()     { p.mu.Lock() }
+func (p *Plan) Unlock()   { p.mu.Unlock() }
+func (p *Plan) RLock()    { p.mu.RLock() }
+func (p *Plan) RUnlock()  { p.mu.RUnlock() }
+
+func (p *Plan) SetHistoryDirty() { p.historyDirty = true }
+
+func (p *Plan) Retreat() bool {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.CurrentIdx > 0 {
+		p.CurrentIdx--
+		if p.CurrentIdx < len(p.Steps) {
+			p.Steps[p.CurrentIdx].Skip = false
+		}
+		p.historyDirty = true
+		return true
+	}
+	return false
+}
+
 func (p *Plan) AddStep(step PlanStep) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -64,6 +85,14 @@ func (p *Plan) AddStep(step PlanStep) {
 	}
 	p.Steps = append(p.Steps, step)
 	p.historyDirty = true
+}
+
+func (p *Plan) UpdateStepResult(stepIndex int, result *StepResult) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if stepIndex >= 0 && stepIndex < len(p.Steps) {
+		p.Steps[stepIndex].Result = result
+	}
 }
 
 func (p *Plan) InvalidateHistoryCache() {

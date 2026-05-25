@@ -48,6 +48,8 @@ RULE 5 — If observe_ui() does not show your target element: broaden strategy,
 scroll, check for tabs/modals/iframes, observe again. Do not hammer a missing
 selector.
 
+RULE 6 — If the observation shows a 404 warning or error page, wait for steering instructions or navigate to the base domain to recover. Do not attempt to interact with elements on a 404 page.
+
 Observation is cheap. Blind retries are expensive and always lose.
 
 ────────────────────────────────────────
@@ -155,13 +157,12 @@ func FormatTools(tools []ToolInfo) string {
 }
 
 type PlannerPromptData struct {
-	Goal              string
-	StartURL          string
-	CurrentURL        string
-	History           string
-	Observation       string
-	Tools             []ToolInfo
-	DependencyContext string
+	Goal        string
+	StartURL    string
+	CurrentURL  string
+	History     string
+	Observation string
+	Tools       []ToolInfo
 }
 
 func (d PlannerPromptData) URLContext() string {
@@ -184,10 +185,11 @@ func BuildSystemPrompt(tools []ToolInfo, dependencyContext string) string {
 }
 
 func sanitizeGoal(goal string) string {
-	// Strip markdown code fences that could break out of the prompt structure
 	goal = strings.ReplaceAll(goal, "```", "")
-	// Strip common LLM injection trigger prefixes
-	goal = strings.ReplaceAll(goal, "\x00", "") // null bytes
+	goal = strings.ReplaceAll(goal, "\x00", "")
+	goal = strings.ReplaceAll(goal, "&", "&amp;")
+	goal = strings.ReplaceAll(goal, "<", "&lt;")
+	goal = strings.ReplaceAll(goal, ">", "&gt;")
 	return strings.TrimSpace(goal)
 }
 

@@ -3,17 +3,18 @@ package llm
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 )
 
-type OpenAIProvider struct{}
+type OpenAIProvider struct {
+	BaseURL string
+}
 
 func (p *OpenAIProvider) Name() string {
 	return "openai"
 }
 
 func (p *OpenAIProvider) Endpoint(model string) string {
-	return "https://api.openai.com/v1/chat/completions"
+	return endpoint(p.BaseURL, "https://api.openai.com/v1", "/chat/completions")
 }
 
 func (p *OpenAIProvider) AuthHeaders(apiKey string) map[string]string {
@@ -24,42 +25,32 @@ func (p *OpenAIProvider) AuthHeaders(apiKey string) map[string]string {
 }
 
 func (p *OpenAIProvider) BuildRequest(ctx context.Context, req *GenerateRequest) ([]byte, error) {
-	messages := req.Messages
-	systemPrompt := ""
-
-	if len(messages) > 0 && messages[0].Role == RoleSystem {
-		systemPrompt = messages[0].Content
-		messages = messages[1:]
+	if err := checkContext(ctx); err != nil {
+		return nil, err
 	}
 
+	systemPrompt, messages := splitSystemMessage(req.Messages)
 	allMessages := make([]Message, 0, len(messages)+1)
 	if systemPrompt != "" {
 		allMessages = append(allMessages, Message{Role: RoleSystem, Content: systemPrompt})
 	}
 	allMessages = append(allMessages, messages...)
 
-	maxTokens := req.MaxCompletionTokens
-	if maxTokens == 0 {
-		maxTokens = req.MaxTokens
-	}
-
 	openReq := openAIRequest{
 		Model:               req.Model,
 		Messages:            allMessages,
-		MaxCompletionTokens: maxTokens,
+		MaxCompletionTokens: req.EffectiveMaxTokens(),
+		TopP:                req.TopP,
+		Stop:                req.Stop,
 		ReasoningEffort:     req.ReasoningEffort,
 	}
 
-
-	// OpenAI doesn't natively use ThinkingConfig, but it uses reasoning_effort.
-	// We map Thinking if provided for compatibility with DeepSeek via generic requests.
 	if req.Thinking != nil && openReq.ReasoningEffort == "" {
 		if req.Thinking.Type == "enabled" || req.Thinking.Type == "max" {
 			openReq.ReasoningEffort = "high"
 		}
 	}
 
-	// Reasoning models (o1, o3, o4, gpt-5+) do not support temperature.
 	if !isReasoningModel(req.Model) {
 		openReq.Temperature = req.Temperature
 	}
@@ -76,8 +67,9 @@ func (p *OpenAIProvider) ParseError(statusCode int, body []byte) error {
 }
 
 func (p *OpenAIProvider) ValidateModel(model string) error {
-	if model == "" {
-		return fmt.Errorf("model is required for OpenAI provider")
-	}
-	return nil
+	return validateModel(model, "openai")
+}
+
+func (p *OpenAIProvider) ApplyConfig(cfg *Config) {
+	p.BaseURL = cfg.BaseURL
 }

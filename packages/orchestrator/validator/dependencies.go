@@ -100,6 +100,27 @@ func (v *DependencyValidator) Validate(flows []types.Flow) ValidationResult {
 
 	// Compute topological order
 	order := v.topologicalSort(flows)
+	if len(order) < len(flows) {
+		// topologicalSort detected a cycle not caught by DFS (defense-in-depth).
+		// The partial order contains flows before the cycle; report the rest as cycle deps.
+		inOrder := make(map[string]bool, len(order))
+		for _, id := range order {
+			inOrder[id] = true
+		}
+		var cycleDeps []string
+		for _, flow := range flows {
+			if !inOrder[flow.ID] {
+				cycleDeps = append(cycleDeps, flow.ID)
+			}
+		}
+		return ValidationResult{
+			Valid: false,
+			Error: &types.DependencyError{
+				FlowID:    "campaign",
+				CycleDeps: cycleDeps,
+			},
+		}
+	}
 
 	return ValidationResult{
 		Valid:            true,
@@ -143,13 +164,27 @@ func (v *DependencyValidator) topologicalSort(flows []types.Flow) []string {
 		}
 	}
 
+	// Detect cycles: if not all flows are in order, there's a cycle.
+	// Return only the partial order up to the cycle. Callers must check
+	// the result length against the input length.
 	return order
 }
 
-func (v *DependencyValidator) GetEligibleFlows(flows []types.Flow) []types.Flow {
+func (v *DependencyValidator) GetEligibleFlows(flows []types.Flow, completedFlowIDs map[string]bool) []types.Flow {
 	var eligible []types.Flow
 	for _, flow := range flows {
 		if len(flow.DependsOn) == 0 {
+			eligible = append(eligible, flow)
+			continue
+		}
+		allDepsComplete := true
+		for _, dep := range flow.DependsOn {
+			if !completedFlowIDs[dep] {
+				allDepsComplete = false
+				break
+			}
+		}
+		if allDepsComplete {
 			eligible = append(eligible, flow)
 		}
 	}
@@ -157,6 +192,9 @@ func (v *DependencyValidator) GetEligibleFlows(flows []types.Flow) []types.Flow 
 }
 
 func (v *DependencyValidator) FormatError(err *types.DependencyError) string {
+	if err == nil {
+		return "unknown dependency error"
+	}
 	var parts []string
 	if len(err.MissingDeps) > 0 {
 		parts = append(parts, fmt.Sprintf(

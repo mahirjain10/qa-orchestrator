@@ -19,29 +19,59 @@ func TestLifecycleController_New(t *testing.T) {
 }
 
 func TestLifecycleController_CanCancel(t *testing.T) {
-	ctrl := NewLifecycleController("run_123")
-
-	for _, status := range []types.RunState{
-		types.RunStatePending,
-		types.RunStateRunning,
-		types.RunStatePaused,
-		types.RunStatePausing,
-		types.RunStateWaitingInput,
-	} {
-		ctrl.SetStatus(status)
-		if !ctrl.CanCancel() {
-			t.Errorf("expected CanCancel() to be true for %s", status)
-		}
+	// PENDING (initial state) — should be cancellable
+	ctrl := NewLifecycleController("run_pending")
+	if !ctrl.CanCancel() {
+		t.Errorf("expected CanCancel() to be true for PENDING")
 	}
 
-	for _, status := range []types.RunState{
-		types.RunStateCompleted,
-		types.RunStateCancelled,
-	} {
-		ctrl.SetStatus(status)
-		if ctrl.CanCancel() {
-			t.Errorf("expected CanCancel() to be false for %s", status)
-		}
+	// RUNNING — should be cancellable
+	ctrl = NewLifecycleController("run_running")
+	ctrl.SetStatus(types.RunStateRunning)
+	if !ctrl.CanCancel() {
+		t.Errorf("expected CanCancel() to be true for RUNNING")
+	}
+
+	// PAUSING — should be cancellable
+	ctrl = NewLifecycleController("run_pausing")
+	ctrl.SetStatus(types.RunStateRunning)
+	ctrl.SetStatus(types.RunStatePausing)
+	if !ctrl.CanCancel() {
+		t.Errorf("expected CanCancel() to be true for PAUSING")
+	}
+
+	// PAUSED — should be cancellable
+	ctrl = NewLifecycleController("run_paused")
+	ctrl.SetStatus(types.RunStateRunning)
+	ctrl.SetStatus(types.RunStatePausing)
+	ctrl.SetStatus(types.RunStatePaused)
+	if !ctrl.CanCancel() {
+		t.Errorf("expected CanCancel() to be true for PAUSED")
+	}
+
+	// WAITING_FOR_INPUT — should be cancellable
+	ctrl = NewLifecycleController("run_waiting")
+	ctrl.SetStatus(types.RunStateRunning)
+	ctrl.SetStatus(types.RunStateWaitingInput)
+	if !ctrl.CanCancel() {
+		t.Errorf("expected CanCancel() to be true for WAITING_FOR_INPUT")
+	}
+
+	// COMPLETED — should NOT be cancellable
+	ctrl = NewLifecycleController("run_completed")
+	ctrl.SetStatus(types.RunStateRunning)
+	ctrl.SetStatus(types.RunStateCompleted)
+	if ctrl.CanCancel() {
+		t.Errorf("expected CanCancel() to be false for COMPLETED")
+	}
+
+	// CANCELLED — should NOT be cancellable
+	ctrl = NewLifecycleController("run_cancelled")
+	ctrl.SetStatus(types.RunStateRunning)
+	ctrl.RequestCancel()
+	ctrl.AcknowledgeCancel()
+	if ctrl.CanCancel() {
+		t.Errorf("expected CanCancel() to be false for CANCELLED")
 	}
 }
 
@@ -66,6 +96,7 @@ func TestLifecycleController_RequestCancel(t *testing.T) {
 func TestLifecycleController_WaitingForInput(t *testing.T) {
 	ctrl := NewLifecycleController("run_123")
 
+	ctrl.SetStatus(types.RunStateRunning)
 	ctrl.SetWaitingForInput()
 	if !ctrl.IsWaitingForInput() {
 		t.Error("expected IsWaitingForInput() to be true")
@@ -160,6 +191,299 @@ func TestSubmitSteering_OverflowTrimsOldest(t *testing.T) {
 	// The last event should be the one we just submitted
 	if events[len(events)-1].Instruction != "new-last" {
 		t.Errorf("expected last event 'new-last', got %q", events[len(events)-1].Instruction)
+	}
+}
+
+// ── transitionValid tests ──────────────────────────────────────────────────
+
+func TestTransitionValid_AllowsKnownTransitions(t *testing.T) {
+	tests := []struct {
+		name string
+		from types.RunState
+		to   types.RunState
+	}{
+		{"PENDING→RUNNING", types.RunStatePending, types.RunStateRunning},
+		{"RUNNING→PAUSING", types.RunStateRunning, types.RunStatePausing},
+		{"RUNNING→CANCELLING", types.RunStateRunning, types.RunStateCancelling},
+		{"RUNNING→COMPLETED", types.RunStateRunning, types.RunStateCompleted},
+		{"RUNNING→FAILED", types.RunStateRunning, types.RunStateFailed},
+		{"RUNNING→WAITING_INPUT", types.RunStateRunning, types.RunStateWaitingInput},
+		{"PAUSING→PAUSED", types.RunStatePausing, types.RunStatePaused},
+		{"PAUSED→RESUMING", types.RunStatePaused, types.RunStateResuming},
+		{"PAUSED→CANCELLING", types.RunStatePaused, types.RunStateCancelling},
+		{"RESUMING→RUNNING", types.RunStateResuming, types.RunStateRunning},
+		{"WAITING_INPUT→RUNNING", types.RunStateWaitingInput, types.RunStateRunning},
+		{"WAITING_INPUT→CANCELLING", types.RunStateWaitingInput, types.RunStateCancelling},
+		{"CANCELLING→CANCELLED", types.RunStateCancelling, types.RunStateCancelled},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if !transitionValid(tt.from, tt.to) {
+				t.Errorf("transitionValid(%v, %v) = false, want true", tt.from, tt.to)
+			}
+		})
+	}
+}
+
+func TestTransitionValid_SameStateIsAlwaysValid(t *testing.T) {
+	states := []types.RunState{
+		types.RunStatePending,
+		types.RunStateRunning,
+		types.RunStatePausing,
+		types.RunStatePaused,
+		types.RunStateResuming,
+		types.RunStateCancelling,
+		types.RunStateCancelled,
+		types.RunStateCompleted,
+		types.RunStateFailed,
+		types.RunStateWaitingInput,
+	}
+	for _, s := range states {
+		t.Run(string(s), func(t *testing.T) {
+			if !transitionValid(s, s) {
+				t.Errorf("transitionValid(%v, %v) = false, want true (same-state)", s, s)
+			}
+		})
+	}
+}
+
+func TestTransitionValid_RejectsInvalidTransitions(t *testing.T) {
+	tests := []struct {
+		name string
+		from types.RunState
+		to   types.RunState
+	}{
+		// PENDING only → RUNNING
+		{"PENDING→PAUSING", types.RunStatePending, types.RunStatePausing},
+		{"PENDING→CANCELLING", types.RunStatePending, types.RunStateCancelling},
+		{"PENDING→COMPLETED", types.RunStatePending, types.RunStateCompleted},
+		{"PENDING→FAILED", types.RunStatePending, types.RunStateFailed},
+		{"PENDING→WAITING_INPUT", types.RunStatePending, types.RunStateWaitingInput},
+
+		// RUNNING only → non-RUNNING targets that aren't in its whitelist
+		{"RUNNING→PENDING", types.RunStateRunning, types.RunStatePending},
+		{"RUNNING→PAUSED", types.RunStateRunning, types.RunStatePaused},
+		{"RUNNING→RESUMING", types.RunStateRunning, types.RunStateResuming},
+
+		// PAUSING only → PAUSED
+		{"PAUSING→RUNNING", types.RunStatePausing, types.RunStateRunning},
+		{"PAUSING→COMPLETED", types.RunStatePausing, types.RunStateCompleted},
+		{"PAUSING→FAILED", types.RunStatePausing, types.RunStateFailed},
+		{"PAUSING→CANCELLING", types.RunStatePausing, types.RunStateCancelling},
+
+		// PAUSED only → RESUMING, CANCELLING
+		{"PAUSED→RUNNING", types.RunStatePaused, types.RunStateRunning},
+		{"PAUSED→COMPLETED", types.RunStatePaused, types.RunStateCompleted},
+		{"PAUSED→FAILED", types.RunStatePaused, types.RunStateFailed},
+		{"PAUSED→WAITING_INPUT", types.RunStatePaused, types.RunStateWaitingInput},
+
+		// RESUMING only → RUNNING
+		{"RESUMING→PENDING", types.RunStateResuming, types.RunStatePending},
+		{"RESUMING→COMPLETED", types.RunStateResuming, types.RunStateCompleted},
+		{"RESUMING→FAILED", types.RunStateResuming, types.RunStateFailed},
+
+		// WAITING_INPUT only → RUNNING, CANCELLING
+		{"WAITING_INPUT→PENDING", types.RunStateWaitingInput, types.RunStatePending},
+		{"WAITING_INPUT→COMPLETED", types.RunStateWaitingInput, types.RunStateCompleted},
+		{"WAITING_INPUT→FAILED", types.RunStateWaitingInput, types.RunStateFailed},
+
+		// CANCELLING only → CANCELLED
+		{"CANCELLING→RUNNING", types.RunStateCancelling, types.RunStateRunning},
+		{"CANCELLING→COMPLETED", types.RunStateCancelling, types.RunStateCompleted},
+		{"CANCELLING→FAILED", types.RunStateCancelling, types.RunStateFailed},
+		{"CANCELLING→PAUSED", types.RunStateCancelling, types.RunStatePaused},
+
+		// Terminal states reject everything
+		{"CANCELLED→RUNNING", types.RunStateCancelled, types.RunStateRunning},
+		{"CANCELLED→PENDING", types.RunStateCancelled, types.RunStatePending},
+		{"COMPLETED→RUNNING", types.RunStateCompleted, types.RunStateRunning},
+		{"COMPLETED→PENDING", types.RunStateCompleted, types.RunStatePending},
+		{"FAILED→RUNNING", types.RunStateFailed, types.RunStateRunning},
+		{"FAILED→PENDING", types.RunStateFailed, types.RunStatePending},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if transitionValid(tt.from, tt.to) {
+				t.Errorf("transitionValid(%v, %v) = true, want false", tt.from, tt.to)
+			}
+		})
+	}
+}
+
+// ── RequestCancel with validation ───────────────────────────────────────────
+
+func TestRequestCancel_ReturnsFalseForInvalidStates(t *testing.T) {
+	tests := []struct {
+		name   string
+		setup  func(ctrl *LifecycleController)
+	}{
+		{"PENDING", func(ctrl *LifecycleController) { /* initial state PENDING */ }},
+		{"COMPLETED", func(ctrl *LifecycleController) {
+			ctrl.SetStatus(types.RunStateRunning)
+			ctrl.SetStatus(types.RunStateCompleted)
+		}},
+		{"CANCELLED", func(ctrl *LifecycleController) {
+			ctrl.SetStatus(types.RunStateRunning)
+			ctrl.RequestCancel()
+			ctrl.AcknowledgeCancel()
+		}},
+		{"FAILED", func(ctrl *LifecycleController) {
+			ctrl.SetStatus(types.RunStateRunning)
+			ctrl.SetStatus(types.RunStateFailed)
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := NewLifecycleController("run_req_cancel_" + tt.name)
+			tt.setup(ctrl)
+			if ctrl.RequestCancel() {
+				t.Errorf("RequestCancel() = true from state %v, want false", ctrl.GetStatus())
+			}
+		})
+	}
+}
+
+// ── AcknowledgeCancel guard ─────────────────────────────────────────────────
+
+func TestAcknowledgeCancel_ReturnsTrueOnlyFromCancelling(t *testing.T) {
+	t.Run("from CANCELLING succeeds", func(t *testing.T) {
+		ctrl := NewLifecycleController("ack_cancel_ok")
+		ctrl.SetStatus(types.RunStateRunning)
+		ctrl.RequestCancel() // → CANCELLING
+		if !ctrl.AcknowledgeCancel() {
+			t.Fatal("AcknowledgeCancel() from CANCELLING returned false")
+		}
+		if ctrl.GetStatus() != types.RunStateCancelled {
+			t.Errorf("status = %v, want CANCELLED", ctrl.GetStatus())
+		}
+	})
+
+	tests := []struct {
+		name  string
+		setup func(ctrl *LifecycleController)
+	}{
+		{"PENDING", func(*LifecycleController) {}},
+		{"RUNNING", func(ctrl *LifecycleController) { ctrl.SetStatus(types.RunStateRunning) }},
+		{"COMPLETED", func(ctrl *LifecycleController) {
+			ctrl.SetStatus(types.RunStateRunning)
+			ctrl.SetStatus(types.RunStateCompleted)
+		}},
+		{"FAILED", func(ctrl *LifecycleController) {
+			ctrl.SetStatus(types.RunStateRunning)
+			ctrl.SetStatus(types.RunStateFailed)
+		}},
+	}
+	for _, tt := range tests {
+		t.Run("from "+tt.name+" fails", func(t *testing.T) {
+			ctrl := NewLifecycleController("ack_cancel_fail_" + tt.name)
+			tt.setup(ctrl)
+			before := ctrl.GetStatus()
+			if ctrl.AcknowledgeCancel() {
+				t.Errorf("AcknowledgeCancel() = true from state %v, want false", before)
+			}
+			if ctrl.GetStatus() != before {
+				t.Errorf("status changed from %v to %v after failed AcknowledgeCancel", before, ctrl.GetStatus())
+			}
+		})
+	}
+}
+
+// ── SetWaitingForInput / AcknowledgeInput validation ────────────────────────
+
+func TestSetWaitingForInput_NoopFromInvalidStates(t *testing.T) {
+	tests := []struct {
+		name  string
+		setup func(ctrl *LifecycleController)
+	}{
+		{"PENDING", func(*LifecycleController) {}},
+		{"PAUSED", func(ctrl *LifecycleController) {
+			ctrl.SetStatus(types.RunStateRunning)
+			ctrl.SetStatus(types.RunStatePausing)
+			ctrl.SetStatus(types.RunStatePaused)
+		}},
+		{"COMPLETED", func(ctrl *LifecycleController) {
+			ctrl.SetStatus(types.RunStateRunning)
+			ctrl.SetStatus(types.RunStateCompleted)
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := NewLifecycleController("swfi_noop_" + tt.name)
+			tt.setup(ctrl)
+			before := ctrl.GetStatus()
+			ctrl.SetWaitingForInput()
+			if ctrl.IsWaitingForInput() {
+				t.Errorf("IsWaitingForInput() = true after SetWaitingForInput from %v", before)
+			}
+			if ctrl.GetStatus() != before {
+				t.Errorf("status changed from %v to %v (should be no-op)", before, ctrl.GetStatus())
+			}
+		})
+	}
+}
+
+func TestAcknowledgeInput_NoopFromInvalidStates(t *testing.T) {
+	tests := []struct {
+		name  string
+		setup func(ctrl *LifecycleController)
+	}{
+		{"PENDING", func(*LifecycleController) {}},
+		{"RUNNING", func(ctrl *LifecycleController) { ctrl.SetStatus(types.RunStateRunning) }},
+		{"COMPLETED", func(ctrl *LifecycleController) {
+			ctrl.SetStatus(types.RunStateRunning)
+			ctrl.SetStatus(types.RunStateCompleted)
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := NewLifecycleController("ack_input_noop_" + tt.name)
+			tt.setup(ctrl)
+			before := ctrl.GetStatus()
+			ctrl.AcknowledgeInput()
+			if ctrl.GetStatus() != before {
+				t.Errorf("status changed from %v to %v (should be no-op)", before, ctrl.GetStatus())
+			}
+		})
+	}
+}
+
+func TestAcknowledgeInput_TransitionsCorrectly(t *testing.T) {
+	ctrl := NewLifecycleController("ack_input_ok")
+	ctrl.SetStatus(types.RunStateRunning)
+	ctrl.SetWaitingForInput()
+	if !ctrl.IsWaitingForInput() {
+		t.Fatal("expected IsWaitingForInput() after SetWaitingForInput")
+	}
+	ctrl.AcknowledgeInput()
+	if ctrl.IsWaitingForInput() {
+		t.Error("IsWaitingForInput() still true after AcknowledgeInput")
+	}
+	if ctrl.GetStatus() != types.RunStateRunning {
+		t.Errorf("status = %v, want RUNNING", ctrl.GetStatus())
+	}
+}
+
+// ── SetStatus validation ────────────────────────────────────────────────────
+
+func TestSetStatus_NoopForInvalidTransition(t *testing.T) {
+	ctrl := NewLifecycleController("set_status_noop")
+	// PENDING is the initial state. Attempting to go to COMPLETED directly should be a no-op.
+	ctrl.SetStatus(types.RunStateCompleted)
+	if ctrl.GetStatus() != types.RunStatePending {
+		t.Errorf("status = %v, want PENDING (no-op attempted COMPLETED)", ctrl.GetStatus())
+	}
+
+	// RUNNING → WAITING_FOR_INPUT is valid
+	ctrl.SetStatus(types.RunStateRunning)
+	ctrl.SetStatus(types.RunStateWaitingInput)
+	if ctrl.GetStatus() != types.RunStateWaitingInput {
+		t.Fatalf("status = %v, want WAITING_FOR_INPUT", ctrl.GetStatus())
+	}
+
+	// WAITING_FOR_INPUT → PAUSED is invalid — should stay WAITING_FOR_INPUT
+	ctrl.SetStatus(types.RunStatePaused)
+	if ctrl.GetStatus() != types.RunStateWaitingInput {
+		t.Errorf("status = %v, want WAITING_FOR_INPUT (no-op attempted PAUSED)", ctrl.GetStatus())
 	}
 }
 

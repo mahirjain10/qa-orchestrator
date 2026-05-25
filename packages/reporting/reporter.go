@@ -9,14 +9,24 @@ import (
 
 	sharedtypes "qa-orchestrator/packages/shared/types"
 	"qa-orchestrator/packages/storage/artifact"
-	"qa-orchestrator/packages/storage/session"
-	"qa-orchestrator/packages/storage/trace"
 )
 
+type SessionStore interface {
+	Get(runID string) (*sharedtypes.Session, error)
+}
+
+type TraceStore interface {
+	GetByRunID(runID string) ([]*sharedtypes.TraceEvent, error)
+}
+
+type ArtifactStore interface {
+	GetByRunID(runID string) ([]*artifact.Artifact, error)
+}
+
 type ReportGenerator struct {
-	sessionStore  *session.SessionStore
-	traceStore    *trace.TraceStore
-	artifactStore *artifact.ArtifactStore
+	sessionStore  SessionStore
+	traceStore    TraceStore
+	artifactStore ArtifactStore
 	outputDir     string
 }
 
@@ -50,7 +60,7 @@ type FlowSummary struct {
 	ArtifactPath string
 }
 
-func NewReportGenerator(sessionStore *session.SessionStore, traceStore *trace.TraceStore, artifactStore *artifact.ArtifactStore, outputDir string) *ReportGenerator {
+func NewReportGenerator(sessionStore SessionStore, traceStore TraceStore, artifactStore ArtifactStore, outputDir string) *ReportGenerator {
 	return &ReportGenerator{
 		sessionStore:  sessionStore,
 		traceStore:    traceStore,

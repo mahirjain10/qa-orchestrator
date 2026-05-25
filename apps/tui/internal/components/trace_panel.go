@@ -336,9 +336,10 @@ func formatBytes(bytes int64) string {
 		return fmt.Sprintf("%d B", bytes)
 	}
 	div, exp := int64(unit), 0
-	for n := bytes / unit; n >= unit; n /= unit {
+	for n := bytes / unit; n >= unit && exp < 5; n /= unit {
 		div *= unit
 		exp++
 	}
-	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
+	suffix := string("KMGTPE"[exp])
+	return fmt.Sprintf("%.1f %sB", float64(bytes)/float64(div), suffix)
 }

@@ -15,6 +15,7 @@ type Provider interface {
 	ParseResponse(body []byte) (*GenerateResponse, error)
 	ParseError(statusCode int, body []byte) error
 	ValidateModel(model string) error
+	ApplyConfig(cfg *Config)
 }
 
 func GetProvider(name string) (Provider, error) {
@@ -113,10 +114,15 @@ func isReasoningModel(model string) bool {
 func parseOpenAIError(statusCode int, body []byte) error {
 	var errResp openAIErrorResponse
 	if err := json.Unmarshal(body, &errResp); err == nil && errResp.Error.Message != "" {
+		codeStr := ""
+		if errResp.Error.Code != nil {
+			codeStr = fmt.Sprintf("%v", errResp.Error.Code)
+		}
 		apiErr := &APIError{
 			StatusCode: statusCode,
 			Message:    errResp.Error.Message,
 			Type:       errResp.Error.Type,
+			Code:       codeStr,
 		}
 		return NewRetryableError(apiErr, IsRetryableStatusCode(statusCode))
 	}

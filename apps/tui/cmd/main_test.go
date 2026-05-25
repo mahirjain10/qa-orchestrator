@@ -301,3 +301,13 @@ func TestRunCampaignWithContext_SetsCompletedStatusOnAllPass(t *testing.T) {
 		}
 	}
 }
+
+func TestCreateAgentEngineMockModeReturnsNilBrowser(t *testing.T) {
+	dataDir := makeTestDir(t)
+	sessionStore, traceStore, artifactStore := createStores(t, dataDir)
+
+	_, browserRuntime := createAgentEngine(sessionStore, traceStore, artifactStore, nil, "mock", nil)
+	if browserRuntime != nil {
+		t.Fatal("expected nil browser runtime in mock mode")
+	}
+}

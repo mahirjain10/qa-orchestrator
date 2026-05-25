@@ -83,6 +83,15 @@ func TestOpenAIProvider_Endpoint(t *testing.T) {
 	}
 }
 
+func TestOpenAIProvider_Endpoint_WithBaseURL(t *testing.T) {
+	p := &OpenAIProvider{BaseURL: "https://custom.openai.com/v1"}
+	endpoint := p.Endpoint("gpt-4o-mini")
+	expected := "https://custom.openai.com/v1/chat/completions"
+	if endpoint != expected {
+		t.Errorf("endpoint = %q, want %q", endpoint, expected)
+	}
+}
+
 func TestOpenAIProvider_AuthHeaders(t *testing.T) {
 	p := &OpenAIProvider{}
 	headers := p.AuthHeaders("test-key")
@@ -218,6 +227,15 @@ func TestOpenRouterProvider_Endpoint(t *testing.T) {
 	}
 }
 
+func TestOpenRouterProvider_Endpoint_WithBaseURL(t *testing.T) {
+	p := &OpenRouterProvider{BaseURL: "https://custom.openrouter.ai/v1"}
+	endpoint := p.Endpoint("openai/gpt-4o-mini")
+	expected := "https://custom.openrouter.ai/v1/chat/completions"
+	if endpoint != expected {
+		t.Errorf("endpoint = %q, want %q", endpoint, expected)
+	}
+}
+
 func TestOpenRouterProvider_AuthHeaders(t *testing.T) {
 	p := &OpenRouterProvider{
 		HTTPReferer: "https://example.com",
@@ -320,6 +338,39 @@ func TestOpenRouterProvider_ApplyProviderSettings(t *testing.T) {
 	}
 }
 
+func TestOpenRouterProvider_ApplyProviderSettingsPreservesExisting(t *testing.T) {
+	allowTrue := true
+	p := &OpenRouterProvider{
+		Provider: &ProviderSettings{
+			Order:          []string{"Anthropic"},
+			AllowFallbacks: &allowTrue,
+		},
+	}
+	// Only setting priority — should not clear existing AllowFallbacks
+	p.ApplyProviderSettings("OpenAI,DeepSeek", "", "")
+
+	if p.Provider == nil {
+		t.Fatal("expected provider to be non-nil")
+	}
+	if len(p.Provider.Order) != 2 || p.Provider.Order[0] != "OpenAI" {
+		t.Errorf("Order = %v, want ['OpenAI', 'DeepSeek']", p.Provider.Order)
+	}
+	if p.Provider.AllowFallbacks == nil || *p.Provider.AllowFallbacks != true {
+		t.Errorf("AllowFallbacks = %v, want true (should be preserved)", p.Provider.AllowFallbacks)
+	}
+	if len(p.Provider.Only) != 0 {
+		t.Errorf("Only = %v, want empty (should not be set)", p.Provider.Only)
+	}
+}
+
+func TestOpenRouterProvider_ApplyProviderSettingsAllEmptyDoesNotCreate(t *testing.T) {
+	p := &OpenRouterProvider{}
+	p.ApplyProviderSettings("", "", "")
+	if p.Provider != nil {
+		t.Error("expected Provider to remain nil when all fields are empty")
+	}
+}
+
 func TestGeminiProvider_Endpoint(t *testing.T) {
 	p := &GeminiProvider{}
 
@@ -350,6 +401,15 @@ func TestGeminiProvider_Endpoint(t *testing.T) {
 		if endpoint != tt.expected {
 			t.Errorf("Endpoint(%q) = %q, want %q", tt.model, endpoint, tt.expected)
 		}
+	}
+}
+
+func TestGeminiProvider_Endpoint_WithBaseURL(t *testing.T) {
+	p := &GeminiProvider{BaseURL: "https://custom.gemini.api.com"}
+	endpoint := p.Endpoint("gemini-2.0-flash")
+	expected := "https://custom.gemini.api.com/v1beta/models/gemini-2.0-flash:generateContent"
+	if endpoint != expected {
+		t.Errorf("Endpoint = %q, want %q", endpoint, expected)
 	}
 }
 
@@ -837,6 +897,45 @@ func TestParseOpenAIResponse_NoReasoning(t *testing.T) {
 	}
 }
 
+func TestGeminiProvider_BuildRequest_WithThinkingNoBudget(t *testing.T) {
+	p := &GeminiProvider{}
+	body, err := p.BuildRequest(context.Background(), &GenerateRequest{
+		Messages:    []Message{{Role: RoleUser, Content: "Hello"}},
+		Model:       "gemini-2.5-pro",
+		Temperature: 0.7,
+		Thinking:    &ThinkingConfig{Type: "enabled"},
+	})
+	if err != nil {
+		t.Fatalf("BuildRequest failed: %v", err)
+	}
+
+	var req map[string]any
+	if err := json.Unmarshal(body, &req); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+
+	config, ok := req["generationConfig"].(map[string]any)
+	if !ok {
+		t.Fatal("expected 'generationConfig' in request")
+	}
+
+	tc, ok := config["thinkingConfig"].(map[string]any)
+	if !ok {
+		t.Fatal("expected 'thinkingConfig' in generationConfig even without budget")
+	}
+
+	// Budget should be absent when not set (defaults to model's internal budget).
+	_, hasBudget := tc["thinkingBudget"]
+	if hasBudget {
+		t.Error("thinkingBudget should be absent when not explicitly provided")
+	}
+
+	// MaxOutputTokens should not be set (only Temperature triggers generationConfig).
+	if _, ok := config["maxOutputTokens"]; ok {
+		t.Error("maxOutputTokens should not be set when MaxTokens is 0")
+	}
+}
+
 func TestGeminiProvider_BuildRequest_WithThinking(t *testing.T) {
 	p := &GeminiProvider{}
 	body, err := p.BuildRequest(context.Background(), &GenerateRequest{
@@ -907,6 +1006,93 @@ func TestGeminiProvider_ParseResponse_WithThoughtParts(t *testing.T) {
 	}
 	if resp.Reasoning != "Let me think step by step..." {
 		t.Errorf("reasoning = %q, want 'Let me think step by step...'", resp.Reasoning)
+	}
+}
+
+func TestGeminiProvider_BuildRequest_CancelledContext(t *testing.T) {
+	p := &GeminiProvider{}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, err := p.BuildRequest(ctx, &GenerateRequest{
+		Messages: []Message{{Role: RoleUser, Content: "Hello"}},
+		Model:    "gemini-2.5-pro",
+	})
+	if err == nil {
+		t.Fatal("expected error for cancelled context")
+	}
+	if !strings.Contains(err.Error(), "context cancelled") {
+		t.Errorf("expected 'context cancelled' error, got: %v", err)
+	}
+}
+
+func TestGeminiProvider_BuildRequest_WithTopPOnly(t *testing.T) {
+	p := &GeminiProvider{}
+	body, err := p.BuildRequest(context.Background(), &GenerateRequest{
+		Messages: []Message{{Role: RoleUser, Content: "Hello"}},
+		Model:    "gemini-2.5-pro",
+		TopP:     0.9,
+	})
+	if err != nil {
+		t.Fatalf("BuildRequest failed: %v", err)
+	}
+
+	var req map[string]any
+	if err := json.Unmarshal(body, &req); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+
+	config, ok := req["generationConfig"].(map[string]any)
+	if !ok {
+		t.Fatal("expected 'generationConfig' in request when TopP is set")
+	}
+
+	topP, ok := config["topP"].(float64)
+	if !ok {
+		t.Fatal("expected 'topP' in generationConfig")
+	}
+	if topP != 0.9 {
+		t.Errorf("topP = %v, want 0.9", topP)
+	}
+}
+
+func TestGeminiProvider_BuildRequest_WithStopOnly(t *testing.T) {
+	p := &GeminiProvider{}
+	body, err := p.BuildRequest(context.Background(), &GenerateRequest{
+		Messages: []Message{{Role: RoleUser, Content: "Hello"}},
+		Model:    "gemini-2.5-pro",
+		Stop:     []string{"\n\n", "."},
+	})
+	if err != nil {
+		t.Fatalf("BuildRequest failed: %v", err)
+	}
+
+	var req map[string]any
+	if err := json.Unmarshal(body, &req); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+
+	config, ok := req["generationConfig"].(map[string]any)
+	if !ok {
+		t.Fatal("expected 'generationConfig' in request when Stop is set")
+	}
+
+	stopRaw, ok := config["stopSequences"]
+	if !ok {
+		t.Fatal("expected 'stopSequences' in generationConfig")
+	}
+
+	stopArr, ok := stopRaw.([]any)
+	if !ok {
+		t.Fatalf("stopSequences is %T, want []any", stopRaw)
+	}
+	if len(stopArr) != 2 {
+		t.Fatalf("stopSequences length = %d, want 2", len(stopArr))
+	}
+	if stopArr[0] != "\n\n" {
+		t.Errorf("stopSequences[0] = %v, want '\\n\\n'", stopArr[0])
+	}
+	if stopArr[1] != "." {
+		t.Errorf("stopSequences[1] = %v, want '.'", stopArr[1])
 	}
 }
 

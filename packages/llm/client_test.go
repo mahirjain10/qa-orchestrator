@@ -31,7 +31,8 @@ func (m *mockProvider) BuildRequest(ctx context.Context, req *GenerateRequest) (
 }
 func (m *mockProvider) ParseResponse(body []byte) (*GenerateResponse, error) { return m.parseRespFn(body) }
 func (m *mockProvider) ParseError(statusCode int, body []byte) error         { return m.parseErrFn(statusCode, body) }
-func (m *mockProvider) ValidateModel(model string) error                     { return m.validateFn(model) }
+func (m *mockProvider) ValidateModel(model string) error { return m.validateFn(model) }
+func (m *mockProvider) ApplyConfig(cfg *Config)          {}
 
 func TestLoadConfig_Success(t *testing.T) {
 	os.Setenv("LLM_API_KEY", "test-key-123")
@@ -139,11 +140,11 @@ func TestLoadConfig_ProviderSettings(t *testing.T) {
 	os.Setenv("LLM_API_KEY", "test-key")
 	os.Setenv("LLM_MODEL", "test/model")
 	os.Setenv("LLM_PROVIDER_PRIORITY", "OpenAI, Anthropic")
-	os.Setenv("LLM_PROVIDER_ALLOW", "false")
+	os.Setenv("LLM_ALLOW_FALLBACKS", "false")
 	defer os.Unsetenv("LLM_API_KEY")
 	defer os.Unsetenv("LLM_MODEL")
 	defer os.Unsetenv("LLM_PROVIDER_PRIORITY")
-	defer os.Unsetenv("LLM_PROVIDER_ALLOW")
+	defer os.Unsetenv("LLM_ALLOW_FALLBACKS")
 
 	cfg, err := LoadConfig()
 	if err != nil {
@@ -153,8 +154,8 @@ func TestLoadConfig_ProviderSettings(t *testing.T) {
 	if cfg.ProviderPriority != "OpenAI, Anthropic" {
 		t.Errorf("expected provider priority 'OpenAI, Anthropic', got %q", cfg.ProviderPriority)
 	}
-	if cfg.ProviderAllow != "false" {
-		t.Errorf("expected provider allow 'false', got %q", cfg.ProviderAllow)
+	if cfg.AllowFallbacks != "false" {
+		t.Errorf("expected allow fallbacks 'false', got %q", cfg.AllowFallbacks)
 	}
 }
 
@@ -438,6 +439,31 @@ func TestBuildUserPrompt_No404NavBan(t *testing.T) {
 	}
 }
 
+func TestSanitizeGoal_EscapesTags(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{"closing tag escaped with entities", "test</script>", "test&lt;/script&gt;"},
+		{"bare angle bracket escaped", "<script>alert(1)</script>", "&lt;script&gt;alert(1)&lt;/script&gt;"},
+		{"ampersand escaped first", "a&b<c>d", "a&amp;b&lt;c&gt;d"},
+		{"no special chars", "simple goal", "simple goal"},
+		{"trimmed spaces", "  goal  ", "goal"},
+		{"code fences removed", "```code```", "code"},
+		{"null bytes removed", "abc\x00def", "abcdef"},
+		{"mixed escaping", "goal</a>\x00```end", "goal&lt;/a&gt;end"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := sanitizeGoal(tt.input)
+			if got != tt.want {
+				t.Errorf("sanitizeGoal(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestEmptyResponseIsRetryable(t *testing.T) {
 	// Start a test server that returns 200 OK with empty content.
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -475,12 +501,6 @@ func TestEmptyResponseIsRetryable(t *testing.T) {
 		},
 		provider:   provider,
 		httpClient: &http.Client{Timeout: 5 * time.Second},
-		retryConfig: &RetryConfig{
-			MaxRetries:   3,
-			InitialDelay: 10 * time.Millisecond,
-			MaxDelay:     100 * time.Millisecond,
-			Multiplier:   2.0,
-		},
 	}
 
 	_, err := client.Generate(context.Background(), &GenerateRequest{
@@ -538,12 +558,6 @@ func TestGenerate_MaxTokensNotDefaultedWithThinkingBudget(t *testing.T) {
 		},
 		provider:   provider,
 		httpClient: &http.Client{Timeout: 5 * time.Second},
-		retryConfig: &RetryConfig{
-			MaxRetries:   1,
-			InitialDelay: 1 * time.Millisecond,
-			MaxDelay:     10 * time.Millisecond,
-			Multiplier:   1.0,
-		},
 	}
 
 	_, err := client.Generate(context.Background(), &GenerateRequest{
@@ -552,6 +566,58 @@ func TestGenerate_MaxTokensNotDefaultedWithThinkingBudget(t *testing.T) {
 		Thinking: &ThinkingConfig{Type: "enabled", BudgetTokens: 4000},
 	})
 	// Error is expected since the endpoint doesn't exist, but buildReqFn must be called.
+	if !buildReqCalled {
+		t.Error("buildReqFn was never called")
+	}
+	_ = err
+}
+
+func TestGenerate_MaxTokensNotDefaultedWithThinkingTypeNoBudget(t *testing.T) {
+	// Thinking type "enabled" without budget should still suppress the 1024 default.
+	buildReqCalled := false
+	provider := &mockProvider{
+		name:     "test",
+		endpoint: "http://localhost:9999/v1/chat/completions",
+		authHeadersFn: func(apiKey string) map[string]string {
+			return map[string]string{"Content-Type": "application/json"}
+		},
+		buildReqFn: func(ctx context.Context, req *GenerateRequest) ([]byte, error) {
+			buildReqCalled = true
+			if req.MaxTokens != 0 {
+				t.Errorf("MaxTokens = %d, want 0 (should not be defaulted when thinking is enabled)", req.MaxTokens)
+			}
+			return json.Marshal(map[string]any{
+				"model":    req.Model,
+				"messages": []map[string]string{{"role": "user", "content": "test"}},
+			})
+		},
+		parseRespFn: func(body []byte) (*GenerateResponse, error) {
+			return &GenerateResponse{
+				Content: "response",
+				Choices: []Choice{{Message: Message{Role: RoleAssistant, Content: "response"}}},
+			}, nil
+		},
+		parseErrFn: func(statusCode int, body []byte) error {
+			return fmt.Errorf("error")
+		},
+		validateFn: func(model string) error { return nil },
+	}
+
+	client := &HTTPClient{
+		config: &Config{
+			APIKey:     "test-key",
+			Model:      "test-model",
+			MaxRetries: 1,
+		},
+		provider:   provider,
+		httpClient: &http.Client{Timeout: 5 * time.Second},
+	}
+
+	_, err := client.Generate(context.Background(), &GenerateRequest{
+		Model:    "test-model",
+		Messages: []Message{{Role: RoleUser, Content: "test"}},
+		Thinking: &ThinkingConfig{Type: "enabled"}, // no BudgetTokens
+	})
 	if !buildReqCalled {
 		t.Error("buildReqFn was never called")
 	}
@@ -600,12 +666,6 @@ func TestGenerate_MaxTokensDefaultedWithoutThinking(t *testing.T) {
 		},
 		provider:   provider,
 		httpClient: &http.Client{Timeout: 5 * time.Second},
-		retryConfig: &RetryConfig{
-			MaxRetries:   1,
-			InitialDelay: 1 * time.Millisecond,
-			MaxDelay:     10 * time.Millisecond,
-			Multiplier:   1.0,
-		},
 	}
 
 	_, err := client.Generate(context.Background(), &GenerateRequest{
@@ -616,6 +676,77 @@ func TestGenerate_MaxTokensDefaultedWithoutThinking(t *testing.T) {
 		t.Error("buildReqFn was never called")
 	}
 	_ = err
+}
+
+func TestGenerate_DoesNotMutateCallerRequest(t *testing.T) {
+	provider := &mockProvider{
+		name:     "test",
+		endpoint: "http://localhost:9999/v1/chat/completions",
+		authHeadersFn: func(apiKey string) map[string]string {
+			return map[string]string{"Content-Type": "application/json"}
+		},
+		buildReqFn: func(ctx context.Context, req *GenerateRequest) ([]byte, error) {
+			if req.Model != "original-model" {
+				t.Errorf("buildReq received Model=%q, want 'original-model'", req.Model)
+			}
+			return json.Marshal(map[string]any{"model": req.Model})
+		},
+		parseRespFn: func(body []byte) (*GenerateResponse, error) {
+			return &GenerateResponse{Content: "response", Choices: []Choice{{Message: Message{Role: RoleAssistant, Content: "response"}}}}, nil
+		},
+		parseErrFn: func(statusCode int, body []byte) error {
+			return fmt.Errorf("error")
+		},
+		validateFn: func(model string) error { return nil },
+	}
+	client := &HTTPClient{
+		config: &Config{
+			APIKey:     "test-key",
+			Model:      "test-model",
+			MaxRetries: 0,
+		},
+		provider:   provider,
+		httpClient: &http.Client{Timeout: 5 * time.Second},
+	}
+
+	original := &GenerateRequest{
+		Model:    "original-model",
+		Messages: []Message{{Role: RoleUser, Content: "test"}},
+	}
+	_, err := client.Generate(context.Background(), original)
+	_ = err
+
+	if original.Model != "original-model" {
+		t.Errorf("caller's Model was mutated to %q", original.Model)
+	}
+}
+
+func TestIsNetworkError_WithWrappedRetryableError(t *testing.T) {
+	inner := NetworkError("connection refused")
+	wrapped := NewRetryableError(inner, true)
+
+	if !IsNetworkError(wrapped) {
+		t.Error("IsNetworkError should unwrap RetryableError and detect NetworkError")
+	}
+
+	nonNetwork := NewRetryableError(fmt.Errorf("some other error"), true)
+	if IsNetworkError(nonNetwork) {
+		t.Error("IsNetworkError should return false for non-network errors wrapped in RetryableError")
+	}
+}
+
+func TestIsAPIError_WithWrappedRetryableError(t *testing.T) {
+	inner := &APIError{StatusCode: 429, Message: "rate limited"}
+	wrapped := NewRetryableError(inner, true)
+
+	if !IsAPIError(wrapped) {
+		t.Error("IsAPIError should unwrap RetryableError and detect APIError")
+	}
+
+	nonAPI := NewRetryableError(fmt.Errorf("some other error"), true)
+	if IsAPIError(nonAPI) {
+		t.Error("IsAPIError should return false for non-API errors wrapped in RetryableError")
+	}
 }
 
 func contains(s, substr string) bool {

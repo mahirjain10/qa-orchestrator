@@ -1,6 +1,7 @@
 package llm
 
 import (
+	"errors"
 	"fmt"
 	"time"
 )
@@ -12,11 +13,13 @@ type RetryConfig struct {
 	Multiplier   float64
 }
 
-var DefaultRetryConfig = RetryConfig{
-	MaxRetries:   3,
-	InitialDelay: 500 * time.Millisecond,
-	MaxDelay:     10 * time.Second,
-	Multiplier:   2.0,
+func DefaultRetryConfig() RetryConfig {
+	return RetryConfig{
+		MaxRetries:   3,
+		InitialDelay: 500 * time.Millisecond,
+		MaxDelay:     10 * time.Second,
+		Multiplier:   2.0,
+	}
 }
 
 type RetryableError struct {
@@ -49,7 +52,7 @@ func IsRateLimit(err error) bool {
 	return re.RetryAfter > 0
 }
 
-func (c *RetryConfig) CalculateDelay(attempt int) time.Duration {
+func (c RetryConfig) CalculateDelay(attempt int) time.Duration {
 	delay := c.InitialDelay
 	for i := 0; i < attempt; i++ {
 		delay = time.Duration(float64(delay) * c.Multiplier)
@@ -77,7 +80,7 @@ func ShouldRetry(err error, attempt int, maxRetries int) (bool, time.Duration) {
 
 	delay := re.RetryAfter
 	if delay == 0 {
-		delay = DefaultRetryConfig.CalculateDelay(attempt)
+		delay = DefaultRetryConfig().CalculateDelay(attempt)
 	}
 
 	return true, delay
@@ -108,6 +111,10 @@ func (e NetworkError) Error() string {
 }
 
 func IsNetworkError(err error) bool {
+	var re *RetryableError
+	if errors.As(err, &re) {
+		err = re.Err
+	}
 	_, ok := err.(NetworkError)
 	return ok
 }
@@ -124,8 +131,12 @@ func (e *APIError) Error() string {
 }
 
 func IsAPIError(err error) bool {
-	_, ok := err.(*APIError)
-	return ok
+	var re *RetryableError
+	if errors.As(err, &re) {
+		err = re.Err
+	}
+	var apiErr *APIError
+	return errors.As(err, &apiErr)
 }
 
 func IsRetryableStatusCode(code int) bool {

@@ -3,9 +3,11 @@ package browserruntime
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/playwright-community/playwright-go"
+	"qa-orchestrator/packages/shared"
 )
 
 type BrowserType string
@@ -37,6 +39,7 @@ func DefaultConfig() *Config {
 }
 
 type BrowserRuntime struct {
+	mu        sync.Mutex
 	config    *Config
 	pw        *playwright.Playwright
 	browser   playwright.Browser
@@ -57,8 +60,11 @@ func NewBrowserRuntime(config *Config) (*BrowserRuntime, error) {
 }
 
 func (r *BrowserRuntime) Start(ctx context.Context) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	if r.isRunning {
-		return fmt.Errorf("browser already running")
+		return fmt.Errorf("%w", shared.ErrAlreadyRunning)
 	}
 
 	if ctx.Err() != nil {
@@ -96,7 +102,7 @@ func (r *BrowserRuntime) Start(ctx context.Context) error {
 		return fmt.Errorf("failed to launch browser: %w", err)
 	}
 
-	context, err := browser.NewContext(playwright.BrowserNewContextOptions{
+	bctx, err := browser.NewContext(playwright.BrowserNewContextOptions{
 		Viewport: &playwright.Size{
 			Width:  r.config.ViewportWidth,
 			Height: r.config.ViewportHeight,
@@ -108,9 +114,9 @@ func (r *BrowserRuntime) Start(ctx context.Context) error {
 		return fmt.Errorf("failed to create context: %w", err)
 	}
 
-	page, err := context.NewPage()
+	page, err := bctx.NewPage()
 	if err != nil {
-		context.Close()
+		bctx.Close()
 		browser.Close()
 		pw.Stop()
 		return fmt.Errorf("failed to create page: %w", err)
@@ -118,7 +124,7 @@ func (r *BrowserRuntime) Start(ctx context.Context) error {
 
 	r.pw = pw
 	r.browser = browser
-	r.context = context
+	r.context = bctx
 	r.page = page
 	r.isRunning = true
 
@@ -126,6 +132,9 @@ func (r *BrowserRuntime) Start(ctx context.Context) error {
 }
 
 func (r *BrowserRuntime) Stop() error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	if !r.isRunning {
 		return nil
 	}
@@ -151,44 +160,72 @@ func (r *BrowserRuntime) Stop() error {
 	}
 
 	r.isRunning = false
+	r.page = nil
+	r.context = nil
+	r.browser = nil
+	r.pw = nil
 	return lastErr
 }
 
 func (r *BrowserRuntime) Page() playwright.Page {
-	return r.page
+	r.mu.Lock()
+	p := r.page
+	r.mu.Unlock()
+	return p
 }
 
 func (r *BrowserRuntime) IsRunning() bool {
-	return r.isRunning
+	r.mu.Lock()
+	v := r.isRunning
+	r.mu.Unlock()
+	return v
 }
 
 func (r *BrowserRuntime) Navigate(ctx context.Context, url string) error {
-	if err := r.ensurePage(); err != nil {
-		return err
-	}
-
 	timeout := float64(r.config.Timeout.Milliseconds())
-	err := runWithContext(ctx, func() error {
-		_, err := r.page.Goto(url, playwright.PageGotoOptions{
-			Timeout: &timeout,
-		})
-		return err
-	})
-	if err != nil && r.page.IsClosed() {
-		if recreateErr := r.ensurePage(); recreateErr != nil {
-			return fmt.Errorf("page closed and recreate failed: %w", recreateErr)
-		}
-		err = runWithContext(ctx, func() error {
-			_, err := r.page.Goto(url, playwright.PageGotoOptions{
+	return r.withPageRecreation(ctx, func(page playwright.Page) error {
+		return runWithContext(ctx, func(ctx context.Context) error {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			_, err := page.Goto(url, playwright.PageGotoOptions{
 				Timeout: &timeout,
 			})
 			return err
 		})
+	})
+}
+
+// withPageRecreation wraps a browser operation, acquiring the page reference
+// under lock and retrying once if the page is closed mid-operation.
+func (r *BrowserRuntime) withPageRecreation(ctx context.Context, op func(page playwright.Page) error) error {
+	r.mu.Lock()
+	if err := r.ensurePage(); err != nil {
+		r.mu.Unlock()
+		return err
+	}
+	page := r.page
+	r.mu.Unlock()
+
+	err := op(page)
+	if err != nil && page.IsClosed() {
+		r.mu.Lock()
+		if recreateErr := r.ensurePage(); recreateErr != nil {
+			r.mu.Unlock()
+			return fmt.Errorf("page closed and recreate failed: %w", recreateErr)
+		}
+		page = r.page
+		r.mu.Unlock()
+		err = op(page)
 	}
 	return err
 }
 
+// ensurePage must be called with r.mu held.
 func (r *BrowserRuntime) ensurePage() error {
+	if !r.isRunning {
+		return fmt.Errorf("%w", shared.ErrNotRunning)
+	}
 	if r.page == nil {
 		return fmt.Errorf("page not available")
 	}
@@ -227,36 +264,47 @@ func (r *BrowserRuntime) ensurePage() error {
 }
 
 func (r *BrowserRuntime) Click(ctx context.Context, selector string) error {
-	if err := r.ensurePage(); err != nil {
-		return err
-	}
-
 	timeout := float64(r.config.Timeout.Milliseconds())
-	return runWithContext(ctx, func() error {
-		return r.page.Click(selector, playwright.PageClickOptions{
-			Timeout: &timeout,
+	return r.withPageRecreation(ctx, func(page playwright.Page) error {
+		return runWithContext(ctx, func(ctx context.Context) error {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			return page.Click(selector, playwright.PageClickOptions{
+				Timeout: &timeout,
+			})
 		})
 	})
 }
 
 func (r *BrowserRuntime) Fill(ctx context.Context, selector, value string) error {
-	if err := r.ensurePage(); err != nil {
-		return err
-	}
-
 	timeout := float64(r.config.Timeout.Milliseconds())
-	return runWithContext(ctx, func() error {
-		return r.page.Fill(selector, value, playwright.PageFillOptions{
-			Timeout: &timeout,
+	return r.withPageRecreation(ctx, func(page playwright.Page) error {
+		return runWithContext(ctx, func(ctx context.Context) error {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			err := page.Fill(selector, value, playwright.PageFillOptions{
+				Timeout: &timeout,
+			})
+			if err == nil {
+				// Dynamically wait for React/Vue/Angular state to reconcile and reflect the value
+				waitTimeout := float64(500)
+				_, _ = page.WaitForFunction(`([sel, expected]) => {
+					const el = document.querySelector(sel);
+					if (!el) return false;
+					if (el.type === 'checkbox' || el.type === 'radio') return true;
+					return el.value === expected;
+				}`, []any{selector, value}, playwright.PageWaitForFunctionOptions{
+					Timeout: &waitTimeout,
+				})
+			}
+			return err
 		})
 	})
 }
 
 func (r *BrowserRuntime) WaitForSelector(ctx context.Context, selector string, options *WaitForOptions) error {
-	if err := r.ensurePage(); err != nil {
-		return err
-	}
-
 	timeout := float64(r.config.Timeout.Milliseconds())
 	opts := playwright.PageWaitForSelectorOptions{
 		Timeout: &timeout,
@@ -272,65 +320,69 @@ func (r *BrowserRuntime) WaitForSelector(ctx context.Context, selector string, o
 		}
 	}
 
-	return runWithContext(ctx, func() error {
-		_, err := r.page.WaitForSelector(selector, opts)
-		return err
+	return r.withPageRecreation(ctx, func(page playwright.Page) error {
+		return runWithContext(ctx, func(ctx context.Context) error {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			_, err := page.WaitForSelector(selector, opts)
+			return err
+		})
 	})
 }
 
 func (r *BrowserRuntime) TextContent(ctx context.Context, selector string) (string, error) {
-	if err := r.ensurePage(); err != nil {
-		return "", err
-	}
-
 	timeout := float64(r.config.Timeout.Milliseconds())
 	var content string
-	err := runWithContext(ctx, func() error {
-		var err error
-		content, err = r.page.TextContent(selector, playwright.PageTextContentOptions{
-			Timeout: &timeout,
+	err := r.withPageRecreation(ctx, func(page playwright.Page) error {
+		return runWithContext(ctx, func(ctx context.Context) error {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			var err error
+			content, err = page.TextContent(selector, playwright.PageTextContentOptions{
+				Timeout: &timeout,
+			})
+			return err
 		})
-		return err
 	})
 	return content, err
 }
 
 func (r *BrowserRuntime) InnerHTML(ctx context.Context, selector string) (string, error) {
-	if err := r.ensurePage(); err != nil {
-		return "", err
-	}
-
 	timeout := float64(r.config.Timeout.Milliseconds())
 	var html string
-	err := runWithContext(ctx, func() error {
-		var err error
-		html, err = r.page.InnerHTML(selector, playwright.PageInnerHTMLOptions{
-			Timeout: &timeout,
+	err := r.withPageRecreation(ctx, func(page playwright.Page) error {
+		return runWithContext(ctx, func(ctx context.Context) error {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			var err error
+			html, err = page.InnerHTML(selector, playwright.PageInnerHTMLOptions{
+				Timeout: &timeout,
+			})
+			return err
 		})
-		return err
 	})
 	return html, err
 }
 
 func (r *BrowserRuntime) Evaluate(ctx context.Context, expression string) (any, error) {
-	if err := r.ensurePage(); err != nil {
-		return nil, err
-	}
-
 	var result any
-	err := runWithContext(ctx, func() error {
-		var err error
-		result, err = r.page.Evaluate(expression)
-		return err
+	err := r.withPageRecreation(ctx, func(page playwright.Page) error {
+		return runWithContext(ctx, func(ctx context.Context) error {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			var err error
+			result, err = page.Evaluate(expression)
+			return err
+		})
 	})
 	return result, err
 }
 
 func (r *BrowserRuntime) Screenshot(ctx context.Context, options *ScreenshotOptions) ([]byte, error) {
-	if err := r.ensurePage(); err != nil {
-		return nil, err
-	}
-
 	opts := playwright.PageScreenshotOptions{}
 	if options != nil {
 		if options.Path != "" {
@@ -342,10 +394,15 @@ func (r *BrowserRuntime) Screenshot(ctx context.Context, options *ScreenshotOpti
 	}
 
 	var data []byte
-	err := runWithContext(ctx, func() error {
-		var err error
-		data, err = r.page.Screenshot(opts)
-		return err
+	err := r.withPageRecreation(ctx, func(page playwright.Page) error {
+		return runWithContext(ctx, func(ctx context.Context) error {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			var err error
+			data, err = page.Screenshot(opts)
+			return err
+		})
 	})
 	return data, err
 }
@@ -373,6 +430,7 @@ type BrowserRuntimeInterface interface {
 }
 
 type FlowBrowserRuntime struct {
+	mu        sync.Mutex
 	parent    *BrowserRuntime
 	context   playwright.BrowserContext
 	page      playwright.Page
@@ -380,6 +438,9 @@ type FlowBrowserRuntime struct {
 }
 
 func (r *BrowserRuntime) NewFlowRuntime(storageState ...*playwright.StorageState) (*FlowBrowserRuntime, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	if !r.isRunning {
 		return nil, fmt.Errorf("browser not started")
 	}
@@ -393,33 +454,40 @@ func (r *BrowserRuntime) NewFlowRuntime(storageState ...*playwright.StorageState
 	if len(storageState) > 0 && storageState[0] != nil {
 		opts.StorageState = storageState[0].ToOptionalStorageState()
 	}
-	ctx, err := r.browser.NewContext(opts)
+	bctx, err := r.browser.NewContext(opts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create flow context: %w", err)
 	}
 
-	page, err := ctx.NewPage()
+	page, err := bctx.NewPage()
 	if err != nil {
-		ctx.Close()
+		bctx.Close()
 		return nil, fmt.Errorf("failed to create flow page: %w", err)
 	}
 
 	return &FlowBrowserRuntime{
 		parent:    r,
-		context:   ctx,
+		context:   bctx,
 		page:      page,
 		isRunning: true,
 	}, nil
 }
 
 func (r *FlowBrowserRuntime) StorageState() (*playwright.StorageState, error) {
-	if r.context == nil {
+	r.mu.Lock()
+	bctx := r.context
+	r.mu.Unlock()
+
+	if bctx == nil {
 		return nil, fmt.Errorf("context not available")
 	}
-	return r.context.StorageState()
+	return bctx.StorageState()
 }
 
 func (r *FlowBrowserRuntime) Close() error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	if !r.isRunning {
 		return nil
 	}
@@ -437,15 +505,52 @@ func (r *FlowBrowserRuntime) Close() error {
 	}
 
 	r.isRunning = false
+	r.page = nil
+	r.context = nil
 	return lastErr
 }
 
 func (r *FlowBrowserRuntime) IsRunning() bool {
-	return r.isRunning
+	r.mu.Lock()
+	v := r.isRunning
+	r.mu.Unlock()
+	return v
 }
 
+// ensurePage must be called with r.mu held.
 func (r *FlowBrowserRuntime) ensurePage() error {
+	if !r.isRunning {
+		return fmt.Errorf("%w", shared.ErrNotRunning)
+	}
 	if r.page == nil || r.page.IsClosed() {
+		if r.context != nil {
+			newPage, err := r.context.NewPage()
+			if err == nil {
+				r.page = newPage
+				return nil
+			}
+		}
+		if r.parent != nil && r.parent.browser != nil {
+			if r.context != nil {
+				r.context.Close()
+			}
+			newCtx, err := r.parent.browser.NewContext(playwright.BrowserNewContextOptions{
+				Viewport: &playwright.Size{
+					Width:  r.parent.config.ViewportWidth,
+					Height: r.parent.config.ViewportHeight,
+				},
+			})
+			if err == nil {
+				r.context = newCtx
+				newPage, err := r.context.NewPage()
+				if err == nil {
+					r.page = newPage
+					return nil
+				}
+				return fmt.Errorf("failed to create flow page after new context: %w", err)
+			}
+			return fmt.Errorf("failed to recreate flow context: %w", err)
+		}
 		return fmt.Errorf("flow page not available")
 	}
 	return nil
@@ -456,54 +561,94 @@ func (r *FlowBrowserRuntime) getTimeout() float64 {
 }
 
 func (r *FlowBrowserRuntime) Page() playwright.Page {
-	return r.page
+	r.mu.Lock()
+	p := r.page
+	r.mu.Unlock()
+	return p
+}
+
+// withPageRecreation wraps a browser operation, acquiring the page reference
+// under lock and retrying once if the page is closed mid-operation.
+func (r *FlowBrowserRuntime) withPageRecreation(ctx context.Context, op func(page playwright.Page) error) error {
+	r.mu.Lock()
+	if err := r.ensurePage(); err != nil {
+		r.mu.Unlock()
+		return err
+	}
+	page := r.page
+	r.mu.Unlock()
+
+	err := op(page)
+	if err != nil && page.IsClosed() {
+		r.mu.Lock()
+		if recreateErr := r.ensurePage(); recreateErr != nil {
+			r.mu.Unlock()
+			return fmt.Errorf("page closed and recreate failed: %w", recreateErr)
+		}
+		page = r.page
+		r.mu.Unlock()
+		err = op(page)
+	}
+	return err
 }
 
 func (r *FlowBrowserRuntime) Navigate(ctx context.Context, url string) error {
-	if err := r.ensurePage(); err != nil {
-		return err
-	}
-
 	timeout := r.getTimeout()
-	return runWithContext(ctx, func() error {
-		_, err := r.page.Goto(url, playwright.PageGotoOptions{
-			Timeout: &timeout,
+	return r.withPageRecreation(ctx, func(page playwright.Page) error {
+		return runWithContext(ctx, func(ctx context.Context) error {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			_, err := page.Goto(url, playwright.PageGotoOptions{
+				Timeout: &timeout,
+			})
+			return err
 		})
-		return err
 	})
 }
 
 func (r *FlowBrowserRuntime) Click(ctx context.Context, selector string) error {
-	if err := r.ensurePage(); err != nil {
-		return err
-	}
-
 	timeout := r.getTimeout()
-	return runWithContext(ctx, func() error {
-		return r.page.Click(selector, playwright.PageClickOptions{
-			Timeout: &timeout,
+	return r.withPageRecreation(ctx, func(page playwright.Page) error {
+		return runWithContext(ctx, func(ctx context.Context) error {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			return page.Click(selector, playwright.PageClickOptions{
+				Timeout: &timeout,
+			})
 		})
 	})
 }
 
 func (r *FlowBrowserRuntime) Fill(ctx context.Context, selector, value string) error {
-	if err := r.ensurePage(); err != nil {
-		return err
-	}
-
 	timeout := r.getTimeout()
-	return runWithContext(ctx, func() error {
-		return r.page.Fill(selector, value, playwright.PageFillOptions{
-			Timeout: &timeout,
+	return r.withPageRecreation(ctx, func(page playwright.Page) error {
+		return runWithContext(ctx, func(ctx context.Context) error {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			err := page.Fill(selector, value, playwright.PageFillOptions{
+				Timeout: &timeout,
+			})
+			if err == nil {
+				// Dynamically wait for React/Vue/Angular state to reconcile and reflect the value
+				waitTimeout := float64(500)
+				_, _ = page.WaitForFunction(`([sel, expected]) => {
+					const el = document.querySelector(sel);
+					if (!el) return false;
+					if (el.type === 'checkbox' || el.type === 'radio') return true;
+					return el.value === expected;
+				}`, []any{selector, value}, playwright.PageWaitForFunctionOptions{
+					Timeout: &waitTimeout,
+				})
+			}
+			return err
 		})
 	})
 }
 
 func (r *FlowBrowserRuntime) WaitForSelector(ctx context.Context, selector string, options *WaitForOptions) error {
-	if err := r.ensurePage(); err != nil {
-		return err
-	}
-
 	timeout := r.getTimeout()
 	opts := playwright.PageWaitForSelectorOptions{
 		Timeout: &timeout,
@@ -519,65 +664,69 @@ func (r *FlowBrowserRuntime) WaitForSelector(ctx context.Context, selector strin
 		}
 	}
 
-	return runWithContext(ctx, func() error {
-		_, err := r.page.WaitForSelector(selector, opts)
-		return err
+	return r.withPageRecreation(ctx, func(page playwright.Page) error {
+		return runWithContext(ctx, func(ctx context.Context) error {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			_, err := page.WaitForSelector(selector, opts)
+			return err
+		})
 	})
 }
 
 func (r *FlowBrowserRuntime) TextContent(ctx context.Context, selector string) (string, error) {
-	if err := r.ensurePage(); err != nil {
-		return "", err
-	}
-
 	timeout := r.getTimeout()
 	var content string
-	err := runWithContext(ctx, func() error {
-		var err error
-		content, err = r.page.TextContent(selector, playwright.PageTextContentOptions{
-			Timeout: &timeout,
+	err := r.withPageRecreation(ctx, func(page playwright.Page) error {
+		return runWithContext(ctx, func(ctx context.Context) error {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			var err error
+			content, err = page.TextContent(selector, playwright.PageTextContentOptions{
+				Timeout: &timeout,
+			})
+			return err
 		})
-		return err
 	})
 	return content, err
 }
 
 func (r *FlowBrowserRuntime) InnerHTML(ctx context.Context, selector string) (string, error) {
-	if err := r.ensurePage(); err != nil {
-		return "", err
-	}
-
 	timeout := r.getTimeout()
 	var html string
-	err := runWithContext(ctx, func() error {
-		var err error
-		html, err = r.page.InnerHTML(selector, playwright.PageInnerHTMLOptions{
-			Timeout: &timeout,
+	err := r.withPageRecreation(ctx, func(page playwright.Page) error {
+		return runWithContext(ctx, func(ctx context.Context) error {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			var err error
+			html, err = page.InnerHTML(selector, playwright.PageInnerHTMLOptions{
+				Timeout: &timeout,
+			})
+			return err
 		})
-		return err
 	})
 	return html, err
 }
 
 func (r *FlowBrowserRuntime) Evaluate(ctx context.Context, expression string) (any, error) {
-	if err := r.ensurePage(); err != nil {
-		return nil, err
-	}
-
 	var result any
-	err := runWithContext(ctx, func() error {
-		var err error
-		result, err = r.page.Evaluate(expression)
-		return err
+	err := r.withPageRecreation(ctx, func(page playwright.Page) error {
+		return runWithContext(ctx, func(ctx context.Context) error {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			var err error
+			result, err = page.Evaluate(expression)
+			return err
+		})
 	})
 	return result, err
 }
 
 func (r *FlowBrowserRuntime) Screenshot(ctx context.Context, options *ScreenshotOptions) ([]byte, error) {
-	if err := r.ensurePage(); err != nil {
-		return nil, err
-	}
-
 	opts := playwright.PageScreenshotOptions{}
 	if options != nil {
 		if options.Path != "" {
@@ -589,21 +738,26 @@ func (r *FlowBrowserRuntime) Screenshot(ctx context.Context, options *Screenshot
 	}
 
 	var data []byte
-	err := runWithContext(ctx, func() error {
-		var err error
-		data, err = r.page.Screenshot(opts)
-		return err
+	err := r.withPageRecreation(ctx, func(page playwright.Page) error {
+		return runWithContext(ctx, func(ctx context.Context) error {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			var err error
+			data, err = page.Screenshot(opts)
+			return err
+		})
 	})
 	return data, err
 }
 
-func runWithContext(ctx context.Context, fn func() error) error {
+func runWithContext(ctx context.Context, fn func(context.Context) error) error {
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}
 	ch := make(chan error, 1)
 	go func() {
-		ch <- fn()
+		ch <- fn(ctx)
 	}()
 	select {
 	case err := <-ch:

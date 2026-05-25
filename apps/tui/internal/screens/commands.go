@@ -1,6 +1,8 @@
 package screens
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -104,4 +106,135 @@ func runCreatedCmd(ch <-chan string) tea.Cmd {
 		runID := <-ch
 		return runCreatedMsg{runID: runID}
 	}
+}
+
+func (m *MainScreen) processSteeringCommand(input string) tea.Cmd {
+	runID := m.currentRunID()
+	if runID == "" {
+		m.setMsg("No run selected")
+		return nil
+	}
+
+	cmd, args := parseSteeringInput(input)
+
+	switch cmd {
+	case "retry":
+		if len(args) > 0 {
+			err := m.handlers.RetryFlow(runID, args[0])
+			if err != nil {
+				m.setMsg(fmt.Sprintf("Error: %v", err))
+			} else {
+				m.setMsg(fmt.Sprintf("Retry scheduled for flow: %s", args[0]))
+				return fetchRunCmd(m.sessionStore, runID)
+			}
+		} else {
+			m.setMsg("Usage: retry <flow_id>")
+		}
+
+	case "skip":
+		if len(args) > 0 {
+			err := m.handlers.SkipFlow(runID, args[0])
+			if err != nil {
+				m.setMsg(fmt.Sprintf("Error: %v", err))
+			} else {
+				m.setMsg(fmt.Sprintf("Flow skipped: %s", args[0]))
+				return fetchRunCmd(m.sessionStore, runID)
+			}
+		} else {
+			m.setMsg("Usage: skip <flow_id>")
+		}
+
+	case "continue":
+		sess, err := m.handlers.GetRunStatus(runID)
+		if err != nil {
+			m.setMsg(fmt.Sprintf("Error getting run status: %v", err))
+		} else if sess != nil && sess.Status == types.RunStateWaitingInput {
+			err := m.handlers.AcknowledgeInputAndResume(runID)
+			if err != nil {
+				m.setMsg(fmt.Sprintf("Error: %v", err))
+			} else {
+				m.setMsg("Run resumed from WAITING_FOR_INPUT")
+				return fetchRunCmd(m.sessionStore, runID)
+			}
+		} else {
+			m.setMsg("Run is not in WAITING_FOR_INPUT state")
+		}
+
+	case "approve":
+		sess, err := m.handlers.GetRunStatus(runID)
+		if err != nil {
+			m.setMsg(fmt.Sprintf("Error getting run status: %v", err))
+		} else if sess != nil && sess.Status == types.RunStateWaitingInput {
+			err := m.handlers.AcknowledgeInputAndResume(runID)
+			if err != nil {
+				m.setMsg(fmt.Sprintf("Error: %v", err))
+			} else {
+				m.setMsg("Approval noted and run resumed")
+				return fetchRunCmd(m.sessionStore, runID)
+			}
+		} else {
+			m.setMsg("Run is not in WAITING_FOR_INPUT state")
+		}
+
+	case "status":
+		sess, err := m.handlers.GetRunStatus(runID)
+		if err == nil && sess != nil {
+			m.setMsg(fmt.Sprintf("Status: %s | Flow: %s | Agent: %s",
+				sess.Status, sess.CurrentFlowID, sess.CurrentAgent))
+		} else {
+			m.setMsg("Could not retrieve status")
+		}
+
+	case "pause":
+		err := m.handlers.PauseRun(runID)
+		if err != nil {
+			m.setMsg(fmt.Sprintf("Error pausing: %v", err))
+		} else {
+			m.setMsg("Run pausing...")
+			return fetchRunCmd(m.sessionStore, runID)
+		}
+
+	case "resume":
+		err := m.handlers.ResumeRun(runID)
+		if err != nil {
+			m.setMsg(fmt.Sprintf("Error resuming: %v", err))
+		} else {
+			m.setMsg("Run resuming...")
+			return fetchRunCmd(m.sessionStore, runID)
+		}
+
+	case "steer":
+		if len(args) == 0 {
+			m.setMsg("Usage: steer <instruction text>")
+		} else if m.lifecycle == nil {
+			m.setMsg("Steering not available (no lifecycle controller)")
+		} else {
+			instruction := strings.Join(args, " ")
+			flowID := ""
+			if m.currentRun != nil {
+				flowID = m.currentRun.CurrentFlowID
+			}
+			m.lifecycle.SubmitSteering(&types.SteeringEvent{
+				RunID:       runID,
+				FlowID:      flowID,
+				Command:     types.SteerInstruction,
+				Instruction: instruction,
+				Timestamp:   time.Now().UTC(),
+			})
+			m.setMsg(fmt.Sprintf("Steering instruction sent: %q", instruction))
+			return fetchRunCmd(m.sessionStore, runID)
+		}
+
+	default:
+		m.setMsg("Unknown command. Try: retry, skip, continue, approve, status, pause, resume, steer")
+	}
+	return nil
+}
+
+func parseSteeringInput(input string) (cmd string, args []string) {
+	parts := strings.Fields(input)
+	if len(parts) == 0 {
+		return "", nil
+	}
+	return parts[0], parts[1:]
 }

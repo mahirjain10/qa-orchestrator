@@ -83,6 +83,10 @@ func (p *CampaignParser) validateSchema(campaign *types.Campaign) error {
 		return fmt.Errorf("campaign must have at least one flow")
 	}
 
+	if campaign.Config == (types.CampaignConfig{}) {
+		return fmt.Errorf("campaign 'config' block is required (must specify 'timeout', 'retry_limit', and 'parallel_limit')")
+	}
+
 	if campaign.Config.Timeout <= 0 {
 		return fmt.Errorf("campaign config: 'timeout' must be greater than 0")
 	}
@@ -107,8 +111,8 @@ func (p *CampaignParser) validateSchema(campaign *types.Campaign) error {
 			return fmt.Errorf("flow %q: 'goal' is required", flow.ID)
 		}
 
-		if flow.Config.Timeout != 0 && flow.Config.Timeout < 0 {
-			return fmt.Errorf("flow %q config: 'timeout' must be greater than 0", flow.ID)
+		if flow.Config.Timeout < 0 {
+			return fmt.Errorf("flow %q config: 'timeout' must be >= 0 (0 = inherit from campaign)", flow.ID)
 		}
 		if flow.Config.RetryLimit < 0 {
 			return fmt.Errorf("flow %q config: 'retry_limit' must be >= 0", flow.ID)
@@ -156,10 +160,11 @@ func (p *CampaignParser) validateSchema(campaign *types.Campaign) error {
 }
 
 func (p *CampaignParser) ParseNaturalLanguage(text string) (*types.Campaign, error) {
-	lines := strings.Split(strings.TrimSpace(text), "\n")
-	if len(lines) == 0 {
+	trimmed := strings.TrimSpace(text)
+	if trimmed == "" {
 		return nil, fmt.Errorf("empty description")
 	}
+	lines := strings.Split(trimmed, "\n")
 
 	// Strip null bytes and markdown fences that could be used for prompt injection
 	sanitized := strings.ReplaceAll(text, "\x00", "")

@@ -150,7 +150,7 @@ func TestPlannerGetProgress(t *testing.T) {
 }
 
 func TestPlannerCreatePlan_AutonomousMode(t *testing.T) {
-	p := NewPlanner()
+	p := NewAutonomousPlanner(&mockLLMClient{}, nil)
 	ctx := &types.ExecutionContext{
 		RunID:  "run_test",
 		FlowID: "flow_test",
@@ -173,6 +173,43 @@ func TestPlannerCreatePlan_AutonomousMode(t *testing.T) {
 
 	if len(plan.Steps) != 0 {
 		t.Errorf("Autonomous plan should start with empty steps, got %d", len(plan.Steps))
+	}
+}
+
+func TestPlannerCreatePlan_GuidedEmptyStepsReturnsError(t *testing.T) {
+	p := NewPlanner()
+	ctx := &types.ExecutionContext{
+		RunID:  "run_test",
+		FlowID: "flow_test",
+		Goal:   "test guided goal",
+		Mode:   sharedtypes.FlowModeGuided,
+		Steps:  []types.Step{},
+	}
+
+	_, err := p.CreatePlan(ctx)
+	if err == nil {
+		t.Fatal("expected error for guided mode with empty steps")
+	}
+	if !strings.Contains(err.Error(), "guided mode requires at least one step") {
+		t.Errorf("unexpected error message: %v", err)
+	}
+}
+
+func TestPlannerCreatePlan_AutonomousWithoutLLMReturnsError(t *testing.T) {
+	p := NewPlanner()
+	ctx := &types.ExecutionContext{
+		RunID:  "run_test",
+		FlowID: "flow_test",
+		Goal:   "test autonomous goal",
+		Mode:   sharedtypes.FlowModeAutonomous,
+	}
+
+	_, err := p.CreatePlan(ctx)
+	if err == nil {
+		t.Fatal("expected error for autonomous mode without LLM client")
+	}
+	if !strings.Contains(err.Error(), "LLM client") {
+		t.Errorf("unexpected error message: %v", err)
 	}
 }
 
@@ -431,7 +468,7 @@ func TestFormatObserveUIObservation_FormatsInteractiveElements(t *testing.T) {
 	if !strings.Contains(result, "Page state: loaded") {
 		t.Errorf("expected page state, got: %s", result)
 	}
-	if !strings.Contains(result, "Interactive elements found (2)") {
+	if !strings.Contains(result, "Interactive elements found (2 total") {
 		t.Errorf("expected element count, got: %s", result)
 	}
 	if !strings.Contains(result, `selector="#username"`) {
@@ -489,7 +526,7 @@ func TestFormatObserveUIObservation_EmptyPage(t *testing.T) {
 	if !strings.Contains(result, "Page state: empty") {
 		t.Errorf("expected empty page state, got: %s", result)
 	}
-	if !strings.Contains(result, "Interactive elements found (0)") {
+	if !strings.Contains(result, "Interactive elements found (0 total") {
 		t.Errorf("expected zero element count, got: %s", result)
 	}
 }
@@ -707,5 +744,391 @@ func TestPlannerGenerateNextStep_UsesObserveUIObservation(t *testing.T) {
 	selector, ok := step.Params["selector"].(string)
 	if !ok || selector != "#submit" {
 		t.Errorf("Expected selector '#submit', got %v", step.Params["selector"])
+	}
+}
+
+func TestPlannerGetNextStep_ReturnsCopyNotDanglingPointer(t *testing.T) {
+	p := NewPlanner()
+	plan := &types.Plan{
+		FlowID:     "test",
+		CurrentIdx: 0,
+		Steps: []types.PlanStep{
+			{StepIndex: 0, StepID: "step1", Tool: "log", Skip: false},
+		},
+	}
+
+	step := p.GetNextStep(plan)
+	if step == nil {
+		t.Fatal("GetNextStep returned nil")
+	}
+
+	// AddStep may reallocate the backing array — pointer from GetNextStep must still be valid
+	plan.AddStep(types.PlanStep{StepID: "step2", Tool: "delay"})
+	plan.AddStep(types.PlanStep{StepID: "step3", Tool: "echo"})
+
+	// The original step pointer should still be valid (not dangling)
+	if step.StepID != "step1" {
+		t.Errorf("StepID after reallocation = %s, want step1", step.StepID)
+	}
+	if step.Tool != "log" {
+		t.Errorf("Tool after reallocation = %s, want log", step.Tool)
+	}
+}
+
+func TestPlannerConcurrentAddStepAndGetNextStep(t *testing.T) {
+	p := NewPlanner()
+	plan := &types.Plan{
+		FlowID:     "test",
+		CurrentIdx: 0,
+		Steps:      make([]types.PlanStep, 0),
+	}
+
+	// Concurrently add steps and read current state
+	done := make(chan struct{})
+	go func() {
+		for i := 0; i < 100; i++ {
+			p.AddStepToPlan(plan, &types.PlanStep{
+				StepID: fmt.Sprintf("step-%d", i),
+				Tool:   "echo",
+			})
+		}
+		close(done)
+	}()
+
+	for i := 0; i < 50; i++ {
+		p.GetNextStep(plan)
+		p.Advance(plan)
+	}
+	<-done
+}
+
+func TestPlannerConcurrentGetProgress(t *testing.T) {
+	p := NewPlanner()
+	plan := &types.Plan{
+		FlowID:     "test",
+		CurrentIdx: 3,
+		Steps: []types.PlanStep{
+			{StepIndex: 0, StepID: "s1", Tool: "log"},
+			{StepIndex: 1, StepID: "s2", Tool: "delay"},
+			{StepIndex: 2, StepID: "s3", Tool: "echo"},
+			{StepIndex: 3, StepID: "s4", Tool: "log"},
+		},
+	}
+
+	done := make(chan struct{})
+	go func() {
+		for i := 0; i < 50; i++ {
+			p.Advance(plan)
+		}
+		close(done)
+	}()
+
+	for i := 0; i < 50; i++ {
+		completed, total := p.GetProgress(plan)
+		if total != 4 {
+			t.Errorf("total should be 4, got %d", total)
+		}
+		_ = completed
+	}
+	<-done
+}
+
+func TestPlannerShouldStop_ConcurrentWithAdvance(t *testing.T) {
+	p := NewPlanner()
+	plan := &types.Plan{
+		FlowID:     "test",
+		CurrentIdx: 0,
+		Steps: []types.PlanStep{
+			{StepIndex: 0, StepID: "s1", Tool: "log", Skip: false},
+			{StepIndex: 1, StepID: "s2", Tool: "echo", Skip: true},
+			{StepIndex: 2, StepID: "s3", Tool: "delay", Skip: false},
+		},
+	}
+
+	done := make(chan struct{})
+	go func() {
+		for i := 0; i < 20; i++ {
+			p.Advance(plan)
+		}
+		close(done)
+	}()
+
+	for i := 0; i < 20; i++ {
+		_ = p.ShouldStop(plan)
+	}
+	<-done
+}
+
+func TestPlannerUpdatePlan_LockPreventsRace(t *testing.T) {
+	p := NewPlanner()
+	plan := &types.Plan{
+		FlowID:     "test",
+		CurrentIdx: 0,
+		Steps: []types.PlanStep{
+			{StepIndex: 0, StepID: "step1", Tool: "log", Skip: false},
+			{StepIndex: 1, StepID: "step2", Tool: "delay", Skip: false},
+		},
+	}
+
+	done := make(chan struct{})
+	go func() {
+		for i := 0; i < 50; i++ {
+			p.UpdatePlan(plan, 0, true, "skipped")
+			p.UpdatePlan(plan, 0, false, "")
+		}
+		close(done)
+	}()
+
+	for i := 0; i < 50; i++ {
+		step := p.GetNextStep(plan)
+		if step != nil {
+			_ = step.StepID
+		}
+	}
+	<-done
+}
+
+func TestSanitizeDOM_EscapesSpecialChars(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{"null bytes", "abc\x00def", "abcdef"},
+		{"code fences", "```code```", "code"},
+		{"backslash quoted", `a"b`, `a&quot;b`},
+		{"backslash first, then quote", `\"`, `\\&quot;`},
+		{"newline removed", "line1\nline2", "line1line2"},
+		{"angle brackets", "<script>", "&lt;script&gt;"},
+		{"open bracket", "[test]", "&#91;test&#93;"},
+		{"close bracket", "]", "&#93;"},
+		{"all special chars mixed", "<a \"b\"\n[c]\\x>", `&lt;a &quot;b&quot;&#91;c&#93;\\x&gt;`},
+		{"backslash before quote", "\\\"", "\\\\&quot;"},
+		{"only backslash", "a\\b", "a\\\\b"},
+		{"ampersand escaped", "a&b", "a&amp;b"},
+		{"ampersand before angle", "<a&b>", "&lt;a&amp;b&gt;"},
+		{"apostrophe escaped", "it's", "it&#39;s"},
+		{"apostrophe in attribute", "a'b", "a&#39;b"},
+		{"empty string", "", ""},
+		{"no special chars", "hello world", "hello world"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := sanitizeDOM(tt.input)
+			if got != tt.want {
+				t.Errorf("sanitizeDOM(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestFormatObserveUIObservation_TruncatesLargeRawData(t *testing.T) {
+	largeData := strings.Repeat("ABCDE", 500) // 2500 chars — exceeds 2000 limit
+	obs := types.Observation{
+		LastStep: &types.StepResult{
+			StepID:  "observe_ui",
+			Tool:    "observe_ui",
+			Success: true,
+		},
+		State: map[string]any{
+			"source": "observe_ui",
+			"data":   largeData,
+		},
+	}
+
+	result := formatObserveUIObservation(obs)
+
+	// sanitizeDOM escapes [ and ], so expect the HTML-entity version
+	if !strings.Contains(result, "&#91;truncated&#93;") {
+		t.Errorf("expected truncation marker in output, got: %s", result)
+	}
+	if len(result) >= len(largeData) {
+		t.Errorf("expected truncated result to be shorter than raw data, len=%d >= raw=%d", len(result), len(largeData))
+	}
+}
+
+func TestFormatObserveUIObservation_SmallRawDataNotTruncated(t *testing.T) {
+	smallData := `{"page_state":"loaded","interactive":[]}`
+	obs := types.Observation{
+		LastStep: &types.StepResult{
+			StepID:  "observe_ui",
+			Tool:    "observe_ui",
+			Success: true,
+		},
+		State: map[string]any{
+			"source": "observe_ui",
+			"data":   smallData,
+		},
+	}
+
+	result := formatObserveUIObservation(obs)
+
+	if strings.Contains(result, "[truncated]") {
+		t.Errorf("unexpected truncation for data under limit: %s", result)
+	}
+}
+
+func TestRenderAttr_OmitsEmptyValue(t *testing.T) {
+	line := "   1. <input>"
+	elemMap := map[string]any{"tag": "input", "selector": "#foo", "placeholder": ""}
+	used := map[string]bool{"tag": true, "selector": true}
+	renderAttr(&line, elemMap, "placeholder", &used)
+	if line != "   1. <input>" {
+		t.Errorf("expected no change for empty value, got: %s", line)
+	}
+}
+
+func TestRenderAttr_OmitsFalseBool(t *testing.T) {
+	line := "   1. <input>"
+	elemMap := map[string]any{"tag": "input", "selector": "#foo", "disabled": false}
+	used := map[string]bool{"tag": true, "selector": true}
+	renderAttr(&line, elemMap, "disabled", &used)
+	if line != "   1. <input>" {
+		t.Errorf("expected no change for false bool, got: %s", line)
+	}
+}
+
+func TestRenderAttr_IncludesTrueBool(t *testing.T) {
+	line := "   1. <input>"
+	elemMap := map[string]any{"tag": "input", "selector": "#foo", "checked": true}
+	used := map[string]bool{"tag": true, "selector": true}
+	renderAttr(&line, elemMap, "checked", &used)
+	if !strings.Contains(line, `checked="true"`) {
+		t.Errorf("expected checked=true in output, got: %s", line)
+	}
+}
+
+func TestRenderAttr_IncludesNonEmptyString(t *testing.T) {
+	line := "   1. <input>"
+	elemMap := map[string]any{"tag": "input", "selector": "#foo", "value": "standard_user"}
+	used := map[string]bool{"tag": true, "selector": true}
+	renderAttr(&line, elemMap, "value", &used)
+	if !strings.Contains(line, `value="standard_user"`) {
+		t.Errorf("expected value=standard_user in output, got: %s", line)
+	}
+}
+
+func TestFormatObserveUIObservation_ValueRendered(t *testing.T) {
+	obs := types.Observation{
+		LastStep: &types.StepResult{StepID: "observe_ui", Tool: "observe_ui", Success: true},
+		State: map[string]any{
+			"source": "observe_ui",
+			"data": map[string]any{
+				"page_state": "loaded",
+				"interactive": []any{
+					map[string]any{"tag": "input", "selector": "#user-name", "value": "standard_user", "text": ""},
+				},
+			},
+		},
+	}
+	result := formatObserveUIObservation(obs)
+	if !strings.Contains(result, `value="standard_user"`) {
+		t.Errorf("expected runtime value in output, got: %s", result)
+	}
+}
+
+func TestFormatObserveUIObservation_PasswordRedacted(t *testing.T) {
+	obs := types.Observation{
+		LastStep: &types.StepResult{StepID: "observe_ui", Tool: "observe_ui", Success: true},
+		State: map[string]any{
+			"source": "observe_ui",
+			"data": map[string]any{
+				"page_state": "loaded",
+				"interactive": []any{
+					map[string]any{"tag": "input", "selector": "#password", "value": "********", "type": "password", "text": ""},
+				},
+			},
+		},
+	}
+	result := formatObserveUIObservation(obs)
+	if !strings.Contains(result, `value="********"`) {
+		t.Errorf("expected redacted password value, got: %s", result)
+	}
+}
+
+func TestFormatObserveUIObservation_DynamicAttrsAppear(t *testing.T) {
+	obs := types.Observation{
+		LastStep: &types.StepResult{StepID: "observe_ui", Tool: "observe_ui", Success: true},
+		State: map[string]any{
+			"source": "observe_ui",
+			"data": map[string]any{
+				"page_state": "loaded",
+				"interactive": []any{
+					map[string]any{
+						"tag":          "button",
+						"selector":     "#login-btn",
+						"data-testid":  "login-btn",
+						"aria-expanded": "true",
+						"text":         "Login",
+					},
+				},
+			},
+		},
+	}
+	result := formatObserveUIObservation(obs)
+	if !strings.Contains(result, `data-testid="login-btn"`) {
+		t.Errorf("expected dynamic data-testid attr, got: %s", result)
+	}
+	if !strings.Contains(result, `aria-expanded="true"`) {
+		t.Errorf("expected dynamic aria-expanded attr, got: %s", result)
+	}
+}
+
+func TestFormatObserveUIObservation_OrderingStable(t *testing.T) {
+	input := map[string]any{
+		"tag":   "input",
+		"id":    "user-name",
+		"name":  "username",
+		"type":  "text",
+		"class": "input_error form_input",
+		"placeholder": "Username",
+		"value": "standard_user",
+		"checked": "true",
+		"data-test": "username",
+		"selector": "#user-name",
+	}
+	obs := types.Observation{
+		LastStep: &types.StepResult{StepID: "observe_ui", Tool: "observe_ui", Success: true},
+		State: map[string]any{
+			"source": "observe_ui",
+			"data": map[string]any{
+				"page_state":  "loaded",
+				"interactive": []any{input},
+			},
+		},
+	}
+
+	// Run twice to verify deterministic ordering
+	r1 := formatObserveUIObservation(obs)
+	r2 := formatObserveUIObservation(obs)
+	if r1 != r2 {
+		t.Errorf("non-deterministic output between runs:\nrun1: %s\nrun2: %s", r1, r2)
+	}
+
+	// Priority fields appear in defined order (id, name, type, placeholder, value, checked)
+	result := r1
+	idIdx := strings.Index(result, `id="user-name"`)
+	nameIdx := strings.Index(result, `name="username"`)
+	typeIdx := strings.Index(result, `type="text"`)
+	valueIdx := strings.Index(result, `value="standard_user"`)
+	checkedIdx := strings.Index(result, `checked="true"`)
+
+	if idIdx > nameIdx || idIdx > typeIdx {
+		t.Errorf("priority order violated: id should come before name/type")
+	}
+	if valueIdx > checkedIdx {
+		t.Errorf("priority order violated: value should come before checked")
+	}
+
+	// data-test (non-priority) should come after priority fields
+	dataTestIdx := strings.Index(result, `data-test="username"`)
+	if dataTestIdx < checkedIdx {
+		t.Errorf("non-priority field data-test should appear after priority fields")
+	}
+
+	// selector should be last
+	selectorIdx := strings.Index(result, `selector="#user-name"`)
+	if selectorIdx < dataTestIdx {
+		t.Errorf("selector should appear last, but appears before data-test")
 	}
 }

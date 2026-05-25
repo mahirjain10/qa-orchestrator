@@ -197,59 +197,48 @@ Adversarial code review of all changed files found and fixed 4 bugs:
 
 **Run 077 completed:** Added 404 recovery rule to system prompt URL RULES. Fixed formatObserveUIObservation to surface 404 warnings to the LLM. Added has404Warning() detection in recovery.Decide() — 404 observations cause RecoveryActionRetry + steering instruction to navigate to root domain, prioritized before all other error checks. 6 new tests added. All 22 packages pass, build clean, vet clean.
 
+## Performance & Stability Enhancements (Run 078)
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| 1 | High-Performance Deep Cloning (Replace JSON) | ✅ COMPLETE |
+| 2 | Dynamic React Sync (WaitForFunction instead of static sleep) | ✅ COMPLETE |
+| 3 | Password Redaction Bug (Empty field observation fix) | ✅ COMPLETE |
+
+**Run 078 completed:** Identified severe UI freezing caused by TUI polling `SessionStore.List()` which used `json.Marshal` inside a global lock to deep clone large historical sessions. Built a custom native Go struct memory cloner `Session.Clone()`. Removed static 250ms sleep in `Fill()` and replaced it with a dynamic Playwright `WaitForFunction` to perfectly sync with React/Vue DOM reconciliations. Fixed `observeUIJS` to report empty strings for empty password fields instead of always `********`. All tests pass cleanly.
+
 ## Last Run
-- Run 090: 2026-05-23 (Agent: opencode)
-  - Status: Bugfix — 4 logic errors: (1) Context/goroutine leak — immediate llmCancel after GenerateNextStep. (2) Replan bypass of retry limits — ShouldRetry/ShouldEscalate count Replan; result.Retries++ in Replan case. (3) Context cancellation ignored in browser — runWithContext wraps all Playwright calls. (4) Prompt injection via DOM — sanitizeDOM escapes null bytes, code fences, angle brackets. 24 test suites pass, build clean.
-- Run 089: 2026-05-23 (Agent: opencode)
-  - Status: Bugfix — 5 logic errors fixed: (7) Playwright resource leak — close old context before overwriting in ensurePage. (8) Invalid selector error masked — check error field from JS selector check. (9) State corruption on resume — don't slice Flows, pre-seed completed results in orchestrator. (10) HTTP read error swallowed — include err in error message. (11) Orphaned artifact files — skip index deletion if file removal fails. 24 test suites pass, build clean.
-- Run 088: 2026-05-23 (Agent: opencode)
-  - Status: Bugfix — 3 security/correctness bugs: (4) Path injection prevented via `sanitizeID()` in session, artifact, trace stores. (5) Upstream `OutcomeFail` now blocks dependent flows. (6) LLM fallback now triggers for all retryable errors, not just empty responses. 24 test suites pass, race clean.
-- Run 087: 2026-05-23 (Agent: opencode)
-  - Status: Bugfix — 3 concurrency bugs fixed: (1) Context cancellation propagated to all browser runtime Playwright calls (7 interface methods). (2) Semaphore blocking defeated by ctx-aware select in flow goroutine. (3) TOCTOU race in RequestCancel fixed by merging check+write under single lock. 24 test suites pass, race detector clean.
-- Run 086: 2026-05-23 (Agent: opencode)
-  - Status: Trace analysis bugfixes — Fixed 4 root-cause bugs from trace log analysis: (P0) Planner loop bug — `GetHistory()` now shows step success/failure so LLM stops re-generating already-executed steps; (P1) URL alternation deadlock after root-nav — `VisitedURLs` reset in `performRootNav()`; (P2) Missing `echo` tool in real browser registry; (P2) blocked_finish_success auto-fails after 3 consecutive attempts. 24 test suites pass, build clean.
-- Run 085: 2026-05-22 (Agent: opencode)
-  - Status: Fixed 3 root-cause bugs from real-urls-parallel trace: (1) observeUIJS rewritten to DOM tree walk — no more :has-text(), no hardcoded tag/class lists. (2) Loop steering text no longer says "or use finish" — blocks finish(success) after loop. (3) Alternation detection tracks visited URLs and blocks re-navigation. 4 new tests (finish blocking, alternation, tree-walk structure, no-has-text assertion). All 22 packages pass, build clean, vet clean.
-- Run 084: 2026-05-22 (Agent: opencode)
-  - Status: Fixed 3 SauceDemo E2E bugs — (1) upstream skip now propagates OutcomeSkip only (not OutcomeFail) so failed flows still share storage state downstream, (2) observe_ui widened to catch .title, .shopping_cart_link, .app_logo, [data-test="title"], (3) class attribute added to observe_ui element output so LLM can identify elements by CSS class. 22 packages pass, build clean, vet clean.
-- Run 083: 2026-05-22 (Agent: opencode)
-  - Status: Fixed flow-eta infinite alternation loop in real-urls-parallel.yaml — reworded goal from "navigate between...each time" to "visit...then visit" to prevent indefinite URL alternation. 22 packages pass, build clean.
-- Run 082: 2026-05-22 (Agent: opencode)
-  - Status: Browser Session Sharing + observe_ui Headings COMPLETE — Fixed SauceDemo session isolation by propagating Playwright StorageState between dependent flows. Added `NewFlowRuntime(storageState ...*playwright.StorageState)` for optional cookie+localStorage inheritance. Added `StorageState()` method to `FlowBrowserRuntime`. Fixed observe_ui to include h1-h6 headings in the elements list so the LLM can see page titles. Created `real-urls-parallel.yaml` campaign with 8 verified-real-URL flows. Makefile campaign count is now dynamic. All 22 packages pass, build clean.
-- Run 081: 2026-05-22 (Agent: opencode)
-  - Status: Fix B Bugfix COMPLETE — Removed `providerForModel` from Run 080's model fallback implementation. The function was switching providers for each fallback model (gpt-4o-mini → OpenAI native endpoint), causing 401 errors when the user's API key belongs to OpenRouter. All models now use the same provider (endpoint + auth unchanged). 2 tests removed (tested removed functionality). All 23 suites pass, build clean.
-- Run 080: 2026-05-22 (Agent: opencode)
-  - Status: Bug Fixes COMPLETE — Fixed 3 bugs from Run 079: (A) Selector auto-replace — Safety Net 4 now auto-replaces hallucinated selectors by extracting intent text and finding best match from observed elements. (B) Model fallback — when empty response exhausts retries for primary model, tries fallback chain (gpt-4o-mini → gemini-2.0-flash-001). (C) 404 detection tightened — heading check runs first, title check uses `HasPrefix`. 16 new tests across 4 test files. All 23 suites pass, build clean, vet clean.
-- Run 079: 2026-05-22 (Agent: opencode)
-  - Status: Post-Run Bug Fixes COMPLETE — Fixed 3 bugs from real browser run of large-parallel.yaml: (1) Yo-Yo loop — added "NEVER use navigate()" rule to system+user prompts forcing click() after 404 recovery. (2) Empty LLM response — changed from non-retryable to retryable with exponential backoff (500ms→1s→2s). (3) 404 false positives — replaced broad body substring check with targeted heading/element query. 3 new tests. All 22 suites pass, build clean, vet clean.
-- Run 078: 2026-05-22 (Agent: opencode)
-  - Status: Agentic Recovery Trace Fixes COMPLETE — Implemented Phase 5 of the agentic recovery plan. Fixed the `buildObservationSummary` function in `engine.go` to ensure the 404 warning is visible in trace logs. Tweaked the `SystemPromptTemplate` in `prompts.go` to explicitly command the LLM to skip `observe_ui` loops and navigate to the root domain when a 404 is detected. Tested compilation. All packages pass.
-- Run 077: 2026-05-22 (Agent: opencode)
-  - Status: Agentic Recovery COMPLETE — 404 detection and root-domain recovery implemented across 3 packages. Added 404 rule to system prompt, surfaced 404 warning in observation output, added has404Warning() recovery check with steering instruction injection. 6 new tests. All 22 packages pass, build clean, vet clean.
-- Run 076: 2026-05-22 (Agent: opencode)
-  - Status: Deep Code Review Fixes COMPLETE — Fixed 7 issues across 3 phases: (A) JS injection via unescaped selector in checkSelectorExists — now uses json.Marshal; fragile "cancelled" string check — now uses sentinel prefix constant. (B) Checkpoint now saves/restores CurrentURL, LastStepSignature, ConsecutiveObserveCount on resume. (C) Guided flow steering drain added; finish(fail) includes planStep.Reason; RecoveryActionReplan documented. 10 new tests (7 injection, 3 checkpoint). All 22 packages pass, build clean.
-- Run 074: 2026-05-22 (Agent: opencode)
-  - Status: Autonomous Engine Hardening COMPLETE — Fixed two bugs from real browser trace: max_steps_reached now sets OutcomeFail, repeat detection hard-breaks after 3 consecutive repeats. 8 lines changed in engine.go, 2 new tests added. All packages pass, build clean.
-- Run 073: 2026-05-22 (Agent: opencode)
-  - Status: start_url Architecture Implementation + Code Review COMPLETE — 6 phases executed: Schema/Types, Prompt Injection, YAML Updates, Safety-Nets, Campaign Test Runner, Documentation. Code review found and fixed 4 bugs. 12 new tests added. All 22 packages pass, build clean.
-- Run 072: 2026-05-21 (Agent: qwen3.6-plus-free)
-  - Status: Autonomous Planner Selector Hallucination Fix — 4-layer defense implemented: (1) Code-level enforce_observe_ui after navigate() and before retry, injected as real plan steps. (2) Recovery agent distinguishes Playwright selector timeouts (→ Replan) from generic timeouts (→ Retry). (3) Pre-execution selector existence check via fast JS querySelector() — 30s timeouts → sub-second failures. (4) User prompt reformatted with observation at bottom under "USE ONLY THESE SELECTORS" header. Added observation_context trace logging. 5 files modified, 2 new tests. 22 packages pass, build clean.
-- Run 071: 2026-05-21 (Agent: qwen3.6-plus-free)
-  - Status: Code Reviewer Skill — 5 Bug Fixes COMPLETE — Fixed critical type mismatch in formatObserveUIObservation (map[string]any vs string), fixed test-production gap in mock return type, gated autoObserve to autonomous mode only, added trace emission on observe_ui failure, capped observations at 10. 4 files modified, 4 new tests. 22 packages pass, race detector clean, build clean, vet clean.
-- Run 070: 2026-05-21 (Agent: qwen3.6-plus-free)
-  - Status: Observation Ordering Fix + observe_ui Data Formatting COMPLETE — Fixed root cause of selector hallucination: moved autoObserve() to after CreateObservation append so observe_ui is always last observation. Added formatObserveUIObservation() to format interactive element data prominently for LLM. Added trace emission for auto-observation visibility. 2 files modified, 7 new tests. 22 packages pass, race detector clean, build clean, vet clean.
-- Run 068: 2026-05-21 (Agent: qwen3.6-plus-free)
-  - Status: Parallel Flow Execution + LLM Hallucination Fix COMPLETE — Worker pool with semaphore replaced sequential loop, per-flow BrowserContext isolation, dependency context injection into LLM prompts, session store race fix. 8 files modified. 22 packages pass, race detector clean, build clean.
-- Run 067: 2026-05-21 (Agent: qwen3.6-plus-free)
-  - Status: Steering Instructions + TUI State Sync COMPLETE — 4 state sync bugs fixed, full steering instruction pipeline implemented (TUI → lifecycle → engine → LLM prompt). 11 files modified. 24 packages pass, build clean, vet clean.
-- Run 066: 2026-05-21 (Agent: qwen3.6-plus-free)
-  - Status: Code Review + Bug Fixes COMPLETE — 18 bugs fixed across 14 files (5 critical, 5 logic, 8 cleanup/security). Build clean, vet clean, 24 packages pass.
-- Run 065: 2026-05-21 (Agent: qwen3.6-plus-free)
-  - Status: Bug Fixes COMPLETE — 4 bugs fixed (TUI session sync, engine session mutation, goroutine TUI violation), 5 already fixed. Build clean, vet clean, 24 packages pass.
-- Run 064: 2026-05-21 (Agent: qwen3.6-plus-free)
-  - Status: Audit Fix Phase 2 COMPLETE — 16 of 43 issues fixed. 3 agents: architecture/docs (E), state machine (F), hardcoded values (H). Full audit COMPLETE (43/43). Build clean, vet clean, 24 packages pass.
-- Run 063: 2026-05-21 (Agent: qwen3.6-plus-free)
-  - Status: Audit Fix Phase 1 COMPLETE — 27 of 43 issues fixed. 5 parallel agents: runtime bugs (A), campaign YAML (B), parser validation (C), dead code removal (D), cleanup (G). Build clean, vet clean, 24 packages pass.
+- Run 109: 2026-05-25 (Agent: opencode)
+  - Status: COMPLETE. Fixed Makefile: removed undefined $(BROWSER_MODE) variable from run-real target, made clean target cross-platform (Windows cmd vs Unix rm -f). All 24 test suites pass, build clean, vet clean.
+- Run 108: 2026-05-25 (Agent: opencode)
+  - Status: COMPLETE. Fixed T6 (2 GetRunStatus error discards in processSteeringCommand continue/approve — already in working tree, added tests) and T11 (filter textinput stale focus state — added Blur() calls in enter/escape branches). 4 new tests, 3 updated. All 22 suites pass.
+- Run 107: 2026-05-25 (Agent: opencode)
+  - Status: COMPLETE. Fixed 4 bugs: (L10) fallback dedup — filter req.Model out of FallbackModels. (L11) DefaultRetryConfig converted from mutable var to value-returning function; CalculateDelay to value receiver. (L13) Gemini BuildRequest now checks ReasoningEffort and maps to reasoningConfig. (T9) cancelled re-checked after semaphore acquire to close TOCTOU race window. All 22 suites pass.
+- Run 106: 2026-05-25 (Agent: opencode)
+  - Status: COMPLETE. Fixed 4 browser-runtime bugs: (S8) `withPageRecreation` added to `BrowserRuntime` for all 8 ops. (S9) `Stop()`/`Close()` nil out fields. (S11) `observe_ui` Evaluate errors captured. (S12) `json.Number` in `matchesType`. Added 5 new tests: Stop nil-out, Close nil-out, all ops fail-when-not-running, matchesType with json.Number (9 sub-cases), 2 Evaluate error sub-cases in 404 detection. All 22 test suites pass.
+- Run 105: 2026-05-25 (Agent: opencode)
+  - Status: COMPLETE. Fixed TUI bugs T11 and T12 from bug-report-sunday.md: (T11) stale `cmd` from `FilterInput.Update()` captured before `SetValue("")` — restructured to call Update once after all state mutations. (T12) `handleContentUp`/`handleContentDown` changed selection but never called `UpdateViewportContent()` or scrolled viewport — added both, selection stays centered. All 22 test suites pass, build clean.
+- Run 104: 2026-05-25 (Agent: opencode)
+  - Status: COMPLETE. Fixed TUI bugs T4 and T5 from bug-report-sunday.md: (T4) ANSI-styled status column misaligned in Flows view — `lipgloss.Width` + manual padding replaces raw `%-*s` Sprintf width. (T5) Context leak on campaign startup error — `campaignCancel()` now called when `startCampaign` returns error. All 22 test suites pass, TUI builds clean.
+- Run 103: 2026-05-25 (Agent: opencode)
+  - Status: COMPLETE. Fixed 2 bugs from bug-report-sunday.md: (Bug A) Engine BUG 5 — pause-before-steering drain order in `runAutonomousFlow` and `runGuidedFlow` — `drainSteeringEvents` now called before `handlePauseResume`. (Bug B) config.go L19 — `envAllowFallbacks` constant alignment. Added `TestGuidedFlow_SteeringSkipBeforePause_ProcessedFirst` verifying steering events are consumed before pause blocks (skip step, flow completes with `OutcomePass`). All 18 test suites pass, build clean.
+- Run 102: 2026-05-24 (Agent: opencode)
+  - Status: COMPLETE. Fixed 7 Storage/Runtime/Browser bugs: S1 (sanitizeID unified), S2 (ListRunIDs mutex), S3 (artifact Save rollback), S4 (removed overflowDropped), S5 (runWithContext drain goroutine removed), S6 (ensurePage isRunning check), S7 (FlowBrowserRuntime page recovery). All affected packages pass, build clean.
+- Run 101: 2026-05-24 (Agent: opencode)
+  - Status: COMPLETE. Fixed 5 LLM package bugs: (1) removed parseTimeout wrapper, (2) MaxRetries capped at 20, (3) ApplyProviderSettings merges instead of overwrites, (4) renamed LLM_PROVIDER_ALLOW → LLM_ALLOW_FALLBACKS, (5) body read error now retryable. 7 new tests. All llm tests pass, build clean, vet clean.
+- Run 100: 2026-05-24 (Agent: opencode)
+  - Status: COMPLETE. Fixed 4 LLM package bugs: (B1) Auto BaseURL resolved after provider detection, no longer defaults to OpenRouter URL when model is Gemini; (B2) ThinkingBudget parse error no longer silently ignored — returns error like maxRetries; (B3) Gemini BuildRequest now passes TopP and StopSequences from request; (B4) NewSimpleClient now uses apiKey parameter even when LoadConfig succeeds. 24/24 test suites pass, build clean.
+- Run 099: 2026-05-24 (Agent: opencode)
+  - Status: COMPLETE. Fixed 5 orchestrator bugs: (O1) flow timeout validation changed to `< 0` (0 = inherit from campaign); (O2) topologicalSort length check in Validate; (O3) FormatError nil guard; (O4) DependencyError.Error() includes flow ID and detail; (O5) config-block-existence check before field-level errors. 24/24 test suites pass, build clean.
+  - Status: COMPLETE. Fixed 7 code-review bugs: (E1) cross-flow steering infinite loop — already had filter, verified by test. (E2) handlePauseResume session deletion — returns pauseFail. (E3) finalizeRunResult no longer demotes OutcomePass on errors. (E4) autonomousLLMContext goroutine leak — added `lifecycleCancel` field, `Close()` method, `defer llmCancel()`. (P5-7) Planner locking and dangling pointer — all properly locked, value copy safe. 24/24 test suites pass (0 pre-existing failures), build clean.
+- Run 094: 2026-05-24 (Agent: opencode)
+  - Status: COMPLETE. Fixed `runWithContext` goroutine leak — added channel-drain goroutine on `ctx.Done()` path so background `fn()` goroutine completes cleanly instead of remaining in-flight. 24/24 test suites pass, build clean.
+- Run 093: 2026-05-24 (Agent: opencode)
+  - Status: Bug Fixes COMPLETE. Fixed 11 code-review bugs across 3 packages: (B1) `runWithContext` goroutine leak fixed via context-aware `fn` signature + channel drain. (B2-3) `checkSelectorExists` returns real errors; `wait_for` no longer defeats dynamic element detection. (B4-6) Sanitization hardened — `sanitizeGoal` escapes `</`, `sanitizeDOM` escapes `"`, `\`, `\n`, `[`, `]`, steering instructions now sanitized. (B7) `BaseURL` wired into all providers. (B8) `IsNetworkError`/`IsAPIError` unwrap `*RetryableError`. (B9-11) Fallback models route to correct provider endpoint; `Generate` clones request to prevent mutation; dead `retryConfig` removed. 23/24 test suites pass (1 pre-existing engine test failure out of scope), build clean.
+- Run 092: 2026-05-23 (Agent: Gemini CLI)
+  - Status: Reliability & Edge Cases COMPLETE. Fixed 5 critical campaign reliability failures (API timeouts, broken retry logic, uncontrolled step repetition, JSON parsing failures, state staleness) and 2 edge cases regarding the LLM "thinking" budget configuration (Gemini gate and MaxTokens cap). All 24 test suites pass, build clean.
+- Run 091: 2026-05-23 (Agent: Gemini CLI)
+  - Status: DeepSeek/GPT-5 Integration COMPLETE. Added `reasoning_effort` and `thinking` parameters to LLM payload, configured OpenRouter pass-through, and repaired provider test suite. All tests pass, build clean.
 - Run 062: 2026-05-20 (Agent: Gemini CLI)
   - Status: TUI Bug Fixes COMPLETE. Wired `pause`, `resume`, `approve` to steering handlers. Fixed spacebar handling for `WAITING_FOR_INPUT`. Removed dead code (`renderHelpModal`). All tests passing.
 - Run 061: 2026-05-20 (Agent: Gemini CLI)
@@ -298,4 +287,8 @@ Adversarial code review of all changed files found and fixed 4 bugs:
 - Added `help` target for available commands
 - Enhanced `run` target documentation
 - Added `fmt`, `vet`, `lint`, and `verify` workflow targets
-- Updated `clean` to be PowerShell-safe on Windows
+- Updated `clean` to be cross-platform (Windows `del /Q`, Unix `rm -f`)
+- Removed undefined `$(BROWSER_MODE)` variable from `run-real` target
+- Added reasoning/thinking env vars to `check-env` (`LLM_REASONING_EFFORT`, `LLM_THINKING_TYPE/BUDGET`, `LLM_HTTP_REFERER`, `LLM_APP_TITLE`)
+- Added provider routing env vars to `check-env` (`LLM_PROVIDER_PRIORITY`, `LLM_PROVIDER_ONLY`, `LLM_ALLOW_FALLBACKS`)
+- Updated usage examples with DeepSeek V4 and GPT-5-Mini configuration patterns

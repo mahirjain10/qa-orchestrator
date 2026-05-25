@@ -8,7 +8,8 @@ import (
 )
 
 type GeminiProvider struct {
-	APIKey string
+	APIKey  string
+	BaseURL string
 }
 
 func (p *GeminiProvider) Name() string {
@@ -21,21 +22,22 @@ func (p *GeminiProvider) Endpoint(model string) string {
 	}
 	model = strings.TrimPrefix(model, "gemini/")
 	model = strings.TrimPrefix(model, "google/")
-	baseURL := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent", model)
-	if p.APIKey != "" {
-		return fmt.Sprintf("%s?key=%s", baseURL, p.APIKey)
+	var baseURL string
+	if p.BaseURL != "" {
+		baseURL = fmt.Sprintf("%s/v1beta/models/%s:generateContent", p.BaseURL, model)
+	} else {
+		baseURL = fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent", model)
 	}
 	return baseURL
 }
 
 func (p *GeminiProvider) AuthHeaders(apiKey string) map[string]string {
+	key := apiKey
 	if p.APIKey != "" {
-		return map[string]string{
-			"Content-Type": "application/json",
-		}
+		key = p.APIKey
 	}
 	return map[string]string{
-		"x-goog-api-key": apiKey,
+		"x-goog-api-key": key,
 		"Content-Type":   "application/json",
 	}
 }
@@ -54,12 +56,17 @@ type geminiContent struct {
 	Parts []geminiPart `json:"parts"`
 }
 
+type geminiReasoningConfig struct {
+	ReasoningEffort string `json:"reasoningEffort,omitempty"`
+}
+
 type geminiGenerationConfig struct {
-	Temperature     float64              `json:"temperature,omitempty"`
-	MaxOutputTokens int                  `json:"maxOutputTokens,omitempty"`
-	TopP            float64              `json:"topP,omitempty"`
-	StopSequences   []string             `json:"stopSequences,omitempty"`
-	ThinkingConfig  *geminiThinkingConfig `json:"thinkingConfig,omitempty"`
+	Temperature     float64                `json:"temperature,omitempty"`
+	MaxOutputTokens int                    `json:"maxOutputTokens,omitempty"`
+	TopP            float64                `json:"topP,omitempty"`
+	StopSequences   []string               `json:"stopSequences,omitempty"`
+	ThinkingConfig  *geminiThinkingConfig  `json:"thinkingConfig,omitempty"`
+	ReasoningConfig *geminiReasoningConfig `json:"reasoningConfig,omitempty"`
 }
 
 type geminiRequest struct {
@@ -94,13 +101,11 @@ type geminiErrorResponse struct {
 }
 
 func (p *GeminiProvider) BuildRequest(ctx context.Context, req *GenerateRequest) ([]byte, error) {
-	messages := req.Messages
-	systemPrompt := ""
-
-	if len(messages) > 0 && messages[0].Role == RoleSystem {
-		systemPrompt = messages[0].Content
-		messages = messages[1:]
+	if err := checkContext(ctx); err != nil {
+		return nil, err
 	}
+
+	systemPrompt, messages := splitSystemMessage(req.Messages)
 
 	geminiReq := geminiRequest{
 		Contents: make([]geminiContent, 0, len(messages)),
@@ -134,18 +139,23 @@ func (p *GeminiProvider) BuildRequest(ctx context.Context, req *GenerateRequest)
 		})
 	}
 
-	if req.Temperature > 0 || req.MaxTokens > 0 || req.MaxCompletionTokens > 0 || req.Thinking != nil {
-		maxTokens := req.MaxTokens
-		if req.MaxCompletionTokens > 0 {
-			maxTokens = req.MaxCompletionTokens
-		}
+	if req.Temperature > 0 || req.MaxTokens > 0 || req.MaxCompletionTokens > 0 || req.Thinking != nil || req.TopP > 0 || len(req.Stop) > 0 || req.ReasoningEffort != "" {
 		cfg := &geminiGenerationConfig{
 			Temperature:     req.Temperature,
-			MaxOutputTokens: maxTokens,
+			MaxOutputTokens: req.EffectiveMaxTokens(),
+			TopP:            req.TopP,
+			StopSequences:   req.Stop,
 		}
-		if req.Thinking != nil && req.Thinking.BudgetTokens > 0 {
-			cfg.ThinkingConfig = &geminiThinkingConfig{
-				ThinkingBudget: req.Thinking.BudgetTokens,
+		if req.Thinking != nil && req.Thinking.Type == "enabled" {
+			tc := &geminiThinkingConfig{}
+			if req.Thinking.BudgetTokens > 0 {
+				tc.ThinkingBudget = req.Thinking.BudgetTokens
+			}
+			cfg.ThinkingConfig = tc
+		}
+		if req.ReasoningEffort != "" {
+			cfg.ReasoningConfig = &geminiReasoningConfig{
+				ReasoningEffort: req.ReasoningEffort,
 			}
 		}
 		geminiReq.GenerationConfig = cfg
@@ -208,10 +218,15 @@ func (p *GeminiProvider) ParseResponse(body []byte) (*GenerateResponse, error) {
 func (p *GeminiProvider) ParseError(statusCode int, body []byte) error {
 	var errResp geminiErrorResponse
 	if err := json.Unmarshal(body, &errResp); err == nil && errResp.Error.Message != "" {
+		codeStr := ""
+		if errResp.Error.Code > 0 {
+			codeStr = fmt.Sprintf("%d", errResp.Error.Code)
+		}
 		apiErr := &APIError{
 			StatusCode: statusCode,
 			Message:    errResp.Error.Message,
 			Type:       errResp.Error.Status,
+			Code:       codeStr,
 		}
 		return NewRetryableError(apiErr, IsRetryableStatusCode(statusCode))
 	}
@@ -223,8 +238,14 @@ func (p *GeminiProvider) ParseError(statusCode int, body []byte) error {
 }
 
 func (p *GeminiProvider) ValidateModel(model string) error {
-	if model == "" {
-		return fmt.Errorf("model is required for Gemini provider")
+	return validateModel(model, "gemini")
+}
+
+func (p *GeminiProvider) ApplyConfig(cfg *Config) {
+	p.BaseURL = cfg.BaseURL
+	if cfg.GeminiAPIKey != "" {
+		p.APIKey = cfg.GeminiAPIKey
+	} else {
+		p.APIKey = cfg.APIKey
 	}
-	return nil
 }

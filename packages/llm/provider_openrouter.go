@@ -3,13 +3,14 @@ package llm
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"strings"
+
+	"qa-orchestrator/packages/shared"
 )
 
 type OpenRouterProvider struct {
 	HTTPReferer string
 	AppTitle    string
+	BaseURL     string
 	Provider    *ProviderSettings
 }
 
@@ -18,7 +19,7 @@ func (p *OpenRouterProvider) Name() string {
 }
 
 func (p *OpenRouterProvider) Endpoint(model string) string {
-	return "https://openrouter.ai/api/v1/chat/completions"
+	return endpoint(p.BaseURL, "https://openrouter.ai/api/v1", "/chat/completions")
 }
 
 func (p *OpenRouterProvider) AuthHeaders(apiKey string) map[string]string {
@@ -36,14 +37,11 @@ func (p *OpenRouterProvider) AuthHeaders(apiKey string) map[string]string {
 }
 
 func (p *OpenRouterProvider) BuildRequest(ctx context.Context, req *GenerateRequest) ([]byte, error) {
-	messages := req.Messages
-	systemPrompt := ""
-
-	if len(messages) > 0 && messages[0].Role == RoleSystem {
-		systemPrompt = messages[0].Content
-		messages = messages[1:]
+	if err := checkContext(ctx); err != nil {
+		return nil, err
 	}
 
+	systemPrompt, messages := splitSystemMessage(req.Messages)
 	allMessages := make([]Message, 0, len(messages)+1)
 	if systemPrompt != "" {
 		allMessages = append(allMessages, Message{Role: RoleSystem, Content: systemPrompt})
@@ -54,11 +52,12 @@ func (p *OpenRouterProvider) BuildRequest(ctx context.Context, req *GenerateRequ
 		Model:           req.Model,
 		Messages:        allMessages,
 		MaxTokens:       req.MaxTokens,
+		TopP:            req.TopP,
+		Stop:            req.Stop,
 		ReasoningEffort: req.ReasoningEffort,
 		Thinking:        req.Thinking,
 	}
 
-	// Reasoning models (o1, o3, o4, gpt-5+) reject the temperature parameter.
 	if !isReasoningModel(req.Model) {
 		openReq.Temperature = req.Temperature
 	}
@@ -85,10 +84,14 @@ func (p *OpenRouterProvider) ParseError(statusCode int, body []byte) error {
 }
 
 func (p *OpenRouterProvider) ValidateModel(model string) error {
-	if model == "" {
-		return fmt.Errorf("model is required for OpenRouter provider")
-	}
-	return nil
+	return validateModel(model, "openrouter")
+}
+
+func (p *OpenRouterProvider) ApplyConfig(cfg *Config) {
+	p.HTTPReferer = cfg.HTTPReferer
+	p.AppTitle = cfg.AppTitle
+	p.BaseURL = cfg.BaseURL
+	p.ApplyProviderSettings(cfg.ProviderPriority, cfg.ProviderOnly, cfg.AllowFallbacks)
 }
 
 func (p *OpenRouterProvider) ApplyProviderSettings(priority, only, allow string) {
@@ -96,20 +99,16 @@ func (p *OpenRouterProvider) ApplyProviderSettings(priority, only, allow string)
 		return
 	}
 
-	p.Provider = &ProviderSettings{}
+	if p.Provider == nil {
+		p.Provider = &ProviderSettings{}
+	}
 
 	if priority != "" {
-		p.Provider.Order = strings.Split(priority, ",")
-		for i := range p.Provider.Order {
-			p.Provider.Order[i] = strings.TrimSpace(p.Provider.Order[i])
-		}
+		p.Provider.Order = shared.SplitAndTrim(priority, ",")
 	}
 
 	if only != "" {
-		p.Provider.Only = strings.Split(only, ",")
-		for i := range p.Provider.Only {
-			p.Provider.Only[i] = strings.TrimSpace(p.Provider.Only[i])
-		}
+		p.Provider.Only = shared.SplitAndTrim(only, ",")
 	}
 
 	if allow != "" {

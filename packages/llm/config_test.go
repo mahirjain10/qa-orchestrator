@@ -3,6 +3,7 @@ package llm
 import (
 	"os"
 	"testing"
+	"time"
 )
 
 func setEnv(key, value string) func() {
@@ -101,5 +102,52 @@ func TestConfigReasoningDefaultsEmpty(t *testing.T) {
 	}
 	if cfg.ThinkingBudget != 0 {
 		t.Errorf("expected ThinkingBudget 0, got %d", cfg.ThinkingBudget)
+	}
+}
+
+func TestConfigMaxRetriesExceedsLimit(t *testing.T) {
+	defer setEnv("LLM_API_KEY", "test-key")()
+	defer setEnv("LLM_MAX_RETRIES", "21")()
+
+	_, err := LoadConfig()
+	if err == nil {
+		t.Fatal("expected error for MaxRetries=21 (exceeds max 20)")
+	}
+}
+
+func TestConfigMaxRetriesNegative(t *testing.T) {
+	defer setEnv("LLM_API_KEY", "test-key")()
+	defer setEnv("LLM_MAX_RETRIES", "-1")()
+
+	_, err := LoadConfig()
+	if err == nil {
+		t.Fatal("expected error for negative MaxRetries")
+	}
+}
+
+func TestConfigMaxRetriesAtLimit(t *testing.T) {
+	defer setEnv("LLM_API_KEY", "test-key")()
+	defer setEnv("LLM_MAX_RETRIES", "20")()
+
+	cfg, err := LoadConfig()
+	if err != nil {
+		t.Fatalf("LoadConfig failed: %v", err)
+	}
+	if cfg.MaxRetries != 20 {
+		t.Errorf("MaxRetries = %d, want 20", cfg.MaxRetries)
+	}
+}
+
+func TestConfigValidateMaxRetriesExceedsLimit(t *testing.T) {
+	cfg := &Config{
+		APIKey:     "test-key",
+		BaseURL:    "https://example.com",
+		Model:      "test-model",
+		Timeout:    30 * time.Second,
+		MaxRetries: 25,
+	}
+	err := cfg.Validate()
+	if err == nil {
+		t.Fatal("expected error for MaxRetries=25 in Validate")
 	}
 }

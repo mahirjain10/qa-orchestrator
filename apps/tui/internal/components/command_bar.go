@@ -47,6 +47,22 @@ func (m *CommandBarModel) SetWidth(w int) {
 	m.Input.Width = w - 4 // Account for prompt and padding
 }
 
+func (m *CommandBarModel) SuggestionCount() int {
+	val := m.Input.Value()
+	parts := strings.Fields(val)
+	cmdName := ""
+	if len(parts) > 0 {
+		cmdName = parts[0]
+	}
+	count := 0
+	for _, cmd := range availableCommands {
+		if cmdName == "" || strings.HasPrefix(cmd.Name, cmdName) {
+			count++
+		}
+	}
+	return count
+}
+
 func (m *CommandBarModel) Focus() {
 	m.Focused = true
 	m.Input.Focus()
@@ -116,7 +132,7 @@ func (m *CommandBarModel) View() string {
 
 	inputView := lipgloss.NewStyle().
 		Foreground(style.Green46).
-		Render(m.Input.View() + "█")
+		Render(m.Input.View())
 
 	inputBar := lipgloss.NewStyle().
 		Background(style.BgDark).

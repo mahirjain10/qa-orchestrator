@@ -77,9 +77,26 @@ func TestGetEligibleFlows(t *testing.T) {
 		{ID: "f3", Name: "Flow 3"},
 	}
 
-	eligible := v.GetEligibleFlows(flows)
+	// No completed flows — only zero-dependency flows are eligible
+	eligible := v.GetEligibleFlows(flows, nil)
 	if len(eligible) != 2 {
-		t.Errorf("expected 2 eligible flows, got %d", len(eligible))
+		t.Errorf("expected 2 eligible flows with nil completed, got %d", len(eligible))
+	}
+	eligible = v.GetEligibleFlows(flows, map[string]bool{})
+	if len(eligible) != 2 {
+		t.Errorf("expected 2 eligible flows with empty completed, got %d", len(eligible))
+	}
+
+	// f1 completed — f2 becomes eligible
+	eligible = v.GetEligibleFlows(flows, map[string]bool{"f1": true})
+	if len(eligible) != 3 {
+		t.Errorf("expected 3 eligible flows after f1 completes, got %d", len(eligible))
+	}
+
+	// All completed
+	eligible = v.GetEligibleFlows(flows, map[string]bool{"f1": true, "f2": true, "f3": true})
+	if len(eligible) != 3 {
+		t.Errorf("expected 3 eligible flows when all completed, got %d", len(eligible))
 	}
 }
 

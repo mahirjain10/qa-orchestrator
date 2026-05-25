@@ -109,15 +109,15 @@ func TestDependencyError_Error(t *testing.T) {
 		FlowID:      "f1",
 		MissingDeps: []string{"missing1"},
 	}
-	if missingErr.Error() != "missing dependencies" {
-		t.Error("expected 'missing dependencies' error message")
+	if missingErr.Error() != `flow "f1": missing dependencies: missing1` {
+		t.Errorf("got %q, want %q", missingErr.Error(), `flow "f1": missing dependencies: missing1`)
 	}
 
 	cycleErr := &DependencyError{
 		FlowID:    "f1",
 		CycleDeps: []string{"a", "b"},
 	}
-	if cycleErr.Error() != "circular dependency detected" {
-		t.Error("expected 'circular dependency detected' error message")
+	if cycleErr.Error() != `flow "f1": circular dependency detected in: a -> b` {
+		t.Errorf("got %q, want %q", cycleErr.Error(), `flow "f1": circular dependency detected in: a -> b`)
 	}
 }

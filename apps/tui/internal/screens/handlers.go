@@ -4,9 +4,20 @@ import (
 	"fmt"
 	"time"
 
+	"qa-orchestrator/packages/shared"
 	"qa-orchestrator/packages/shared/types"
 	"qa-orchestrator/packages/storage/session"
 )
+
+type RunController interface {
+	PauseRun(runID string) error
+	ResumeRun(runID string) error
+	CancelRun(runID string) error
+	GetRunStatus(runID string) (*types.Session, error)
+	SkipFlow(runID, flowID string) error
+	RetryFlow(runID, flowID string) error
+	AcknowledgeInputAndResume(runID string) error
+}
 
 type CommandHandlers struct {
 	store *session.SessionStore
@@ -18,10 +29,6 @@ func NewCommandHandlers(store *session.SessionStore) *CommandHandlers {
 	}
 }
 
-func (h *CommandHandlers) StartCampaign(campaign *types.Campaign) (*types.Session, error) {
-	return h.store.Create(campaign)
-}
-
 func (h *CommandHandlers) PauseRun(runID string) error {
 	sess, err := h.store.Get(runID)
 	if err != nil {
@@ -29,7 +36,7 @@ func (h *CommandHandlers) PauseRun(runID string) error {
 	}
 
 	if sess.Status != types.RunStateRunning && sess.Status != types.RunStatePending {
-		return fmt.Errorf("cannot pause: run is in %s state", sess.Status)
+		return fmt.Errorf("%w: run is in %s state", shared.ErrInvalidStateTransition, sess.Status)
 	}
 
 	return h.store.UpdateStatus(runID, types.RunStatePausing)
@@ -42,7 +49,7 @@ func (h *CommandHandlers) ResumeRun(runID string) error {
 	}
 
 	if sess.Status != types.RunStatePaused && sess.Status != types.RunStatePausing {
-		return fmt.Errorf("cannot resume: run is in %s state, expected PAUSED or PAUSING", sess.Status)
+		return fmt.Errorf("%w: run is in %s state, expected PAUSED or PAUSING", shared.ErrInvalidStateTransition, sess.Status)
 	}
 
 	return h.store.UpdateStatus(runID, types.RunStateResuming)
@@ -55,7 +62,7 @@ func (h *CommandHandlers) CancelRun(runID string) error {
 	}
 
 	if sess.Status == types.RunStateCompleted || sess.Status == types.RunStateCancelled {
-		return fmt.Errorf("cannot cancel: run is already %s", sess.Status)
+		return fmt.Errorf("%w: run is already %s", shared.ErrInvalidStateTransition, sess.Status)
 	}
 
 	return h.store.UpdateStatus(runID, types.RunStateCancelling)
@@ -175,7 +182,7 @@ func (h *CommandHandlers) AcknowledgeInputAndResume(runID string) error {
 	}
 
 	if sess.Status != types.RunStateWaitingInput {
-		return fmt.Errorf("run is not in WAITING_FOR_INPUT state: %s", sess.Status)
+		return fmt.Errorf("%w: run is not in WAITING_FOR_INPUT state: %s", shared.ErrInvalidStateTransition, sess.Status)
 	}
 
 	sess.Status = types.RunStateRunning
@@ -202,7 +209,7 @@ func (h *CommandHandlers) RetryFlow(runID, flowID string) error {
 		}
 	}
 	if !found {
-		return fmt.Errorf("flow %q not found in run %s", flowID, runID)
+		return fmt.Errorf("%w: flow %q not found in run %s", shared.ErrFlowNotFound, flowID, runID)
 	}
 
 	return h.store.Save(sess)

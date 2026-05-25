@@ -10,13 +10,15 @@ import (
 
 	"github.com/rs/zerolog/log"
 	agentstypes "qa-orchestrator/packages/agents/types"
+	"qa-orchestrator/packages/shared"
 	sharedtypes "qa-orchestrator/packages/shared/types"
 )
 
 type TraceStore struct {
-	mu      sync.RWMutex
-	baseDir string
-	traces  map[string][]*sharedtypes.TraceEvent
+	mu             sync.RWMutex
+	baseDir        string
+	traces         map[string][]*sharedtypes.TraceEvent
+	persistedCount map[string]int
 }
 
 func NewTraceStore(baseDir string) (*TraceStore, error) {
@@ -25,8 +27,9 @@ func NewTraceStore(baseDir string) (*TraceStore, error) {
 	}
 
 	return &TraceStore{
-		baseDir: baseDir,
-		traces:  make(map[string][]*sharedtypes.TraceEvent),
+		baseDir:        baseDir,
+		traces:         make(map[string][]*sharedtypes.TraceEvent),
+		persistedCount: make(map[string]int),
 	}, nil
 }
 
@@ -55,14 +58,14 @@ func (s *TraceStore) GetByRunID(runID string) ([]*sharedtypes.TraceEvent, error)
 	s.mu.RUnlock()
 
 	if exists {
-		return cloneTraceEvents(events)
+		return shared.CloneDeepSlice(events)
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if events, exists = s.traces[runID]; exists {
-		return cloneTraceEvents(events)
+		return shared.CloneDeepSlice(events)
 	}
 
 	events, err := s.loadFromFile(runID)
@@ -71,7 +74,7 @@ func (s *TraceStore) GetByRunID(runID string) ([]*sharedtypes.TraceEvent, error)
 	}
 
 	s.traces[runID] = events
-	return cloneTraceEvents(events)
+	return shared.CloneDeepSlice(events)
 }
 
 func (s *TraceStore) GetByFlowID(runID, flowID string) ([]*sharedtypes.TraceEvent, error) {
@@ -86,7 +89,7 @@ func (s *TraceStore) GetByFlowID(runID, flowID string) ([]*sharedtypes.TraceEven
 			filtered = append(filtered, e)
 		}
 	}
-	return cloneTraceEvents(filtered)
+	return shared.CloneDeepSlice(filtered)
 }
 
 func (s *TraceStore) GetRecent(runID string, limit int) ([]*sharedtypes.TraceEvent, error) {
@@ -96,12 +99,15 @@ func (s *TraceStore) GetRecent(runID string, limit int) ([]*sharedtypes.TraceEve
 	}
 
 	if len(events) <= limit {
-		return cloneTraceEvents(events)
+		return shared.CloneDeepSlice(events)
 	}
-	return cloneTraceEvents(events[len(events)-limit:])
+	return shared.CloneDeepSlice(events[len(events)-limit:])
 }
 
 func (s *TraceStore) ListRunIDs() ([]string, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
 	tracesDir := filepath.Join(s.baseDir, "traces")
 	if _, err := os.Stat(tracesDir); os.IsNotExist(err) {
 		return nil, nil
@@ -141,10 +147,7 @@ func (s *TraceStore) filePath(runID string) string {
 }
 
 func sanitizeID(id string) string {
-	clean := strings.ReplaceAll(id, "..", "_")
-	clean = strings.ReplaceAll(clean, "/", "_")
-	clean = strings.ReplaceAll(clean, "\\", "_")
-	return clean
+	return shared.SanitizeID(id)
 }
 
 func (s *TraceStore) persist(runID string) error {
@@ -155,9 +158,15 @@ func (s *TraceStore) persist(runID string) error {
 
 	path := s.filePath(runID)
 	events := s.traces[runID]
+	start := s.persistedCount[runID]
 
+	if start >= len(events) {
+		return nil
+	}
+
+	newEvents := events[start:]
 	var lines []string
-	for _, event := range events {
+	for _, event := range newEvents {
 		data, err := json.Marshal(event)
 		if err != nil {
 			return fmt.Errorf("marshaling trace event: %w", err)
@@ -165,16 +174,17 @@ func (s *TraceStore) persist(runID string) error {
 		lines = append(lines, string(data))
 	}
 
-	data := []byte(strings.Join(lines, "\n") + "\n")
-	tmpPath := path + ".tmp"
-	if err := os.WriteFile(tmpPath, data, 0644); err != nil {
-		return fmt.Errorf("writing trace file: %w", err)
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return fmt.Errorf("opening trace file for append: %w", err)
+	}
+	defer f.Close()
+
+	if _, err := f.WriteString(strings.Join(lines, "\n") + "\n"); err != nil {
+		return fmt.Errorf("appending to trace file: %w", err)
 	}
 
-	if err := os.Rename(tmpPath, path); err != nil {
-		return fmt.Errorf("renaming trace file: %w", err)
-	}
-
+	s.persistedCount[runID] = len(events)
 	return nil
 }
 
@@ -202,6 +212,7 @@ func (s *TraceStore) loadFromFile(runID string) ([]*sharedtypes.TraceEvent, erro
 		events = append(events, &event)
 	}
 
+	s.persistedCount[runID] = len(events)
 	return events, nil
 }
 
@@ -303,16 +314,5 @@ func EmitArtifactEvent(store *TraceStore, runID, flowID, artifactType, path stri
 }
 
 func cloneTraceEvents(events []*sharedtypes.TraceEvent) ([]*sharedtypes.TraceEvent, error) {
-	if len(events) == 0 {
-		return []*sharedtypes.TraceEvent{}, nil
-	}
-	data, err := json.Marshal(events)
-	if err != nil {
-		return nil, fmt.Errorf("cloning trace events: %w", err)
-	}
-	var cloned []*sharedtypes.TraceEvent
-	if err := json.Unmarshal(data, &cloned); err != nil {
-		return nil, fmt.Errorf("cloning trace events: %w", err)
-	}
-	return cloned, nil
+	return shared.CloneDeepSlice(events)
 }

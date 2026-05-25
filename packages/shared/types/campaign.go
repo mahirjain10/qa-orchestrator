@@ -1,6 +1,8 @@
 package types
 
 import (
+	"fmt"
+	"strings"
 	"time"
 )
 
@@ -142,10 +144,10 @@ type DependencyError struct {
 
 func (e *DependencyError) Error() string {
 	if len(e.MissingDeps) > 0 {
-		return "missing dependencies"
+		return fmt.Sprintf("flow %q: missing dependencies: %s", e.FlowID, strings.Join(e.MissingDeps, ", "))
 	}
 	if len(e.CycleDeps) > 0 {
-		return "circular dependency detected"
+		return fmt.Sprintf("flow %q: circular dependency detected in: %s", e.FlowID, strings.Join(e.CycleDeps, " -> "))
 	}
 	return "unknown dependency error"
 }

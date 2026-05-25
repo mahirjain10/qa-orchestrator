@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 
 	"qa-orchestrator/packages/agents/types"
@@ -33,11 +34,17 @@ func NewAutonomousPlanner(client LLMClient, tools []llm.ToolInfo) *Planner {
 }
 
 func (p *Planner) CreatePlan(ctx *types.ExecutionContext) (*types.Plan, error) {
+	if ctx == nil {
+		return nil, fmt.Errorf("execution context is nil")
+	}
 	if ctx.Mode == sharedtypes.FlowModeAutonomous {
 		return p.CreateAutonomousPlan(ctx)
 	}
 
 	steps := ctx.Steps
+	if len(steps) == 0 {
+		return nil, fmt.Errorf("guided mode requires at least one step, but got 0")
+	}
 
 	plan := &types.Plan{
 		FlowID:       ctx.FlowID,
@@ -62,18 +69,23 @@ func (p *Planner) CreatePlan(ctx *types.ExecutionContext) (*types.Plan, error) {
 }
 
 func (p *Planner) UpdatePlan(plan *types.Plan, stepIdx int, skip bool, reason string) {
+	plan.Lock()
+	defer plan.Unlock()
 	if stepIdx >= 0 && stepIdx < len(plan.Steps) {
 		plan.Steps[stepIdx].Skip = skip
 		plan.Steps[stepIdx].Reason = reason
-		plan.InvalidateHistoryCache()
+		plan.SetHistoryDirty()
 	}
 }
 
 func (p *Planner) GetNextStep(plan *types.Plan) *types.PlanStep {
+	plan.Lock()
+	defer plan.Unlock()
 	for plan.CurrentIdx < len(plan.Steps) {
-		current := &plan.Steps[plan.CurrentIdx]
+		current := plan.Steps[plan.CurrentIdx]
 		if !current.Skip {
-			return current
+			step := current
+			return &step
 		}
 		plan.CurrentIdx++
 	}
@@ -81,25 +93,35 @@ func (p *Planner) GetNextStep(plan *types.Plan) *types.PlanStep {
 }
 
 func (p *Planner) Advance(plan *types.Plan) {
+	plan.Lock()
+	defer plan.Unlock()
 	plan.CurrentIdx++
 }
 
 func (p *Planner) ShouldStop(plan *types.Plan) bool {
+	plan.RLock()
+	defer plan.RUnlock()
 	if plan.IsAutonomous {
-		// Autonomous mode termination is handled by the `finish` tool or maxSteps check
-		// in the engine loop, not by ShouldStop.
 		return false
 	}
-	return p.GetNextStep(plan) == nil
+	return len(plan.Steps) == 0 || plan.CurrentIdx >= len(plan.Steps)
 }
 
 func (p *Planner) GetProgress(plan *types.Plan) (completed, total int) {
+	plan.RLock()
+	defer plan.RUnlock()
 	total = len(plan.Steps)
 	completed = plan.CurrentIdx
 	return
 }
 
 func (p *Planner) CreateAutonomousPlan(ctx *types.ExecutionContext) (*types.Plan, error) {
+	if ctx == nil {
+		return nil, fmt.Errorf("execution context is nil")
+	}
+	if p.llmClient == nil {
+		return nil, fmt.Errorf("LLM client is nil: autonomous mode requires a configured LLM client")
+	}
 	plan := &types.Plan{
 		FlowID:       ctx.FlowID,
 		Goal:         ctx.Goal,
@@ -113,9 +135,30 @@ func (p *Planner) CreateAutonomousPlan(ctx *types.ExecutionContext) (*types.Plan
 func sanitizeDOM(s string) string {
 	s = strings.ReplaceAll(s, "\x00", "")
 	s = strings.ReplaceAll(s, "```", "")
+	s = strings.ReplaceAll(s, "\\", "\\\\")
+	s = strings.ReplaceAll(s, "&", "&amp;")
+	s = strings.ReplaceAll(s, "\"", "&quot;")
+	s = strings.ReplaceAll(s, "'", "&#39;")
+	s = strings.ReplaceAll(s, "\n", "")
 	s = strings.ReplaceAll(s, "<", "&lt;")
 	s = strings.ReplaceAll(s, ">", "&gt;")
+	s = strings.ReplaceAll(s, "[", "&#91;")
+	s = strings.ReplaceAll(s, "]", "&#93;")
 	return s
+}
+
+// renderAttr appends a single attr key="value" to the line string if the value is non-empty and not false
+func renderAttr(line *string, m map[string]any, key string, used *map[string]bool) {
+	v, ok := m[key]
+	if !ok {
+		return
+	}
+	vs := fmt.Sprintf("%v", v)
+	if vs == "" || vs == "<nil>" || vs == "false" {
+		return
+	}
+	(*used)[key] = true
+	*line += fmt.Sprintf(` %s="%s"`, key, sanitizeDOM(vs))
 }
 
 func formatObserveUIObservation(obs types.Observation) string {
@@ -130,6 +173,10 @@ func formatObserveUIObservation(obs types.Observation) string {
 			parsed = data
 		} else if dataStr, ok := obs.State["data"].(string); ok {
 			if err := json.Unmarshal([]byte(dataStr), &parsed); err != nil {
+				const maxRawDataLen = 2000
+				if len(dataStr) > maxRawDataLen {
+					dataStr = dataStr[:maxRawDataLen] + "... [truncated]"
+				}
 				result += fmt.Sprintf("  Raw data: %s\n", sanitizeDOM(dataStr))
 			}
 		}
@@ -141,18 +188,62 @@ func formatObserveUIObservation(obs types.Observation) string {
 				result += fmt.Sprintf("  Page state: %s\n", sanitizeDOM(pageState))
 			}
 			if interactive, ok := parsed["interactive"].([]any); ok {
-				result += fmt.Sprintf("  Interactive elements found (%d):\n", len(interactive))
+				totalElems := len(interactive)
+				maxElems := 40
+				var truncated bool
+				if len(interactive) > maxElems {
+					interactive = interactive[:maxElems]
+					truncated = true
+				}
+				if truncated {
+					result += fmt.Sprintf("  Interactive elements found (%d total, showing %d):\n", totalElems, maxElems)
+				} else {
+					result += fmt.Sprintf("  Interactive elements found (%d total):\n", totalElems)
+				}
 				for i, elem := range interactive {
 					if elemMap, ok := elem.(map[string]any); ok {
-						tag := fmt.Sprintf("%v", elemMap["tag"])
-						selector := fmt.Sprintf("%v", elemMap["selector"])
-						text := fmt.Sprintf("%v", elemMap["text"])
-						var classStr string
-					if c, ok := elemMap["class"].(string); ok {
-						classStr = c
+						line := fmt.Sprintf("    %d. <%s>", i+1, sanitizeDOM(fmt.Sprintf("%v", elemMap["tag"])))
+
+						// Priority fields rendered in semantically meaningful order
+						priority := []string{"id", "name", "type", "role", "placeholder", "href",
+							"value", "checked", "disabled", "selected", "aria-label"}
+
+						used := map[string]bool{"tag": true, "selector": true}
+
+						for _, k := range priority {
+							renderAttr(&line, elemMap, k, &used)
+						}
+
+						// Remaining attrs alphabetically — schema-independent by design
+						remaining := make([]string, 0)
+						for k := range elemMap {
+							if !used[k] {
+								remaining = append(remaining, k)
+							}
+						}
+						sort.Strings(remaining)
+						for _, k := range remaining {
+							renderAttr(&line, elemMap, k, &used)
+						}
+
+						// Selector rendered last — it's the longest and most important for LLM use
+						renderAttr(&line, elemMap, "selector", &used)
+
+						// Close tag and render text content
+						line += ">"
+						if text, ok := elemMap["text"].(string); ok && text != "" {
+							line += sanitizeDOM(text)
+						}
+
+						// Selector is the most critical piece of info for the LLM
+						if selector, ok := elemMap["selector"].(string); ok && selector != "" {
+							line += fmt.Sprintf("  [selector: %s]", sanitizeDOM(selector))
+						}
+						result += line + "\n"
 					}
-					result += fmt.Sprintf("    %d. <%s> selector=\"%s\" text=\"%s\" class=\"%s\"\n", i+1, sanitizeDOM(tag), sanitizeDOM(selector), sanitizeDOM(text), sanitizeDOM(classStr))
-					}
+				}
+				if truncated {
+					result += fmt.Sprintf("    ... and %d more elements\n", totalElems-maxElems)
 				}
 			}
 		}
@@ -164,6 +255,12 @@ func formatObserveUIObservation(obs types.Observation) string {
 func (p *Planner) GenerateNextStep(ctx context.Context, execCtx *types.ExecutionContext) (*types.PlanStep, error) {
 	if p.llmClient == nil {
 		return nil, fmt.Errorf("LLM client not configured for autonomous mode")
+	}
+	if execCtx == nil {
+		return nil, fmt.Errorf("execution context is nil")
+	}
+	if execCtx.Plan == nil {
+		return nil, fmt.Errorf("plan is nil")
 	}
 
 	goal := execCtx.Goal
@@ -188,11 +285,6 @@ func (p *Planner) GenerateNextStep(ctx context.Context, execCtx *types.Execution
 		}
 	}
 
-	// Prepend failure context if any observation has an error/failure.
-	// This is done AFTER building the observation string so the failure
-	// warning appears prominently, separate from the observation details.
-	// We intentionally do NOT also append lastObs.Error to observation
-	// because scanForRecentFailure already includes it and duplicates waste tokens.
 	if failureMsg := scanForRecentFailure(execCtx.Observations); failureMsg != "" {
 		if observation != "" {
 			observation = failureMsg + "\n" + observation
@@ -203,19 +295,18 @@ func (p *Planner) GenerateNextStep(ctx context.Context, execCtx *types.Execution
 
 	systemPrompt := llm.BuildSystemPrompt(p.tools, execCtx.DependencyContext)
 	userPrompt := llm.BuildUserPrompt(llm.PlannerPromptData{
-		Goal:              goal,
-		StartURL:          execCtx.StartURL,
-		CurrentURL:        execCtx.CurrentURL,
-		History:           history,
-		Observation:       observation,
-		Tools:             p.tools,
-		DependencyContext: execCtx.DependencyContext,
+		Goal:        goal,
+		StartURL:    execCtx.StartURL,
+		CurrentURL:  execCtx.CurrentURL,
+		History:     history,
+		Observation: observation,
+		Tools:       p.tools,
 	})
 
 	if len(execCtx.SteeringInstructions) > 0 {
-		steeringCtx := "\n\nIMPORTANT — Steering instructions from the operator (follow these when generating the next step):\n"
+		steeringCtx := "\n\nIMPORTANT \u2014 Steering instructions from the operator (follow these when generating the next step):\n"
 		for i, inst := range execCtx.SteeringInstructions {
-			steeringCtx += fmt.Sprintf("  %d. %s\n", i+1, inst)
+			steeringCtx += fmt.Sprintf("  %d. %s\n", i+1, sanitizeDOM(inst))
 		}
 		userPrompt += steeringCtx
 	}
@@ -249,7 +340,7 @@ func (p *Planner) GenerateNextStep(ctx context.Context, execCtx *types.Execution
 
 	stepID := fmt.Sprintf("auto-step-%d", len(execCtx.Plan.Steps)+1)
 	planStep := types.PlanStep{
-		StepIndex: execCtx.Plan.CurrentIdx,
+		StepIndex: len(execCtx.Plan.Steps),
 		StepID:    stepID,
 		Tool:      tool,
 		Params:    params,
@@ -268,27 +359,22 @@ func (p *Planner) IsAutonomousMode(ctx *types.ExecutionContext) bool {
 	return ctx.Mode == sharedtypes.FlowModeAutonomous
 }
 
-// scanForRecentFailure scans observations for the most recent error and returns
-// a formatted warning string, or empty string if no failure found.
-// It checks both the observation-level Error and the step-level !Success.
 func scanForRecentFailure(observations []types.Observation) string {
 	for i := len(observations) - 1; i >= 0; i-- {
 		obs := observations[i]
-		// Observation-level error (e.g., tool execution failure)
 		if obs.Error != nil {
 			tool := "?"
 			if obs.LastStep != nil {
 				tool = obs.LastStep.Tool
 			}
-			return fmt.Sprintf("⚠ RECENT FAILURE: tool=%s error=%v", tool, obs.Error)
+			return fmt.Sprintf("\u26a0 RECENT FAILURE: tool=%s error=%v", tool, obs.Error)
 		}
-		// Step-level failure (success=false)
 		if obs.LastStep != nil && !obs.LastStep.Success {
 			errMsg := "unknown error"
 			if obs.LastStep.Error != nil {
 				errMsg = obs.LastStep.Error.Error()
 			}
-			return fmt.Sprintf("⚠ RECENT FAILURE: tool=%s error=%s", obs.LastStep.Tool, errMsg)
+			return fmt.Sprintf("\u26a0 RECENT FAILURE: tool=%s error=%s", obs.LastStep.Tool, errMsg)
 		}
 	}
 	return ""

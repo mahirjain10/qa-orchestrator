@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"qa-orchestrator/packages/shared"
 )
 
 type ArtifactType string
@@ -91,6 +93,12 @@ func (s *ArtifactStore) Save(runID, flowID string, artifactType ArtifactType, fi
 	s.artifacts[runID] = append(s.artifacts[runID], artifact)
 	s.index[artifactID] = artifact
 	if err := s.persistIndex(); err != nil {
+		artifacts := s.artifacts[runID]
+		if len(artifacts) > 0 && artifacts[len(artifacts)-1].ArtifactID == artifactID {
+			s.artifacts[runID] = artifacts[:len(artifacts)-1]
+		}
+		delete(s.index, artifactID)
+		os.Remove(path)
 		return nil, fmt.Errorf("persisting artifact index: %w", err)
 	}
 
@@ -113,22 +121,24 @@ func (s *ArtifactStore) Get(artifactID string) (*Artifact, error) {
 	s.mu.RUnlock()
 
 	if exists {
-		return artifact, nil
+		return shared.CloneDeep(artifact)
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if artifact, exists = s.index[artifactID]; exists {
-		return artifact, nil
+		return shared.CloneDeep(artifact)
 	}
 
-	s.loadIndex()
+	if err := s.loadIndex(); err != nil {
+		return nil, err
+	}
 	if artifact, exists = s.index[artifactID]; exists {
-		return artifact, nil
+		return shared.CloneDeep(artifact)
 	}
 
-	return nil, fmt.Errorf("artifact not found: %s", artifactID)
+	return nil, fmt.Errorf("%w: %s", shared.ErrNotFound, artifactID)
 }
 
 func (s *ArtifactStore) GetByRunID(runID string) ([]*Artifact, error) {
@@ -137,17 +147,19 @@ func (s *ArtifactStore) GetByRunID(runID string) ([]*Artifact, error) {
 	s.mu.RUnlock()
 
 	if exists {
-		return cloneArtifacts(artifacts)
+		return shared.CloneDeepSlice(artifacts)
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if artifacts, exists = s.artifacts[runID]; exists {
-		return cloneArtifacts(artifacts)
+		return shared.CloneDeepSlice(artifacts)
 	}
 
-	s.loadIndex()
+	if err := s.loadIndex(); err != nil {
+		return nil, err
+	}
 	var filtered []*Artifact
 	for _, a := range s.index {
 		if a.RunID == runID {
@@ -155,7 +167,7 @@ func (s *ArtifactStore) GetByRunID(runID string) ([]*Artifact, error) {
 		}
 	}
 	s.artifacts[runID] = filtered
-	return cloneArtifacts(filtered)
+	return shared.CloneDeepSlice(filtered)
 }
 
 func (s *ArtifactStore) GetByFlowID(runID, flowID string) ([]*Artifact, error) {
@@ -170,22 +182,7 @@ func (s *ArtifactStore) GetByFlowID(runID, flowID string) ([]*Artifact, error) {
 			filtered = append(filtered, a)
 		}
 	}
-	return cloneArtifacts(filtered)
-}
-
-func cloneArtifacts(artifacts []*Artifact) ([]*Artifact, error) {
-	if len(artifacts) == 0 {
-		return []*Artifact{}, nil
-	}
-	data, err := json.Marshal(artifacts)
-	if err != nil {
-		return nil, fmt.Errorf("cloning artifacts: %w", err)
-	}
-	var cloned []*Artifact
-	if err := json.Unmarshal(data, &cloned); err != nil {
-		return nil, fmt.Errorf("cloning artifacts: %w", err)
-	}
-	return cloned, nil
+	return shared.CloneDeepSlice(filtered)
 }
 
 func (s *ArtifactStore) ListByType(runID string, artifactType ArtifactType) ([]*Artifact, error) {
@@ -208,21 +205,24 @@ func (s *ArtifactStore) Delete(runID string) error {
 	defer s.mu.Unlock()
 
 	artifacts := s.artifacts[runID]
-	var firstErr error
+
+	// Try to remove all files first. If any fail, abort without modifying state.
 	for _, a := range artifacts {
-		if err := os.Remove(a.Path); err != nil {
-			if firstErr == nil {
-				firstErr = fmt.Errorf("removing artifact %s: %w", a.Path, err)
-			}
-			continue
+		if err := os.Remove(a.Path); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("removing artifact %s: %w", a.Path, err)
 		}
+	}
+
+	// All files removed — now update in-memory state atomically.
+	for _, a := range artifacts {
 		delete(s.index, a.ArtifactID)
 	}
 	delete(s.artifacts, runID)
-	if err := s.persistIndex(); err != nil && firstErr == nil {
-		firstErr = fmt.Errorf("persisting artifact index after delete: %w", err)
+
+	if err := s.persistIndex(); err != nil {
+		return fmt.Errorf("persisting artifact index after delete: %w", err)
 	}
-	return firstErr
+	return nil
 }
 
 func (s *ArtifactStore) artifactDir(runID, flowID, artifactType string) string {
@@ -238,13 +238,7 @@ func (s *ArtifactStore) artifactDir(runID, flowID, artifactType string) string {
 }
 
 func sanitizeID(id string) string {
-	replacer := strings.NewReplacer(
-		"/", "_",
-		"\\", "_",
-		"..", "_",
-		":", "_",
-	)
-	return replacer.Replace(id)
+	return shared.SanitizeID(id)
 }
 
 func (s *ArtifactStore) indexPath() string {
@@ -276,32 +270,32 @@ func (s *ArtifactStore) persistIndex() error {
 		return fmt.Errorf("marshaling artifact index: %w", err)
 	}
 
-	tmpPath := path + ".tmp"
-	if err := os.WriteFile(tmpPath, data, 0644); err != nil {
-		return fmt.Errorf("writing artifact index tmp file: %w", err)
-	}
-	if err := os.Rename(tmpPath, path); err != nil {
-		return fmt.Errorf("renaming artifact index: %w", err)
+	if err := shared.AtomicWriteFile(path, data, 0644); err != nil {
+		return fmt.Errorf("writing artifact index: %w", err)
 	}
 	return nil
 }
 
-func (s *ArtifactStore) loadIndex() {
+func (s *ArtifactStore) loadIndex() error {
 	path := s.indexPath()
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("reading artifact index: %w", err)
 	}
 
 	var all []*Artifact
 	if err := json.Unmarshal(data, &all); err != nil {
-		return
+		return fmt.Errorf("parsing artifact index: %w", err)
 	}
 
 	for _, a := range all {
 		s.index[a.ArtifactID] = a
 		s.artifacts[a.RunID] = append(s.artifacts[a.RunID], a)
 	}
+	return nil
 }
 
 func newArtifactID() string {
