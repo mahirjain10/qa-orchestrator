@@ -178,21 +178,38 @@ To maintain a clean root directory, all transient files (e.g., `MIDWORK.md`, `se
 - **Live Dashboard:** Real-time visualization of campaign progress and metrics.
 - **Multi-View Navigation:** Specialized screens for Dashboard, Flows, Traces, and Reports.
 - **Trace Streaming:** Live, filterable logs with "follow-tail" mode for instant debugging.
+- **Integrated Steering:** Direct runtime control (retry, skip, pause) via the command console.
 
 ### 2. Advanced Orchestration
 - **Parallel Execution:** Worker pool and semaphore system for concurrent flow execution.
-- **Dependency Graph:** Topological scheduling ensuring upstream requirements are met.
-- **Session Inheritance:** Persistence of cookies/localStorage across dependent flows.
+- **DAG-Based Scheduling:** Intelligent flow sequencing using **Kahn’s Algorithm** to resolve complex dependencies.
+- **Session & Storage Inheritance:** Persistence of cookies and `localStorage` across dependent flows (e.g., Login -> Checkout).
+- **Upstream Context Injection:** Grounding downstream agents with results and URLs from completed parent flows.
 
-### 3. Agentic Execution Engine
+### 3. Agentic Intelligence (The 5 Safety Nets)
 - **Hybrid Modes:** Supports both `guided` (deterministic) and `autonomous` (LLM-powered) flows.
-- **Grounded Observations:** Custom `observe_ui` tool providing exact selectors to the LLM.
-- **Safety Nets:** Intelligent loop detection, 404 interception, and automated selector repair.
+- **Grounded Observations:** Custom `observe_ui` tool providing exact DOM-tree selectors to the LLM.
+- **Safety Nets:**
+    - **Repeat Detection:** Aborts if the agent gets stuck in a tool/param loop.
+    - **Observe-Loop Intercept:** Prevents agents from "staring" at the UI without making progress.
+    - **Early-Exit Prevention:** Forces at least 3 attempts before declaring a goal unachievable.
+    - **Selector Auto-Repair:** Uses fuzzy text matching to fix hallucinated CSS selectors.
+    - **404 Intercept:** Automatically resets the agent's path upon detecting broken links.
+- **Prompt Injection Defense:** Goals are sanitized and isolated via XML-style tags with system-prompt precedence.
 
-### 4. Reliability
-- **Checkpoint/Resume:** Pause and resume any run from the last successful step.
-- **LLM Fallback:** Automatic model switching during provider downtime.
-- **Dynamic Sync:** Intelligent waiting for modern frontend state updates (React/Vue).
+### 4. Multi-Provider LLM Gateway
+- **Unified API:** One-stop gateway for **OpenAI**, **Gemini**, and **OpenRouter** (200+ models).
+- **Auto-Detection:** Intelligent provider routing based on model prefixes or environment config.
+- **Resilient Fallback Chain:** Automatically switches to alternative models (`LLM_FALLBACK_MODELS`) if a provider fails.
+- **Next-Gen Reasoning:** Native support for "Thinking" modes (DeepSeek, Gemini) and `reasoning_effort` (GPT-o1 series).
+- **Surgical JSON Parsing:** Robust logic that handles conversational "noise" and markdown wrapping in LLM responses.
+
+### 5. Hardened Infrastructure
+- **Checkpoint/Resume:** Pause and resume any run from the last successful step, even after a restart.
+- **Thread-Safe State:** `SessionStore` uses a **clone-before-mutate** pattern, eliminating data races.
+- **Atomic Persistence:** Crash-safe storage using a write-tmp-then-rename strategy for all data.
+- **Dynamic React/Vue Sync:** Intelligent polling for modern frontend state updates after interactions.
+- **High-Performance Memory Cloning:** Custom deep-cloning for session data, avoiding CPU-heavy JSON serialization in the TUI loop.
 
 ## Current Limitations & Known Issues (The "Why")
 
@@ -307,7 +324,3 @@ Useful targets:
 ## Current delivery status
 
 See [docs/status/CURRENT.md](docs/status/CURRENT.md) for the latest phase status and run history.
-
-## Performance & Stability Enhancements
-- **Dynamic React Sync:** The framework uses Playwright's `WaitForFunction` to dynamically poll UI state updates after interactions, eliminating infinite observation loops on modern frontend frameworks (React, Vue, Angular).
-- **High-Performance Deep Cloning:** The session store implements custom native struct copying instead of `json.Marshal`, radically reducing CPU overhead and global lock contention when streaming massive DOM payloads to the TUI.
