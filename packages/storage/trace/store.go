@@ -70,7 +70,7 @@ func (s *TraceStore) GetByRunID(runID string) ([]*sharedtypes.TraceEvent, error)
 
 	events, err := s.loadFromFile(runID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get trace by run %s: %w", runID, err)
 	}
 
 	s.traces[runID] = events
@@ -80,7 +80,7 @@ func (s *TraceStore) GetByRunID(runID string) ([]*sharedtypes.TraceEvent, error)
 func (s *TraceStore) GetByFlowID(runID, flowID string) ([]*sharedtypes.TraceEvent, error) {
 	events, err := s.GetByRunID(runID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get trace by flow %s/%s: %w", runID, flowID, err)
 	}
 
 	var filtered []*sharedtypes.TraceEvent
@@ -95,7 +95,7 @@ func (s *TraceStore) GetByFlowID(runID, flowID string) ([]*sharedtypes.TraceEven
 func (s *TraceStore) GetRecent(runID string, limit int) ([]*sharedtypes.TraceEvent, error) {
 	events, err := s.GetByRunID(runID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get recent trace for %s: %w", runID, err)
 	}
 
 	if len(events) <= limit {
@@ -313,6 +313,4 @@ func EmitArtifactEvent(store *TraceStore, runID, flowID, artifactType, path stri
 	}
 }
 
-func cloneTraceEvents(events []*sharedtypes.TraceEvent) ([]*sharedtypes.TraceEvent, error) {
-	return shared.CloneDeepSlice(events)
-}
+

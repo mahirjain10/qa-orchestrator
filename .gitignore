@@ -55,9 +55,21 @@ blob-report/
 .env
 .env.local
 
+# Junk files
+run-reports.md
+bug-report-sunday.md
+
 # Build outputs
 dist/
 build/
+
+# Documentation history and archives
+docs/history/
+docs/workflow-review/
+
+# Root transient files (archived to docs/history/sessions/)
+MIDWORK.md
+session-*.md
 
 # Temporary files
 *.tmp
@@ -65,8 +77,6 @@ build/
 *.orig
 
 .gocache/
-docs/workflow-review/
-
 .devin/
 
 # OpenCode project-level config and agents

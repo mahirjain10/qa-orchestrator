@@ -102,8 +102,9 @@ func TestLoadConfig_MissingAPIKey(t *testing.T) {
 	if err == nil {
 		t.Error("expected error for missing API key")
 	}
-	if err.Error() != "LLM_API_KEY environment variable is required" {
-		t.Errorf("unexpected error message: %v", err)
+	expected := "validate API keys: LLM_API_KEY environment variable is required"
+	if err.Error() != expected {
+		t.Errorf("unexpected error message: %v, want %q", err, expected)
 	}
 }
 
@@ -349,12 +350,9 @@ func TestParseStepsFromResponse_InvalidJSON(t *testing.T) {
 
 func TestParseStepsFromResponse_WithCodeFence(t *testing.T) {
 	response := "```json\n[{\"tool\":\"navigate\",\"params\":{\"url\":\"https://example.com\"},\"reason\":\"go\"}]\n```"
-	steps, err := ParseStepsFromResponse(response)
-	if err != nil {
-		t.Fatalf("ParseStepsFromResponse failed: %v", err)
-	}
-	if len(steps) != 1 {
-		t.Fatalf("expected 1 step, got %d", len(steps))
+	_, err := ParseStepsFromResponse(response)
+	if err == nil {
+		t.Error("expected error for code-fence-wrapped response (prompt forbids markdown fences)")
 	}
 }
 
@@ -436,6 +434,50 @@ func TestBuildUserPrompt_No404NavBan(t *testing.T) {
 	}
 	if contains(prompt, "extract the root domain") {
 		t.Error("user prompt should NOT contain root domain extraction — recovery is engine-level now")
+	}
+}
+
+func TestSanitizePromptField(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{"null bytes removed", "abc\x00def", "abcdef"},
+		{"code fences removed", "```code```", "code"},
+		{"double braces escaped", "{{.History}}", "&#123;&#123;.History&#125;&#125;"},
+		{"nested braces escaped", "{{.Observation}} test {{.Goal}}", "&#123;&#123;.Observation&#125;&#125; test &#123;&#123;.Goal&#125;&#125;"},
+		{"normal text preserved", "Step 1: opened page", "Step 1: opened page"},
+		{"mixed content", "before```{{.Tools}}```after", "before&#123;&#123;.Tools&#125;&#125;after"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := sanitizePromptField(tt.input)
+			if got != tt.want {
+				t.Errorf("sanitizePromptField(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestBuildUserPrompt_SanitizesAllFields(t *testing.T) {
+	data := PlannerPromptData{
+		Goal:        "Test login",
+		History:     "Data: {{.Observation}} inject",
+		Observation: "{{.Goal}} injected",
+		Tools:       []ToolInfo{},
+	}
+
+	prompt := BuildUserPrompt(data)
+
+	if contains(prompt, "{{.Observation}}") {
+		t.Error("History should have {{.Observation}} escaped")
+	}
+	if contains(prompt, "{{.Goal}}") {
+		t.Error("Observation should have {{.Goal}} escaped")
+	}
+	if !contains(prompt, "&#123;&#123;.Goal&#125;&#125;") {
+		t.Error("expected Observation {{.Goal}} to be HTML-entity escaped")
 	}
 }
 

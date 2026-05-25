@@ -50,26 +50,7 @@ func (m *RunPanelModel) View() string {
 	lines = append(lines, style.Section.Render("  Campaign:  ")+style.Normal.Render(m.session.CampaignName))
 
 	statusStr := string(m.session.Status)
-	statusColor := style.StatusPending
-
-	switch m.session.Status {
-	case types.RunStateRunning:
-		statusColor = style.StatusRunning
-	case types.RunStatePaused, types.RunStatePausing:
-		statusColor = style.StatusPaused
-	case types.RunStateCancelled, types.RunStateCancelling:
-		statusColor = style.StatusCancelled
-	case types.RunStateCompleted:
-		statusColor = style.StatusPassed
-	case types.RunStateFailed:
-		statusColor = style.StatusFailed
-	case types.RunStateWaitingInput:
-		statusColor = style.StatusRetrying
-	case types.RunStateResuming:
-		statusColor = style.StatusRunning
-	case types.RunStatePending:
-		statusColor = style.StatusPending
-	}
+	statusColor := GetRunStatusStyle(m.session.Status)
 
 	var statusDisplay string
 	if m.session.Status == types.RunStateRunning {
@@ -130,25 +111,7 @@ func (m *RunPanelModel) ViewWithWidth(width int) string {
 	var lines []string
 
 	statusStr := string(m.session.Status)
-	statusColor := style.StatusPending
-	switch m.session.Status {
-	case types.RunStateRunning:
-		statusColor = style.StatusRunning
-	case types.RunStatePaused, types.RunStatePausing:
-		statusColor = style.StatusPaused
-	case types.RunStateCancelled, types.RunStateCancelling:
-		statusColor = style.StatusCancelled
-	case types.RunStateCompleted:
-		statusColor = style.StatusPassed
-	case types.RunStateFailed:
-		statusColor = style.StatusFailed
-	case types.RunStateWaitingInput:
-		statusColor = style.StatusRetrying
-	case types.RunStateResuming:
-		statusColor = style.StatusRunning
-	case types.RunStatePending:
-		statusColor = style.StatusPending
-	}
+	statusColor := GetRunStatusStyle(m.session.Status)
 
 	statusLine := fmt.Sprintf("Status: %s", statusColor.Render(statusStr))
 	if m.session.Status == types.RunStateRunning {

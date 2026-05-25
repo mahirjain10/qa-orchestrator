@@ -12,4 +12,5 @@ type ToolInfo struct {
 	Name        string                   `json:"name"`
 	Description string                   `json:"description"`
 	Parameters  map[string]ParameterInfo `json:"parameters"`
+	Hidden      bool                     `json:"-"`
 }

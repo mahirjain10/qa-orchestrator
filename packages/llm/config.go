@@ -64,7 +64,7 @@ func LoadConfig() (*Config, error) {
 	model, geminiModel := resolveModel(provider, os.Getenv(envModel), os.Getenv(envGeminiModel))
 	apiKey, geminiAPIKey, err := validateAPIKeys(provider, os.Getenv(envAPIKey), os.Getenv(envGeminiAPIKey))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("validate API keys: %w", err)
 	}
 	if model == "" {
 		return nil, fmt.Errorf("%s environment variable is required", envModel)
@@ -72,11 +72,11 @@ func LoadConfig() (*Config, error) {
 	baseURL := resolveBaseURL(provider, model, os.Getenv(envBaseURL))
 	timeout, err := parseEnvInt(envTimeout, defaultTimeout)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("parse timeout: %w", err)
 	}
 	maxRetries, err := parseEnvIntWithBounds(envMaxRetries, defaultMaxRetries, 0, maxMaxRetries)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("parse max retries: %w", err)
 	}
 	fallbackModels := shared.SplitAndTrim(os.Getenv(envFallbackModels), ",")
 	if len(fallbackModels) == 0 {
@@ -84,7 +84,7 @@ func LoadConfig() (*Config, error) {
 	}
 	budget, err := parseEnvIntWithBounds(envThinkingBudget, 0, 0, -1)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("parse thinking budget: %w", err)
 	}
 	return &Config{
 		APIKey:           apiKey,
@@ -134,8 +134,10 @@ func resolveModel(provider, model, geminiModel string) (string, string) {
 		return defaultModel, geminiModel
 	case "gemini":
 		return geminiModel, geminiModel
+	case "openai":
+		return "gpt-4o-mini", geminiModel
 	}
-	return model, geminiModel
+	return defaultModel, geminiModel
 }
 
 func validateAPIKeys(provider, apiKey, geminiAPIKey string) (string, string, error) {
@@ -238,7 +240,7 @@ func (c *Config) GetProvider() (Provider, error) {
 
 	provider, err := GetProvider(providerName)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get provider %s: %w", providerName, err)
 	}
 
 	provider.ApplyConfig(c)

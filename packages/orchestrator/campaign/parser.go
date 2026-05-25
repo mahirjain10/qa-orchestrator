@@ -3,6 +3,7 @@ package campaign
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,6 +13,21 @@ import (
 	"qa-orchestrator/packages/orchestrator/validator"
 	"qa-orchestrator/packages/shared/types"
 )
+
+var validTools = map[string]struct{}{
+	"navigate":      {},
+	"click":         {},
+	"type_text":     {},
+	"select_option": {},
+	"wait_for":      {},
+	"get_text":      {},
+	"get_html":      {},
+	"evaluate":      {},
+	"screenshot":    {},
+	"finish":        {},
+	"observe_ui":    {},
+	"echo":          {},
+}
 
 type CampaignParser struct{}
 
@@ -107,6 +123,10 @@ func (p *CampaignParser) validateSchema(campaign *types.Campaign) error {
 		}
 		seenIDs[flow.ID] = true
 
+		if flow.DependsOn == nil {
+			return fmt.Errorf("flow %q: 'depends_on' is required (use [] when no dependencies)", flow.ID)
+		}
+
 		if flow.Goal == "" {
 			return fmt.Errorf("flow %q: 'goal' is required", flow.ID)
 		}
@@ -116,6 +136,13 @@ func (p *CampaignParser) validateSchema(campaign *types.Campaign) error {
 		}
 		if flow.Config.RetryLimit < 0 {
 			return fmt.Errorf("flow %q config: 'retry_limit' must be >= 0", flow.ID)
+		}
+
+		if flow.StartURL != "" {
+			u, err := url.ParseRequestURI(flow.StartURL)
+			if err != nil || (u.Scheme != "http" && u.Scheme != "https") {
+				return fmt.Errorf("flow %q: invalid start_url %q (must be http/https URL)", flow.ID, flow.StartURL)
+			}
 		}
 
 		switch flow.Mode {
@@ -153,6 +180,12 @@ func (p *CampaignParser) validateSchema(campaign *types.Campaign) error {
 			if flow.Mode == types.FlowModeGuided && step.Tool == "" {
 				return fmt.Errorf("flow %q: step %q: 'tool' is required", flow.ID, step.ID)
 			}
+
+			if flow.Mode == types.FlowModeGuided && step.Tool != "" {
+				if _, ok := validTools[step.Tool]; !ok {
+					return fmt.Errorf("flow %q: step %q: unknown tool %q", flow.ID, step.ID, step.Tool)
+				}
+			}
 		}
 	}
 
@@ -171,12 +204,13 @@ func (p *CampaignParser) ParseNaturalLanguage(text string) (*types.Campaign, err
 	sanitized = strings.ReplaceAll(sanitized, "```", "")
 
 	flow := types.Flow{
-		ID:       fmt.Sprintf("auto-flow-%d", time.Now().UnixNano()),
-		Name:     strings.TrimSpace(lines[0]),
-		Goal:     strings.TrimSpace(sanitized),
-		Mode:     types.FlowModeAutonomous,
-		Priority: types.FlowPriorityMedium,
-		Steps:    []types.Step{},
+		ID:        fmt.Sprintf("auto-flow-%d", time.Now().UnixNano()),
+		Name:      strings.TrimSpace(lines[0]),
+		Goal:      strings.TrimSpace(sanitized),
+		Mode:      types.FlowModeAutonomous,
+		Priority:  types.FlowPriorityMedium,
+		Steps:     []types.Step{},
+		DependsOn: []string{},
 	}
 
 	if len(lines) > 1 && strings.TrimSpace(lines[1]) != "" {

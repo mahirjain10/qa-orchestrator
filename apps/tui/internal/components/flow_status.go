@@ -88,26 +88,7 @@ func (m *FlowStatusModel) View() string {
 
 	for i, f := range m.flows {
 		statusStr := string(f.Status)
-		statusColor := style.StatusPending
-
-		switch f.Status {
-		case types.FlowStateRunning:
-			statusColor = style.StatusRunning
-		case types.FlowStatePassed:
-			statusColor = style.StatusPassed
-		case types.FlowStateFailed:
-			statusColor = style.StatusFailed
-		case types.FlowStatePaused:
-			statusColor = style.StatusPaused
-		case types.FlowStatePending:
-			statusColor = style.StatusPending
-		case types.FlowStateRetrying:
-			statusColor = style.StatusRetrying
-		case types.FlowStateSkippedUpstream, types.FlowStateSkippedUser, types.FlowStateBlockedConfigError:
-			statusColor = style.StatusCancelled
-		case types.FlowStateWaitingInput:
-			statusColor = style.StatusPaused
-		}
+		statusColor := GetFlowStatusStyle(f.Status)
 
 		startedStr := "-"
 		if f.StartedAt != nil {
@@ -163,26 +144,7 @@ func (m *FlowStatusModel) ViewWithWidth(width int) string {
 
 	for i, f := range m.flows {
 		statusStr := string(f.Status)
-		statusColor := style.StatusPending
-
-		switch f.Status {
-		case types.FlowStateRunning:
-			statusColor = style.StatusRunning
-		case types.FlowStatePassed:
-			statusColor = style.StatusPassed
-		case types.FlowStateFailed:
-			statusColor = style.StatusFailed
-		case types.FlowStatePaused:
-			statusColor = style.StatusPaused
-		case types.FlowStatePending:
-			statusColor = style.StatusPending
-		case types.FlowStateRetrying:
-			statusColor = style.StatusRetrying
-		case types.FlowStateSkippedUpstream, types.FlowStateSkippedUser, types.FlowStateBlockedConfigError:
-			statusColor = style.StatusCancelled
-		case types.FlowStateWaitingInput:
-			statusColor = style.StatusPaused
-		}
+		statusColor := GetFlowStatusStyle(f.Status)
 
 		flowID := util.Truncate(f.FlowID, util.SafeWidth(colFlow-2, 4))
 

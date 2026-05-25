@@ -309,7 +309,7 @@ func NewSimpleClient(apiKey string) (*SimpleClient, error) {
 	}
 	client, err := NewClient(cfg)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create inner client for simple client: %w", err)
 	}
 	return &SimpleClient{client: client}, nil
 }
@@ -320,7 +320,7 @@ func (s *SimpleClient) Generate(ctx context.Context, prompt string) (string, err
 	}
 	resp, err := s.client.GenerateWithMessages(ctx, messages)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("simple generate failed: %w", err)
 	}
 	return resp.Content, nil
 }
@@ -332,7 +332,7 @@ func (s *SimpleClient) GenerateWithSystem(ctx context.Context, system, user stri
 	}
 	resp, err := s.client.GenerateWithMessages(ctx, messages)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("simple generate with system failed: %w", err)
 	}
 	return resp.Content, nil
 }
@@ -342,11 +342,9 @@ func (s *SimpleClient) Close() error {
 }
 
 func ParseStepsFromResponse(response string) ([]map[string]any, error) {
-	response = strings.TrimSpace(response)
-
 	jsonStr, err := extractJSONArray(response)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("extract json array from response: %w", err)
 	}
 
 	var steps []map[string]any
@@ -358,49 +356,52 @@ func ParseStepsFromResponse(response string) ([]map[string]any, error) {
 }
 
 func extractJSONArray(s string) (string, error) {
-	for i := 0; i < len(s); i++ {
-		if s[i] != '[' {
-			continue
-		}
-		depth := 0
-		inString := false
-		escaped := false
-		for j := i; j < len(s); j++ {
-			ch := s[j]
-			if inString {
-				if escaped {
-					escaped = false
-					continue
-				}
-				if ch == '\\' {
-					escaped = true
-					continue
-				}
-				if ch == '"' {
-					inString = false
-				}
+	trimmed := strings.TrimSpace(s)
+	if len(trimmed) == 0 || trimmed[0] != '[' {
+		return "", fmt.Errorf("parsing: LLM output must be a JSON array — found %q", trimmed)
+	}
+
+	depth := 0
+	inString := false
+	escaped := false
+	for j := 0; j < len(trimmed); j++ {
+		ch := trimmed[j]
+		if inString {
+			if escaped {
+				escaped = false
+				continue
+			}
+			if ch == '\\' {
+				escaped = true
 				continue
 			}
 			if ch == '"' {
-				inString = true
-				continue
+				inString = false
 			}
-			if ch == '[' {
-				depth++
-			} else if ch == ']' {
-				depth--
-				if depth == 0 {
-					candidate := s[i : j+1]
-					var probe any
-					if err := json.Unmarshal([]byte(candidate), &probe); err == nil {
-						if _, ok := probe.([]any); ok {
-							return candidate, nil
+			continue
+		}
+		if ch == '"' {
+			inString = true
+			continue
+		}
+		if ch == '[' {
+			depth++
+		} else if ch == ']' {
+			depth--
+			if depth == 0 {
+				candidate := trimmed[:j+1]
+				var probe any
+				if err := json.Unmarshal([]byte(candidate), &probe); err == nil {
+					if _, ok := probe.([]any); ok {
+						if candidate != trimmed {
+							return "", fmt.Errorf("parsing: LLM output contains text outside the JSON array — prompt requires ONLY a JSON array with no surrounding text")
 						}
+						return candidate, nil
 					}
-					break
 				}
+				return "", fmt.Errorf("parsing: found brackets but content is not a valid JSON array")
 			}
 		}
 	}
-	return "", fmt.Errorf("no JSON array found in response")
+	return "", fmt.Errorf("parsing: no JSON array found in response")
 }

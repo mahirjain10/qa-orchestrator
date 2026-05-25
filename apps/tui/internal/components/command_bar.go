@@ -18,8 +18,8 @@ type CommandDef struct {
 var availableCommands = []CommandDef{
 	{Name: "retry", Desc: "Retry a specific flow (usage: retry <flow_id>)"},
 	{Name: "skip", Desc: "Skip a specific flow (usage: skip <flow_id>)"},
-	{Name: "continue", Desc: "Resume run from WAITING_FOR_INPUT state"},
-	{Name: "approve", Desc: "Approve pending input"},
+	{Name: "continue", Desc: "Resume run from WAITING_FOR_INPUT state (same as approve)"},
+	{Name: "approve", Desc: "Alias for continue"},
 	{Name: "status", Desc: "Show current run status"},
 	{Name: "pause", Desc: "Pause the current run"},
 	{Name: "resume", Desc: "Resume a paused run"},

@@ -3,19 +3,23 @@ package llm
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"qa-orchestrator/packages/shared"
 )
 
 type OpenRouterProvider struct {
+	BaseProvider
 	HTTPReferer string
 	AppTitle    string
 	BaseURL     string
 	Provider    *ProviderSettings
 }
 
-func (p *OpenRouterProvider) Name() string {
-	return "openrouter"
+func NewOpenRouterProvider() *OpenRouterProvider {
+	return &OpenRouterProvider{
+		BaseProvider: BaseProvider{name: "openrouter"},
+	}
 }
 
 func (p *OpenRouterProvider) Endpoint(model string) string {
@@ -37,8 +41,8 @@ func (p *OpenRouterProvider) AuthHeaders(apiKey string) map[string]string {
 }
 
 func (p *OpenRouterProvider) BuildRequest(ctx context.Context, req *GenerateRequest) ([]byte, error) {
-	if err := checkContext(ctx); err != nil {
-		return nil, err
+	if err := p.CheckContext(ctx); err != nil {
+		return nil, fmt.Errorf("openrouter check context: %w", err)
 	}
 
 	systemPrompt, messages := splitSystemMessage(req.Messages)
@@ -72,22 +76,27 @@ func (p *OpenRouterProvider) BuildRequest(ctx context.Context, req *GenerateRequ
 		Provider:      p.Provider,
 	}
 
-	return json.Marshal(orReq)
+	data, err := json.Marshal(orReq)
+	if err != nil {
+		return nil, fmt.Errorf("openrouter marshal request: %w", err)
+	}
+	return data, nil
 }
 
 func (p *OpenRouterProvider) ParseResponse(body []byte) (*GenerateResponse, error) {
-	return parseOpenAIResponse(body)
+	resp, err := parseOpenAIResponse(body)
+	if err != nil {
+		return nil, fmt.Errorf("openrouter parse response: %w", err)
+	}
+	return resp, nil
 }
 
 func (p *OpenRouterProvider) ParseError(statusCode int, body []byte) error {
 	return parseOpenAIError(statusCode, body)
 }
 
-func (p *OpenRouterProvider) ValidateModel(model string) error {
-	return validateModel(model, "openrouter")
-}
-
 func (p *OpenRouterProvider) ApplyConfig(cfg *Config) {
+	p.BaseProvider.ApplyConfig(cfg)
 	p.HTTPReferer = cfg.HTTPReferer
 	p.AppTitle = cfg.AppTitle
 	p.BaseURL = cfg.BaseURL

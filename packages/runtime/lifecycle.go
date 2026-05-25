@@ -11,12 +11,27 @@ const (
 )
 
 type LifecycleController struct {
-	mu         sync.RWMutex
-	runID      string
-	status     types.RunState
-	steeringMu sync.Mutex
-	steering   []*types.SteeringEvent
-	cancelCh   chan struct{}
+	mu             sync.RWMutex
+	runID          string
+	status         types.RunState
+	steeringMu     sync.Mutex
+	steering       []*types.SteeringEvent
+	cancelCh       chan struct{}
+	onStatusChange func(runID string, old, new types.RunState)
+}
+
+func (c *LifecycleController) SetOnStatusChange(fn func(runID string, old, new types.RunState)) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.onStatusChange = fn
+}
+
+func (c *LifecycleController) setStatusLocked(new types.RunState) {
+	old := c.status
+	c.status = new
+	if c.onStatusChange != nil {
+		c.onStatusChange(c.runID, old, new)
+	}
 }
 
 func NewLifecycleController(runID string) *LifecycleController {
@@ -52,7 +67,7 @@ func (c *LifecycleController) SetStatus(status types.RunState) {
 	if !transitionValid(c.status, status) {
 		return
 	}
-	c.status = status
+	c.setStatusLocked(status)
 }
 
 // BeginExecution atomically transitions PENDING→RUNNING and returns
@@ -64,7 +79,7 @@ func (c *LifecycleController) BeginExecution() (cancelCh <-chan struct{}, ok boo
 	if !transitionValid(c.status, types.RunStateRunning) {
 		return nil, false
 	}
-	c.status = types.RunStateRunning
+	c.setStatusLocked(types.RunStateRunning)
 	return c.cancelCh, true
 }
 
@@ -78,7 +93,7 @@ func (c *LifecycleController) Transition(from, to types.RunState) bool {
 	if !transitionValid(from, to) {
 		return false
 	}
-	c.status = to
+	c.setStatusLocked(to)
 	return true
 }
 
@@ -102,8 +117,12 @@ func (c *LifecycleController) RequestCancel() bool {
 	if !transitionValid(c.status, types.RunStateCancelling) {
 		return false
 	}
-	c.status = types.RunStateCancelling
-	c.cancelCh <- struct{}{}
+	c.setStatusLocked(types.RunStateCancelling)
+	select {
+	case c.cancelCh <- struct{}{}:
+	default:
+		// Channel full — cancel already pending, don't block
+	}
 	return true
 }
 
@@ -113,7 +132,7 @@ func (c *LifecycleController) AcknowledgeCancel() bool {
 	if c.status != types.RunStateCancelling {
 		return false
 	}
-	c.status = types.RunStateCancelled
+	c.setStatusLocked(types.RunStateCancelled)
 	return true
 }
 
@@ -123,6 +142,7 @@ func (c *LifecycleController) CancelCh() <-chan struct{} {
 
 func (c *LifecycleController) SubmitSteering(event *types.SteeringEvent) bool {
 	c.steeringMu.Lock()
+	defer c.steeringMu.Unlock()
 	if len(c.steering) >= maxSteeringQueue {
 		trim := len(c.steering) - maxSteeringQueue + 1
 		if trim <= 0 {
@@ -131,15 +151,14 @@ func (c *LifecycleController) SubmitSteering(event *types.SteeringEvent) bool {
 		c.steering = c.steering[trim:]
 	}
 	c.steering = append(c.steering, event)
-	c.steeringMu.Unlock()
 	return true
 }
 
 func (c *LifecycleController) DrainSteeringEvents() []*types.SteeringEvent {
 	c.steeringMu.Lock()
+	defer c.steeringMu.Unlock()
 	events := c.steering
 	c.steering = make([]*types.SteeringEvent, 0, 64)
-	c.steeringMu.Unlock()
 	return events
 }
 
@@ -149,7 +168,7 @@ func (c *LifecycleController) SetWaitingForInput() {
 	if !transitionValid(c.status, types.RunStateWaitingInput) {
 		return
 	}
-	c.status = types.RunStateWaitingInput
+	c.setStatusLocked(types.RunStateWaitingInput)
 }
 
 func (c *LifecycleController) IsWaitingForInput() bool {
@@ -164,7 +183,7 @@ func (c *LifecycleController) AcknowledgeInput() {
 	if c.status != types.RunStateWaitingInput {
 		return
 	}
-	c.status = types.RunStateRunning
+	c.setStatusLocked(types.RunStateRunning)
 }
 
 func transitionValid(from, to types.RunState) bool {

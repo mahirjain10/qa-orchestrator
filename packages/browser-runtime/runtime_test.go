@@ -156,6 +156,7 @@ func TestOperations_FailWhenNotRunning(t *testing.T) {
 		{"Navigate", func() error { return r.Navigate(ctx, "https://example.com") }},
 		{"Click", func() error { return r.Click(ctx, "#btn") }},
 		{"Fill", func() error { return r.Fill(ctx, "#input", "val") }},
+		{"SelectOption", func() error { idx := 0; return r.SelectOption(ctx, "#sel", "", "", &idx) }},
 		{"WaitForSelector", func() error { return r.WaitForSelector(ctx, "#el", nil) }},
 		{"TextContent", func() error { _, err := r.TextContent(ctx, "#el"); return err }},
 		{"InnerHTML", func() error { _, err := r.InnerHTML(ctx, "#el"); return err }},

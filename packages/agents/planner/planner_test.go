@@ -342,7 +342,7 @@ func TestPlannerGenerateNextStep(t *testing.T) {
 		Plan:   plan,
 	}
 
-	step, err := p.GenerateNextStep(context.Background(), ctx)
+	step, _, err := p.GenerateNextStep(context.Background(), ctx)
 	if err != nil {
 		t.Fatalf("GenerateNextStep failed: %v", err)
 	}
@@ -381,7 +381,7 @@ func TestPlannerGenerateNextStep_NoLLMClient(t *testing.T) {
 		Plan:   plan,
 	}
 
-	_, err := p.GenerateNextStep(context.Background(), ctx)
+	_, _, err := p.GenerateNextStep(context.Background(), ctx)
 	if err == nil {
 		t.Error("Expected error when LLM client is not configured")
 	}
@@ -408,7 +408,7 @@ func TestPlannerGenerateNextStep_InvalidResponse(t *testing.T) {
 		Plan:   plan,
 	}
 
-	_, err := p.GenerateNextStep(context.Background(), ctx)
+	_, _, err := p.GenerateNextStep(context.Background(), ctx)
 	if err == nil {
 		t.Error("Expected error for invalid LLM response")
 	}
@@ -732,7 +732,7 @@ func TestPlannerGenerateNextStep_UsesObserveUIObservation(t *testing.T) {
 		},
 	}
 
-	step, err := p.GenerateNextStep(context.Background(), ctx)
+	step, _, err := p.GenerateNextStep(context.Background(), ctx)
 	if err != nil {
 		t.Fatalf("GenerateNextStep failed: %v", err)
 	}

@@ -2,6 +2,7 @@ package llm
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	sharedtypes "qa-orchestrator/packages/shared/types"
@@ -90,7 +91,7 @@ Do not add verification steps after success.
 RESPONSE FORMAT
 ────────────────────────────────────────
 
-Output ONLY a JSON array with exactly one step:
+Output ONLY a JSON array with one or more steps:
 [{"tool": "tool_name", "params": {}, "reason": "brief explanation"}]
 
 No markdown fences. No text before or after the array.`
@@ -149,7 +150,13 @@ func FormatTools(tools []ToolInfo) string {
 	for _, tool := range tools {
 		result += "- **" + tool.Name + "**: " + tool.Description + "\n"
 		result += "  Parameters:\n"
-		for param, info := range tool.Parameters {
+		paramNames := make([]string, 0, len(tool.Parameters))
+		for name := range tool.Parameters {
+			paramNames = append(paramNames, name)
+		}
+		sort.Strings(paramNames)
+		for _, param := range paramNames {
+			info := tool.Parameters[param]
 			required := ""
 			if info.Required {
 				required = " (required)"
@@ -198,12 +205,22 @@ func sanitizeGoal(goal string) string {
 	return strings.TrimSpace(goal)
 }
 
+func sanitizePromptField(s string) string {
+	s = strings.ReplaceAll(s, "\x00", "")
+	s = strings.ReplaceAll(s, "```", "")
+	s = strings.ReplaceAll(s, "{{", "&#123;&#123;")
+	s = strings.ReplaceAll(s, "}}", "&#125;&#125;")
+	s = strings.ReplaceAll(s, "<", "&lt;")
+	s = strings.ReplaceAll(s, ">", "&gt;")
+	return s
+}
+
 func BuildUserPrompt(data PlannerPromptData) string {
 	prompt := UserPromptTemplate
 	prompt = replacePlaceholder(prompt, "Goal", sanitizeGoal(data.Goal))
 	prompt = replacePlaceholder(prompt, "URLContext", data.URLContext())
-	prompt = replacePlaceholder(prompt, "History", data.History)
-	prompt = replacePlaceholder(prompt, "Observation", data.Observation)
+	prompt = replacePlaceholder(prompt, "History", sanitizePromptField(data.History))
+	prompt = replacePlaceholder(prompt, "Observation", sanitizePromptField(data.Observation))
 	return prompt
 }
 

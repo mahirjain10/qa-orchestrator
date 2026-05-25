@@ -2,10 +2,7 @@ package planner
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"sort"
-	"strings"
 
 	"qa-orchestrator/packages/agents/types"
 	"qa-orchestrator/packages/llm"
@@ -132,135 +129,15 @@ func (p *Planner) CreateAutonomousPlan(ctx *types.ExecutionContext) (*types.Plan
 	return plan, nil
 }
 
-func sanitizeDOM(s string) string {
-	s = strings.ReplaceAll(s, "\x00", "")
-	s = strings.ReplaceAll(s, "```", "")
-	s = strings.ReplaceAll(s, "\\", "\\\\")
-	s = strings.ReplaceAll(s, "&", "&amp;")
-	s = strings.ReplaceAll(s, "\"", "&quot;")
-	s = strings.ReplaceAll(s, "'", "&#39;")
-	s = strings.ReplaceAll(s, "\n", "")
-	s = strings.ReplaceAll(s, "<", "&lt;")
-	s = strings.ReplaceAll(s, ">", "&gt;")
-	s = strings.ReplaceAll(s, "[", "&#91;")
-	s = strings.ReplaceAll(s, "]", "&#93;")
-	return s
-}
-
-// renderAttr appends a single attr key="value" to the line string if the value is non-empty and not false
-func renderAttr(line *string, m map[string]any, key string, used *map[string]bool) {
-	v, ok := m[key]
-	if !ok {
-		return
-	}
-	vs := fmt.Sprintf("%v", v)
-	if vs == "" || vs == "<nil>" || vs == "false" {
-		return
-	}
-	(*used)[key] = true
-	*line += fmt.Sprintf(` %s="%s"`, key, sanitizeDOM(vs))
-}
-
-func formatObserveUIObservation(obs types.Observation) string {
-	result := "Page observation after last step:\n"
-	if obs.LastStep != nil {
-		result += fmt.Sprintf("  Last step: %s, Tool: %s, Success: %v\n",
-			obs.LastStep.StepID, obs.LastStep.Tool, obs.LastStep.Success)
-	}
-	if obs.State != nil {
-		var parsed map[string]any
-		if data, ok := obs.State["data"].(map[string]any); ok {
-			parsed = data
-		} else if dataStr, ok := obs.State["data"].(string); ok {
-			if err := json.Unmarshal([]byte(dataStr), &parsed); err != nil {
-				const maxRawDataLen = 2000
-				if len(dataStr) > maxRawDataLen {
-					dataStr = dataStr[:maxRawDataLen] + "... [truncated]"
-				}
-				result += fmt.Sprintf("  Raw data: %s\n", sanitizeDOM(dataStr))
-			}
-		}
-		if parsed != nil {
-			if warning, ok := parsed["warning"].(string); ok && warning != "" {
-				result += fmt.Sprintf("  ⚠ %s\n", sanitizeDOM(warning))
-			}
-			if pageState, ok := parsed["page_state"].(string); ok {
-				result += fmt.Sprintf("  Page state: %s\n", sanitizeDOM(pageState))
-			}
-			if interactive, ok := parsed["interactive"].([]any); ok {
-				totalElems := len(interactive)
-				maxElems := 40
-				var truncated bool
-				if len(interactive) > maxElems {
-					interactive = interactive[:maxElems]
-					truncated = true
-				}
-				if truncated {
-					result += fmt.Sprintf("  Interactive elements found (%d total, showing %d):\n", totalElems, maxElems)
-				} else {
-					result += fmt.Sprintf("  Interactive elements found (%d total):\n", totalElems)
-				}
-				for i, elem := range interactive {
-					if elemMap, ok := elem.(map[string]any); ok {
-						line := fmt.Sprintf("    %d. <%s>", i+1, sanitizeDOM(fmt.Sprintf("%v", elemMap["tag"])))
-
-						// Priority fields rendered in semantically meaningful order
-						priority := []string{"id", "name", "type", "role", "placeholder", "href",
-							"value", "checked", "disabled", "selected", "aria-label"}
-
-						used := map[string]bool{"tag": true, "selector": true}
-
-						for _, k := range priority {
-							renderAttr(&line, elemMap, k, &used)
-						}
-
-						// Remaining attrs alphabetically — schema-independent by design
-						remaining := make([]string, 0)
-						for k := range elemMap {
-							if !used[k] {
-								remaining = append(remaining, k)
-							}
-						}
-						sort.Strings(remaining)
-						for _, k := range remaining {
-							renderAttr(&line, elemMap, k, &used)
-						}
-
-						// Selector rendered last — it's the longest and most important for LLM use
-						renderAttr(&line, elemMap, "selector", &used)
-
-						// Close tag and render text content
-						line += ">"
-						if text, ok := elemMap["text"].(string); ok && text != "" {
-							line += sanitizeDOM(text)
-						}
-
-						// Selector is the most critical piece of info for the LLM
-						if selector, ok := elemMap["selector"].(string); ok && selector != "" {
-							line += fmt.Sprintf("  [selector: %s]", sanitizeDOM(selector))
-						}
-						result += line + "\n"
-					}
-				}
-				if truncated {
-					result += fmt.Sprintf("    ... and %d more elements\n", totalElems-maxElems)
-				}
-			}
-		}
-	}
-	result += "Use the selectors above when generating your next step. Do not invent selectors."
-	return result
-}
-
-func (p *Planner) GenerateNextStep(ctx context.Context, execCtx *types.ExecutionContext) (*types.PlanStep, error) {
+func (p *Planner) GenerateNextStep(ctx context.Context, execCtx *types.ExecutionContext) (*types.PlanStep, []map[string]any, error) {
 	if p.llmClient == nil {
-		return nil, fmt.Errorf("LLM client not configured for autonomous mode")
+		return nil, nil, fmt.Errorf("LLM client not configured for autonomous mode")
 	}
 	if execCtx == nil {
-		return nil, fmt.Errorf("execution context is nil")
+		return nil, nil, fmt.Errorf("execution context is nil")
 	}
 	if execCtx.Plan == nil {
-		return nil, fmt.Errorf("plan is nil")
+		return nil, nil, fmt.Errorf("plan is nil")
 	}
 
 	goal := execCtx.Goal
@@ -279,7 +156,12 @@ func (p *Planner) GenerateNextStep(ctx context.Context, execCtx *types.Execution
 				observation = fmt.Sprintf("Last step: %s, Tool: %s, Success: %v",
 					lastObs.LastStep.StepID, lastObs.LastStep.Tool, lastObs.LastStep.Success)
 				if lastObs.LastStep.Output != nil {
-					observation += fmt.Sprintf(", Output: %v", lastObs.LastStep.Output)
+					outputStr := fmt.Sprintf("%v", lastObs.LastStep.Output)
+					const maxOutputLen = 2000
+					if len(outputStr) > maxOutputLen {
+						outputStr = outputStr[:maxOutputLen] + "... [truncated]"
+					}
+					observation += fmt.Sprintf(", Output: %s", sanitizeDOM(outputStr))
 				}
 			}
 		}
@@ -313,19 +195,32 @@ func (p *Planner) GenerateNextStep(ctx context.Context, execCtx *types.Execution
 
 	response, err := p.llmClient.GenerateWithSystem(ctx, systemPrompt, userPrompt)
 	if err != nil {
-		return nil, fmt.Errorf("LLM request failed: %w", err)
+		return nil, nil, fmt.Errorf("LLM request failed: %w", err)
 	}
 
 	steps, err := llm.ParseStepsFromResponse(response)
 	if err != nil {
-		return nil, fmt.Errorf("parsing LLM response: %w", err)
+		return nil, nil, fmt.Errorf("parsing LLM response: %w", err)
 	}
 
 	if len(steps) == 0 {
-		return nil, fmt.Errorf("LLM returned no steps")
+		return nil, nil, fmt.Errorf("LLM returned no steps")
 	}
 
-	stepData := steps[0]
+	firstStep, err := RawStepToPlanStep(steps[0], execCtx.Plan)
+	if err != nil {
+		return nil, nil, fmt.Errorf("raw step to plan step: %w", err)
+	}
+
+	var remaining []map[string]any
+	if len(steps) > 1 {
+		remaining = steps[1:]
+	}
+
+	return firstStep, remaining, nil
+}
+
+func RawStepToPlanStep(stepData map[string]any, plan *types.Plan) (*types.PlanStep, error) {
 	tool, ok := stepData["tool"].(string)
 	if !ok {
 		return nil, fmt.Errorf("step missing 'tool' field")
@@ -338,9 +233,9 @@ func (p *Planner) GenerateNextStep(ctx context.Context, execCtx *types.Execution
 
 	reason, _ := stepData["reason"].(string)
 
-	stepID := fmt.Sprintf("auto-step-%d", len(execCtx.Plan.Steps)+1)
+	stepID := fmt.Sprintf("auto-step-%d", len(plan.Steps)+1)
 	planStep := types.PlanStep{
-		StepIndex: len(execCtx.Plan.Steps),
+		StepIndex: len(plan.Steps),
 		StepID:    stepID,
 		Tool:      tool,
 		Params:    params,

@@ -8,12 +8,15 @@ import (
 )
 
 type GeminiProvider struct {
+	BaseProvider
 	APIKey  string
 	BaseURL string
 }
 
-func (p *GeminiProvider) Name() string {
-	return "gemini"
+func NewGeminiProvider() *GeminiProvider {
+	return &GeminiProvider{
+		BaseProvider: BaseProvider{name: "gemini"},
+	}
 }
 
 func (p *GeminiProvider) Endpoint(model string) string {
@@ -101,8 +104,8 @@ type geminiErrorResponse struct {
 }
 
 func (p *GeminiProvider) BuildRequest(ctx context.Context, req *GenerateRequest) ([]byte, error) {
-	if err := checkContext(ctx); err != nil {
-		return nil, err
+	if err := p.CheckContext(ctx); err != nil {
+		return nil, fmt.Errorf("gemini check context: %w", err)
 	}
 
 	systemPrompt, messages := splitSystemMessage(req.Messages)
@@ -161,7 +164,11 @@ func (p *GeminiProvider) BuildRequest(ctx context.Context, req *GenerateRequest)
 		geminiReq.GenerationConfig = cfg
 	}
 
-	return json.Marshal(geminiReq)
+	data, err := json.Marshal(geminiReq)
+	if err != nil {
+		return nil, fmt.Errorf("gemini marshal request: %w", err)
+	}
+	return data, nil
 }
 
 func (p *GeminiProvider) ParseResponse(body []byte) (*GenerateResponse, error) {
@@ -237,11 +244,8 @@ func (p *GeminiProvider) ParseError(statusCode int, body []byte) error {
 	)
 }
 
-func (p *GeminiProvider) ValidateModel(model string) error {
-	return validateModel(model, "gemini")
-}
-
 func (p *GeminiProvider) ApplyConfig(cfg *Config) {
+	p.BaseProvider.ApplyConfig(cfg)
 	p.BaseURL = cfg.BaseURL
 	if cfg.GeminiAPIKey != "" {
 		p.APIKey = cfg.GeminiAPIKey

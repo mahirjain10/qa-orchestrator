@@ -75,6 +75,9 @@ func (m *mockRuntime) Click(ctx context.Context, selector string) error {
 func (m *mockRuntime) Fill(ctx context.Context, selector, value string) error {
 	return nil
 }
+func (m *mockRuntime) SelectOption(ctx context.Context, selector, value, label string, index *int) error {
+	return nil
+}
 func (m *mockRuntime) WaitForSelector(ctx context.Context, selector string, options *browserruntime.WaitForOptions) error {
 	return nil
 }
@@ -343,6 +346,29 @@ func TestToolRegistryExecute_ValidatesRequiredAndType(t *testing.T) {
 
 	if _, err := r.Execute("validate_me", map[string]any{"required_text": "x", "flag": true}); err != nil {
 		t.Fatalf("expected successful execution, got %v", err)
+	}
+}
+
+func TestSelectOption_RequiresSingleSelectionCriterion(t *testing.T) {
+	r := &ToolRegistry{
+		tools: make(map[string]Tool),
+		meta:  make(map[string]ToolInfo),
+	}
+	mock := &mockRuntime{
+		evaluateFn: func(expression string) (any, error) {
+			return `{"exists": true, "visible": true}`, nil
+		},
+	}
+	r.registerSelectOption(mock)
+
+	if _, err := r.Execute("select_option", map[string]any{"selector": "#sort"}); err == nil {
+		t.Fatal("expected error when no selection criterion is provided")
+	}
+	if _, err := r.Execute("select_option", map[string]any{"selector": "#sort", "value": "name", "label": "Name"}); err == nil {
+		t.Fatal("expected error when multiple selection criteria are provided")
+	}
+	if _, err := r.Execute("select_option", map[string]any{"selector": "#sort", "value": "lohi"}); err != nil {
+		t.Fatalf("expected success when one criterion is provided, got %v", err)
 	}
 }
 

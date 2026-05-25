@@ -86,7 +86,7 @@ func (s *SessionStore) Get(runID string) (*types.Session, error) {
 
 	session, err := s.loadFromFile(runID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get session %s: %w", runID, err)
 	}
 
 	s.sessions[runID] = session
@@ -225,6 +225,44 @@ func (s *SessionStore) Delete(runID string) error {
 	return nil
 }
 
+func (s *SessionStore) FinalizeRun(runID string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	session, err := s.getOrLoadLocked(runID)
+	if err != nil {
+		return fmt.Errorf("loading session %s for finalization: %w", runID, err)
+	}
+
+	cloned := session.Clone()
+	now := time.Now().UTC()
+	cloned.CompletedAt = &now
+
+	hasFailures := false
+	for _, f := range cloned.Flows {
+		if f.Status == types.FlowStateFailed {
+			hasFailures = true
+			break
+		}
+	}
+
+	if cloned.Status != types.RunStateCancelled && cloned.Status != types.RunStateCancelling {
+		if hasFailures {
+			cloned.Status = types.RunStateFailed
+		} else {
+			cloned.Status = types.RunStateCompleted
+		}
+	} else {
+		cloned.Status = types.RunStateCancelled
+	}
+
+	cloned.UpdatedAt = now
+	s.sessions[runID] = cloned
+	s.touchOrder(runID)
+	s.evictIfNeeded()
+	return s.persist(cloned)
+}
+
 // Cache management
 
 // touchOrder marks a session as recently accessed by moving it to the back.
@@ -270,7 +308,7 @@ func (s *SessionStore) getOrLoadLocked(runID string) (*types.Session, error) {
 	}
 	session, err := s.loadFromFile(runID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("load session %s: %w", runID, err)
 	}
 	s.sessions[runID] = session
 	s.touchOrder(runID)

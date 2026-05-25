@@ -144,32 +144,24 @@ func (m *MainScreen) processSteeringCommand(input string) tea.Cmd {
 			m.setMsg("Usage: skip <flow_id>")
 		}
 
-	case "continue":
-		sess, err := m.handlers.GetRunStatus(runID)
-		if err != nil {
-			m.setMsg(fmt.Sprintf("Error getting run status: %v", err))
-		} else if sess != nil && sess.Status == types.RunStateWaitingInput {
+	case "continue", "approve":
+		isWaiting := m.handlers.IsWaitingForInput()
+		if !isWaiting {
+			sess, err := m.handlers.GetRunStatus(runID)
+			if err != nil {
+				m.setMsg(fmt.Sprintf("Error getting run status: %v", err))
+				break
+			}
+			if sess != nil && sess.Status == types.RunStateWaitingInput {
+				isWaiting = true
+			}
+		}
+		if isWaiting {
 			err := m.handlers.AcknowledgeInputAndResume(runID)
 			if err != nil {
 				m.setMsg(fmt.Sprintf("Error: %v", err))
 			} else {
 				m.setMsg("Run resumed from WAITING_FOR_INPUT")
-				return fetchRunCmd(m.sessionStore, runID)
-			}
-		} else {
-			m.setMsg("Run is not in WAITING_FOR_INPUT state")
-		}
-
-	case "approve":
-		sess, err := m.handlers.GetRunStatus(runID)
-		if err != nil {
-			m.setMsg(fmt.Sprintf("Error getting run status: %v", err))
-		} else if sess != nil && sess.Status == types.RunStateWaitingInput {
-			err := m.handlers.AcknowledgeInputAndResume(runID)
-			if err != nil {
-				m.setMsg(fmt.Sprintf("Error: %v", err))
-			} else {
-				m.setMsg("Approval noted and run resumed")
 				return fetchRunCmd(m.sessionStore, runID)
 			}
 		} else {
@@ -226,7 +218,7 @@ func (m *MainScreen) processSteeringCommand(input string) tea.Cmd {
 		}
 
 	default:
-		m.setMsg("Unknown command. Try: retry, skip, continue, approve, status, pause, resume, steer")
+		m.setMsg("Unknown command. Try: retry, skip, continue, status, pause, resume, steer")
 	}
 	return nil
 }

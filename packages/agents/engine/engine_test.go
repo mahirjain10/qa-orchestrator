@@ -211,6 +211,20 @@ func TestConvertToLLMTools_UsesRegistryDocs(t *testing.T) {
 	}
 }
 
+func TestConvertToLLMTools_DefaultIncludesSelectOption(t *testing.T) {
+	result := convertToLLMTools(nil)
+	found := false
+	for _, tool := range result {
+		if tool.Name == "select_option" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatal("expected default LLM tools to include select_option")
+	}
+}
+
 type cancelAwareLLMClient struct {
 	started chan struct{}
 }
@@ -597,7 +611,7 @@ func TestAutoObserve_CapsObservations(t *testing.T) {
 		Observations: make([]types.Observation, 0),
 	}
 
-	for i := 0; i < 12; i++ {
+	for i := 0; i < 55; i++ {
 		planStep := &types.PlanStep{
 			StepID:    fmt.Sprintf("step%d", i),
 			Tool:      "echo",
@@ -607,8 +621,8 @@ func TestAutoObserve_CapsObservations(t *testing.T) {
 		engine.executeAndValidate(ctx, planStep)
 	}
 
-	if len(ctx.Observations) > 10 {
-		t.Errorf("expected observations capped at 10, got %d", len(ctx.Observations))
+	if len(ctx.Observations) > 50 {
+		t.Errorf("expected observations capped at 50, got %d", len(ctx.Observations))
 	}
 }
 
@@ -810,6 +824,119 @@ func TestAutonomousFlow_AlternationDetection_BlocksRevisit(t *testing.T) {
 	result := engine.RunFlow("run_test", flow)
 	if result.Outcome != OutcomePass {
 		t.Fatalf("expected OutcomePass (navigate blocked, finish succeeds), got %s with errors %v", result.Outcome, result.Errors)
+	}
+}
+
+func TestAutonomousFlow_BatchStepExecution(t *testing.T) {
+	registry := executor.NewMockToolRegistry()
+	llmClient := &sequenceLLMClient{
+		responses: []string{
+			`[{"tool":"echo","params":{"value":"step1"},"reason":"first"},
+			  {"tool":"echo","params":{"value":"step2"},"reason":"second"},
+			  {"tool":"echo","params":{"value":"step3"},"reason":"third"}]`,
+		},
+	}
+	engine := NewAgentEngineWithLLM(registry, nil, nil, nil, llmClient, &mockBrowserTools{docs: []browsertools.ToolInfo{}})
+
+	flow := types.Flow{
+		ID:   "auto-flow",
+		Mode: sharedtypes.FlowModeAutonomous,
+		Goal: "Execute batch steps",
+		Config: sharedtypes.FlowConfig{
+			MaxAutonomousSteps: 10,
+		},
+	}
+
+	result := engine.RunFlow("run_test", flow)
+	if result.Outcome != OutcomePass {
+		t.Fatalf("expected OutcomePass, got %s with errors %v", result.Outcome, result.Errors)
+	}
+	echoCount := 0
+	for _, s := range result.Steps {
+		if s.Tool == "echo" {
+			echoCount++
+		}
+	}
+	if echoCount != 3 {
+		t.Fatalf("expected 3 echo steps from batch, got %d", echoCount)
+	}
+}
+
+func TestAutonomousFlow_BatchWithFinishAtEnd(t *testing.T) {
+	// LLM returns a batch where the last step is finish(success).
+	// All steps should execute and the flow should pass.
+	registry := executor.NewMockToolRegistry()
+	llmClient := &sequenceLLMClient{
+		responses: []string{
+			`[{"tool":"echo","params":{"value":"step1"},"reason":"first"},
+			  {"tool":"echo","params":{"value":"step2"},"reason":"second"},
+			  {"tool":"finish","params":{"status":"success"},"reason":"all done"}]`,
+		},
+	}
+	engine := NewAgentEngineWithLLM(registry, nil, nil, nil, llmClient, &mockBrowserTools{docs: []browsertools.ToolInfo{}})
+
+	flow := types.Flow{
+		ID:   "auto-flow",
+		Mode: sharedtypes.FlowModeAutonomous,
+		Goal: "Batch with finish at end",
+		Config: sharedtypes.FlowConfig{
+			MaxAutonomousSteps: 10,
+		},
+	}
+
+	result := engine.RunFlow("run_test", flow)
+	if result.Outcome != OutcomePass {
+		t.Fatalf("expected OutcomePass, got %s with errors %v", result.Outcome, result.Errors)
+	}
+	echoCount := 0
+	for _, s := range result.Steps {
+		if s.Tool == "echo" {
+			echoCount++
+		}
+	}
+	if echoCount != 2 {
+		t.Fatalf("expected 2 echo steps from batch, got %d", echoCount)
+	}
+}
+
+func TestAutonomousFlow_BatchLoopClearsQueue(t *testing.T) {
+	// LLM returns [echo(same), echo(same), echo(same)]
+	// First echo triggers repeat, queue should clear, next LLM call should be fresh.
+	registry := executor.NewMockToolRegistry()
+	llmClient := &sequenceLLMClient{
+		responses: []string{
+			`[{"tool":"echo","params":{"value":"same"},"reason":"first"},
+			  {"tool":"echo","params":{"value":"same"},"reason":"repeat 1"},
+			  {"tool":"echo","params":{"value":"same"},"reason":"repeat 2"}]`,
+			`[{"tool":"echo","params":{"value":"different"},"reason":"fresh approach"}]`,
+		},
+	}
+	engine := NewAgentEngineWithLLM(registry, nil, nil, nil, llmClient, &mockBrowserTools{docs: []browsertools.ToolInfo{}})
+
+	flow := types.Flow{
+		ID:   "auto-flow",
+		Mode: sharedtypes.FlowModeAutonomous,
+		Goal: "Verify batch loop clears queue",
+		Config: sharedtypes.FlowConfig{
+			MaxAutonomousSteps: 10,
+		},
+	}
+
+	result := engine.RunFlow("run_test", flow)
+	// After loop detection + clear, LLM returns fresh step.
+	// Sequence: echo(same) → loop detection clears remaining → LLM called again
+	// Must NOT execute the second and third echoed batch steps.
+	echoSameCount := 0
+	for _, s := range result.Steps {
+		if s.Tool == "echo" {
+			val, _ := s.Output.(string)
+			if val == "same" {
+				echoSameCount++
+			}
+		}
+	}
+	if echoSameCount > 1 {
+		t.Fatalf("expected at most 1 echo(same) after loop clear, got %d", echoSameCount)
 	}
 }
 
@@ -1076,8 +1203,8 @@ func TestDrainSteeringEvents_InstructionTargetedByFlowID(t *testing.T) {
 	eng.SetLifecycleController(lc)
 
 	ctx := &types.ExecutionContext{
-		RunID:               "run_steer",
-		FlowID:              "flow-a",
+		RunID:                "run_steer",
+		FlowID:               "flow-a",
 		SteeringInstructions: []string{},
 	}
 
@@ -1117,8 +1244,8 @@ func TestDrainSteeringEvents_RingBufferCap(t *testing.T) {
 	eng.SetLifecycleController(lc)
 
 	ctx := &types.ExecutionContext{
-		RunID:               "run_ring",
-		FlowID:              "flow-x",
+		RunID:                "run_ring",
+		FlowID:               "flow-x",
 		SteeringInstructions: []string{},
 	}
 
@@ -1466,8 +1593,8 @@ func TestDrainSteeringEvents_CrossFlowNoResubmit(t *testing.T) {
 	eng.SetLifecycleController(lc)
 
 	ctx := &types.ExecutionContext{
-		RunID:               "run_cross",
-		FlowID:              "flow-a",
+		RunID:                "run_cross",
+		FlowID:               "flow-a",
 		SteeringInstructions: []string{},
 	}
 
@@ -1504,25 +1631,26 @@ func TestHandlePauseResume_SessionDeletedReturnsPauseFail(t *testing.T) {
 	}
 
 	eng := NewAgentEngineWithStores(executor.NewMockToolRegistry(), store, nil, nil)
-	// Set lifecycle controller so handlePauseResume checks both lifecycle + session
+	// Wire lifecycle controller
 	lc := runtime.NewLifecycleController(sess.RunID)
 	eng.SetLifecycleController(lc)
-	err = store.UpdateStatus(sess.RunID, sharedtypes.RunStatePausing)
-	if err != nil {
-		t.Fatalf("failed to set pausing: %v", err)
-	}
+	// Both lifecycle and session store reflect Pausing state
+	lc.SetStatus(sharedtypes.RunStatePausing)
+	_ = store.UpdateStatus(sess.RunID, sharedtypes.RunStatePausing)
 
 	ctx := &types.ExecutionContext{RunID: sess.RunID, FlowID: "flow-1"}
 
-	// Delete the session while paused
+	// Delete the session while paused — in-memory lifecycle still has Pausing
 	err = store.Delete(sess.RunID)
 	if err != nil {
 		t.Fatalf("failed to delete session: %v", err)
 	}
 
+	// With lifecycle controller as primary source, checkPauseState still returns
+	// Pausing from lifecycle. handlePauseResume should process the pause transition.
 	action := eng.handlePauseResume(sess.RunID, ctx)
-	if action != pauseFail {
-		t.Fatalf("expected pauseFail for deleted session, got %v", action)
+	if action != pauseContinue {
+		t.Fatalf("expected pauseContinue (lifecycle controller is source of truth), got %v", action)
 	}
 }
 
@@ -1542,21 +1670,23 @@ func TestHandlePauseResume_PausedStateDeletedReturnsPauseFail(t *testing.T) {
 	eng := NewAgentEngineWithStores(executor.NewMockToolRegistry(), store, nil, nil)
 	lc := runtime.NewLifecycleController(sess.RunID)
 	eng.SetLifecycleController(lc)
-	err = store.UpdateStatus(sess.RunID, sharedtypes.RunStatePaused)
-	if err != nil {
-		t.Fatalf("failed to set paused: %v", err)
-	}
+	// Both lifecycle and session store reflect Paused state
+	lc.SetStatus(sharedtypes.RunStatePaused)
+	_ = store.UpdateStatus(sess.RunID, sharedtypes.RunStatePaused)
 
 	ctx := &types.ExecutionContext{RunID: sess.RunID, FlowID: "flow-1"}
 
+	// Delete the session — lifecycle still knows it's Paused
 	err = store.Delete(sess.RunID)
 	if err != nil {
 		t.Fatalf("failed to delete session: %v", err)
 	}
 
+	// With lifecycle controller as primary source, handlePauseResume enters
+	// the PAUSED branch, waitsForResume, then returns pauseContinue
 	action := eng.handlePauseResume(sess.RunID, ctx)
-	if action != pauseFail {
-		t.Fatalf("expected pauseFail for deleted session (Paused state), got %v", action)
+	if action != pauseContinue {
+		t.Fatalf("expected pauseContinue (lifecycle controller is source of truth), got %v", action)
 	}
 }
 

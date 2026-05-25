@@ -25,7 +25,7 @@ High-level runtime path:
    - Artifact store: screenshots/logs/reports.
 7. TUI renders live run state and accepts operator commands.
 
-Detailed design is in [docs/architecture.md](docs/architecture.md).
+Detailed design is in [docs/design/architecture.md](docs/design/architecture.md).
 
 ## Repository layout
 
@@ -33,14 +33,14 @@ Detailed design is in [docs/architecture.md](docs/architecture.md).
 apps/tui/                        # terminal application (TUI)
 packages/orchestrator/           # flow scheduling and execution control
 packages/agents/                 # planner/executor/validator/recovery
-  ├── engine/                    #   flow execution engine + agent loop
+  ├── engine/                    #   flow execution engine (engine.go, autonomous.go, execution.go, checkpoint.go, lifecycle.go, policy.go)
   ├── executor/                  #   tool execution
   ├── planner/                   #   step planning (guided + autonomous)
   ├── recovery/                  #   failure recovery decisions
   ├── validator/                 #   step validation + observations
   ├── tools/                     #   ToolInfo adapter for LLM prompts
   └── types/                     #   shared agent types
-packages/browser-runtime/        # Playwright runtime + ToolRegistry
+packages/browser-runtime/        # Playwright runtime (runtime.go, navigation.go, flow.go, screenshot.go)
 packages/runtime/                # LifecycleController (pause/resume/cancel/steer)
 packages/llm/                    # LLM client abstraction (OpenRouter, Gemini)
 packages/storage/                # session/trace/artifact stores
@@ -48,7 +48,10 @@ packages/reporting/              # campaign summary reporting
 packages/shared/                 # shared types (campaign, session, trace)
 campaigns/                       # 10 sample campaign YAMLs
 logs/                            # app.log + run logs (jsonl)
-docs/                            # architecture, phases, run summaries
+docs/                            # organized documentation
+  ├── design/                    # blueprints and conventions
+  ├── status/                    # roadmap and current delivery state
+  └── history/                   # run summaries, archived sessions, and phase audits
 ```
 
 ## TUI behavior and controls
@@ -70,6 +73,16 @@ Main controls:
 - `?`: Toggle help modal overlay
 - `Esc`: Dismiss help modal / exit command or filter mode
 - `q`: Quit
+
+## Maintenance
+
+To maintain a clean root directory, all transient files (e.g., `MIDWORK.md`, `session-*.md`) are periodically archived to `docs/history/sessions/`. Large execution logs are managed in `logs/` and should be cleared using `make clean` if disk space is a concern.
+
+## Agent Hand-off Experiment (Experimental)
+
+This repository implements an experimental "Run Summary" hand-off mechanism for AI agents. Instead of agents traversing the entire codebase to guess previous progress, we use `docs/history/run-summaries/` to provide high-context, surgical summaries of past work. 
+
+Feedback from participating agents suggests this significantly reduces "hallucination-guessing" and provides a cleaner state transfer than raw log analysis. While experimental, this approach aims to streamline multi-turn agentic workflows.
 
 ## Prerequisites
 
@@ -125,7 +138,7 @@ Useful targets:
 
 ## Current delivery status
 
-See [docs/CURRENT.md](docs/CURRENT.md) for the latest phase status and run history.
+See [docs/status/CURRENT.md](docs/status/CURRENT.md) for the latest phase status and run history.
 
 ## Performance & Stability Enhancements
 - **Dynamic React Sync:** The framework uses Playwright's `WaitForFunction` to dynamically poll UI state updates after interactions, eliminating infinite observation loops on modern frontend frameworks (React, Vue, Angular).

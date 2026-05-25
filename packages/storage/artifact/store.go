@@ -132,7 +132,7 @@ func (s *ArtifactStore) Get(artifactID string) (*Artifact, error) {
 	}
 
 	if err := s.loadIndex(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get artifact %s: %w", artifactID, err)
 	}
 	if artifact, exists = s.index[artifactID]; exists {
 		return shared.CloneDeep(artifact)
@@ -158,7 +158,7 @@ func (s *ArtifactStore) GetByRunID(runID string) ([]*Artifact, error) {
 	}
 
 	if err := s.loadIndex(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get artifacts by run %s: %w", runID, err)
 	}
 	var filtered []*Artifact
 	for _, a := range s.index {
@@ -173,7 +173,7 @@ func (s *ArtifactStore) GetByRunID(runID string) ([]*Artifact, error) {
 func (s *ArtifactStore) GetByFlowID(runID, flowID string) ([]*Artifact, error) {
 	artifacts, err := s.GetByRunID(runID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get artifacts by flow %s/%s: %w", runID, flowID, err)
 	}
 
 	var filtered []*Artifact
@@ -188,7 +188,7 @@ func (s *ArtifactStore) GetByFlowID(runID, flowID string) ([]*Artifact, error) {
 func (s *ArtifactStore) ListByType(runID string, artifactType ArtifactType) ([]*Artifact, error) {
 	artifacts, err := s.GetByRunID(runID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list artifacts by type %s/%s: %w", runID, artifactType, err)
 	}
 
 	var filtered []*Artifact

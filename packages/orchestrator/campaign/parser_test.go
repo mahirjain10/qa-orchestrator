@@ -50,6 +50,7 @@ flows:
     goal: Do something
     mode: guided
     priority: high
+    depends_on: []
     steps:
       - id: step1
         tool: navigate
@@ -87,7 +88,7 @@ func TestParseFile_JSON(t *testing.T) {
 			"retry_limit": 2,
 			"parallel_limit": 1
 		},
-		"flows": [{"id": "jflow-1", "name": "JSON Flow", "goal": "test", "mode": "guided", "priority": "high", "steps": [{"id": "s1", "tool": "click"}]}]
+		"flows": [{"id": "jflow-1", "name": "JSON Flow", "goal": "test", "mode": "guided", "priority": "high", "depends_on": [], "steps": [{"id": "s1", "tool": "click"}]}]
 	}`), 0644)
 	if err != nil {
 		t.Fatalf("failed to write test file: %v", err)
@@ -146,7 +147,7 @@ func TestValidate_DuplicateFlowID(t *testing.T) {
 		Goal:     "another goal",
 		Mode:     types.FlowModeGuided,
 		Priority: types.FlowPriorityMedium,
-		Steps:    []types.Step{{ID: "s2", Tool: "type"}},
+		Steps:    []types.Step{{ID: "s2", Tool: "click"}},
 	})
 	err := parser.validateSchema(campaign)
 	if err == nil {
@@ -446,5 +447,93 @@ func TestValidate_StepToolEmptyInAutonomousAllowed(t *testing.T) {
 	err := parser.validateSchema(campaign)
 	if err != nil {
 		t.Fatalf("expected no error for empty tool in autonomous mode: %v", err)
+	}
+}
+
+func TestValidate_DependsOnRequired(t *testing.T) {
+	parser := NewCampaignParser()
+	campaign := validCampaign()
+	campaign.Flows[0].DependsOn = nil
+	err := parser.validateSchema(campaign)
+	if err == nil {
+		t.Fatal("expected error for nil depends_on")
+	}
+	if !strings.Contains(err.Error(), "depends_on") {
+		t.Fatalf("expected depends_on error, got: %v", err)
+	}
+}
+
+func TestValidate_InvalidStartURL(t *testing.T) {
+	parser := NewCampaignParser()
+	campaign := validCampaign()
+	campaign.Flows[0].StartURL = "not-a-url"
+	err := parser.validateSchema(campaign)
+	if err == nil {
+		t.Fatal("expected error for invalid start_url")
+	}
+	if !strings.Contains(err.Error(), "start_url") {
+		t.Fatalf("expected start_url error, got: %v", err)
+	}
+}
+
+func TestValidate_InvalidStartURLScheme(t *testing.T) {
+	parser := NewCampaignParser()
+	campaign := validCampaign()
+	campaign.Flows[0].StartURL = "ftp://example.com/page"
+	err := parser.validateSchema(campaign)
+	if err == nil {
+		t.Fatal("expected error for invalid start_url scheme")
+	}
+	if !strings.Contains(err.Error(), "start_url") {
+		t.Fatalf("expected start_url error, got: %v", err)
+	}
+}
+
+func TestValidate_ValidStartURL(t *testing.T) {
+	parser := NewCampaignParser()
+	campaign := validCampaign()
+	campaign.Flows[0].StartURL = "https://example.com/page"
+	err := parser.validateSchema(campaign)
+	if err != nil {
+		t.Fatalf("expected no error for valid start_url: %v", err)
+	}
+}
+
+func TestValidate_UnknownTool(t *testing.T) {
+	parser := NewCampaignParser()
+	campaign := validCampaign()
+	campaign.Flows[0].Steps = []types.Step{
+		{ID: "step1", Tool: "clik"},
+	}
+	err := parser.validateSchema(campaign)
+	if err == nil {
+		t.Fatal("expected error for unknown tool")
+	}
+	if !strings.Contains(err.Error(), "unknown tool") {
+		t.Fatalf("expected unknown tool error, got: %v", err)
+	}
+}
+
+func TestValidate_ValidTool(t *testing.T) {
+	parser := NewCampaignParser()
+	campaign := validCampaign()
+	campaign.Flows[0].Steps = []types.Step{
+		{ID: "step1", Tool: "navigate"},
+	}
+	err := parser.validateSchema(campaign)
+	if err != nil {
+		t.Fatalf("expected no error for valid tool: %v", err)
+	}
+}
+
+func TestValidate_SelectOptionToolAllowed(t *testing.T) {
+	parser := NewCampaignParser()
+	campaign := validCampaign()
+	campaign.Flows[0].Steps = []types.Step{
+		{ID: "step1", Tool: "select_option"},
+	}
+	err := parser.validateSchema(campaign)
+	if err != nil {
+		t.Fatalf("expected no error for select_option tool: %v", err)
 	}
 }

@@ -24,7 +24,17 @@ func TestStartCampaignCreatesSessionBeforeLLMCheck(t *testing.T) {
 
 	sessionStore, traceStore, artifactStore := createStores(t, dataDir)
 
-	err := startCampaign(campaignPath, "", "mock", context.Background(), sessionStore, traceStore, artifactStore, make(chan string, 1), nil)
+	err := startCampaign(CampaignConfig{
+		CampaignPath:  campaignPath,
+		ResumeID:      "",
+		BrowserMode:   "mock",
+		Ctx:           context.Background(),
+		SessionStore:  sessionStore,
+		TraceStore:    traceStore,
+		ArtifactStore: artifactStore,
+		RunCreatedCh:  make(chan string, 1),
+		LifecycleCtrl: nil,
+	})
 	if err != nil {
 		t.Fatalf("startCampaign should not error when LLM is missing, got: %v", err)
 	}
@@ -54,7 +64,17 @@ func TestStartCampaignAllowsGuidedWithoutLLMConfig(t *testing.T) {
 
 	sessionStore, traceStore, artifactStore := createStores(t, dataDir)
 
-	if err := startCampaign(campaignPath, "", "mock", context.Background(), sessionStore, traceStore, artifactStore, make(chan string, 1), nil); err != nil {
+	if err := startCampaign(CampaignConfig{
+		CampaignPath:  campaignPath,
+		ResumeID:      "",
+		BrowserMode:   "mock",
+		Ctx:           context.Background(),
+		SessionStore:  sessionStore,
+		TraceStore:    traceStore,
+		ArtifactStore: artifactStore,
+		RunCreatedCh:  make(chan string, 1),
+		LifecycleCtrl: nil,
+	}); err != nil {
 		t.Fatalf("startCampaign failed: %v", err)
 	}
 
@@ -187,9 +207,9 @@ flows:
     depends_on: []
     steps:
       - id: step-1
-        tool: nonexistent_tool
+        tool: finish
         params:
-          value: fail
+          status: fail
 `
 
 	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
@@ -207,7 +227,17 @@ func TestRunCampaignWithContext_SetsFailedStatusOnFlowFailure(t *testing.T) {
 
 	sessionStore, traceStore, artifactStore := createStores(t, dataDir)
 
-	if err := startCampaign(campaignPath, "", "mock", context.Background(), sessionStore, traceStore, artifactStore, make(chan string, 1), nil); err != nil {
+	if err := startCampaign(CampaignConfig{
+		CampaignPath:  campaignPath,
+		ResumeID:      "",
+		BrowserMode:   "mock",
+		Ctx:           context.Background(),
+		SessionStore:  sessionStore,
+		TraceStore:    traceStore,
+		ArtifactStore: artifactStore,
+		RunCreatedCh:  make(chan string, 1),
+		LifecycleCtrl: nil,
+	}); err != nil {
 		t.Fatalf("startCampaign failed: %v", err)
 	}
 
@@ -268,7 +298,17 @@ func TestRunCampaignWithContext_SetsCompletedStatusOnAllPass(t *testing.T) {
 
 	sessionStore, traceStore, artifactStore := createStores(t, dataDir)
 
-	if err := startCampaign(campaignPath, "", "mock", context.Background(), sessionStore, traceStore, artifactStore, make(chan string, 1), nil); err != nil {
+	if err := startCampaign(CampaignConfig{
+		CampaignPath:  campaignPath,
+		ResumeID:      "",
+		BrowserMode:   "mock",
+		Ctx:           context.Background(),
+		SessionStore:  sessionStore,
+		TraceStore:    traceStore,
+		ArtifactStore: artifactStore,
+		RunCreatedCh:  make(chan string, 1),
+		LifecycleCtrl: nil,
+	}); err != nil {
 		t.Fatalf("startCampaign failed: %v", err)
 	}
 
@@ -306,7 +346,17 @@ func TestCreateAgentEngineMockModeReturnsNilBrowser(t *testing.T) {
 	dataDir := makeTestDir(t)
 	sessionStore, traceStore, artifactStore := createStores(t, dataDir)
 
-	_, browserRuntime := createAgentEngine(sessionStore, traceStore, artifactStore, nil, "mock", nil)
+	_, browserRuntime, err := createAgentEngine(EngineConfig{
+		SessionStore:  sessionStore,
+		TraceStore:    traceStore,
+		ArtifactStore: artifactStore,
+		LLMClient:     nil,
+		BrowserMode:   "mock",
+		LifecycleCtrl: nil,
+	})
+	if err != nil {
+		t.Fatalf("createAgentEngine returned error: %v", err)
+	}
 	if browserRuntime != nil {
 		t.Fatal("expected nil browser runtime in mock mode")
 	}

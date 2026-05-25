@@ -2,8 +2,8 @@ package screens
 
 import (
 	"fmt"
-	"time"
 
+	"qa-orchestrator/packages/runtime"
 	"qa-orchestrator/packages/shared"
 	"qa-orchestrator/packages/shared/types"
 	"qa-orchestrator/packages/storage/session"
@@ -17,10 +17,12 @@ type RunController interface {
 	SkipFlow(runID, flowID string) error
 	RetryFlow(runID, flowID string) error
 	AcknowledgeInputAndResume(runID string) error
+	IsWaitingForInput() bool
 }
 
 type CommandHandlers struct {
-	store *session.SessionStore
+	store     *session.SessionStore
+	lifecycle *runtime.LifecycleController
 }
 
 func NewCommandHandlers(store *session.SessionStore) *CommandHandlers {
@@ -29,42 +31,70 @@ func NewCommandHandlers(store *session.SessionStore) *CommandHandlers {
 	}
 }
 
+func (h *CommandHandlers) SetLifecycleController(lc *runtime.LifecycleController) {
+	h.lifecycle = lc
+}
+
+func (h *CommandHandlers) IsWaitingForInput() bool {
+	if h.lifecycle != nil {
+		return h.lifecycle.IsWaitingForInput()
+	}
+	return false
+}
+
 func (h *CommandHandlers) PauseRun(runID string) error {
+	if h.lifecycle != nil {
+		status := h.lifecycle.GetStatus()
+		if status != types.RunStateRunning && status != types.RunStatePending {
+			return fmt.Errorf("%w: run is in %s state", shared.ErrInvalidStateTransition, status)
+		}
+		h.lifecycle.SetStatus(types.RunStatePausing)
+		return nil
+	}
 	sess, err := h.store.Get(runID)
 	if err != nil {
 		return fmt.Errorf("getting session: %w", err)
 	}
-
 	if sess.Status != types.RunStateRunning && sess.Status != types.RunStatePending {
 		return fmt.Errorf("%w: run is in %s state", shared.ErrInvalidStateTransition, sess.Status)
 	}
-
 	return h.store.UpdateStatus(runID, types.RunStatePausing)
 }
 
 func (h *CommandHandlers) ResumeRun(runID string) error {
+	if h.lifecycle != nil {
+		status := h.lifecycle.GetStatus()
+		if status != types.RunStatePaused && status != types.RunStatePausing {
+			return fmt.Errorf("%w: run is in %s state, expected PAUSED or PAUSING", shared.ErrInvalidStateTransition, status)
+		}
+		h.lifecycle.SetStatus(types.RunStateResuming)
+		return nil
+	}
 	sess, err := h.store.Get(runID)
 	if err != nil {
 		return fmt.Errorf("getting session: %w", err)
 	}
-
 	if sess.Status != types.RunStatePaused && sess.Status != types.RunStatePausing {
 		return fmt.Errorf("%w: run is in %s state, expected PAUSED or PAUSING", shared.ErrInvalidStateTransition, sess.Status)
 	}
-
 	return h.store.UpdateStatus(runID, types.RunStateResuming)
 }
 
 func (h *CommandHandlers) CancelRun(runID string) error {
+	if h.lifecycle != nil {
+		if !h.lifecycle.RequestCancel() {
+			status := h.lifecycle.GetStatus()
+			return fmt.Errorf("%w: cannot cancel from %s state", shared.ErrInvalidStateTransition, status)
+		}
+		return nil
+	}
 	sess, err := h.store.Get(runID)
 	if err != nil {
 		return fmt.Errorf("getting session: %w", err)
 	}
-
 	if sess.Status == types.RunStateCompleted || sess.Status == types.RunStateCancelled {
 		return fmt.Errorf("%w: run is already %s", shared.ErrInvalidStateTransition, sess.Status)
 	}
-
 	return h.store.UpdateStatus(runID, types.RunStateCancelling)
 }
 
@@ -107,7 +137,7 @@ func (h *CommandHandlers) MarkFlowFailed(runID, flowID string, errMsg string) er
 func (h *CommandHandlers) GetCheckpoint(runID string) (*types.Checkpoint, error) {
 	sess, err := h.store.Get(runID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getting checkpoint for run %s: %w", runID, err)
 	}
 	return sess.Checkpoint, nil
 }
@@ -115,76 +145,74 @@ func (h *CommandHandlers) GetCheckpoint(runID string) (*types.Checkpoint, error)
 func (h *CommandHandlers) SetCurrentFlow(runID, flowID string) error {
 	sess, err := h.store.Get(runID)
 	if err != nil {
-		return err
+		return fmt.Errorf("loading session %s to set current flow: %w", runID, err)
 	}
 	sess.CurrentFlowID = flowID
-	return h.store.Save(sess)
+	if err := h.store.Save(sess); err != nil {
+		return fmt.Errorf("saving session %s after setting flow %s: %w", runID, flowID, err)
+	}
+	return nil
 }
 
 func (h *CommandHandlers) SetCurrentAgent(runID, agent string) error {
 	sess, err := h.store.Get(runID)
 	if err != nil {
-		return err
+		return fmt.Errorf("loading session %s to set agent: %w", runID, err)
 	}
 	sess.CurrentAgent = agent
-	return h.store.Save(sess)
+	if err := h.store.Save(sess); err != nil {
+		return fmt.Errorf("saving session %s after setting agent %s: %w", runID, agent, err)
+	}
+	return nil
 }
 
 func (h *CommandHandlers) IncrementRetryCount(runID string) error {
 	sess, err := h.store.Get(runID)
 	if err != nil {
-		return err
+		return fmt.Errorf("loading session %s to increment retry count: %w", runID, err)
 	}
 	sess.RetryCount++
-	return h.store.Save(sess)
+	if err := h.store.Save(sess); err != nil {
+		return fmt.Errorf("saving session %s after incrementing retry count: %w", runID, err)
+	}
+	return nil
 }
 
 func (h *CommandHandlers) FinalizeRunCompletion(runID string) error {
-	sess, err := h.store.Get(runID)
-	if err != nil {
-		return err
+	if err := h.store.FinalizeRun(runID); err != nil {
+		return fmt.Errorf("finalizing run %s: %w", runID, err)
 	}
-
-	now := time.Now().UTC()
-	sess.CompletedAt = &now
-
-	hasFailures := false
-	for _, f := range sess.Flows {
-		if f.Status == types.FlowStateFailed {
-			hasFailures = true
-			break
-		}
-	}
-
-	if hasFailures {
-		sess.Status = types.RunStateFailed
-	} else {
-		sess.Status = types.RunStateCompleted
-	}
-
-	return h.store.Save(sess)
+	return nil
 }
 
 func (h *CommandHandlers) SetRunWaitingForInput(runID string) error {
 	sess, err := h.store.Get(runID)
 	if err != nil {
-		return err
+		return fmt.Errorf("loading session %s to set waiting for input: %w", runID, err)
 	}
 
 	sess.Status = types.RunStateWaitingInput
-	return h.store.Save(sess)
+	if err := h.store.Save(sess); err != nil {
+		return fmt.Errorf("saving session %s after setting waiting for input: %w", runID, err)
+	}
+	return nil
 }
 
 func (h *CommandHandlers) AcknowledgeInputAndResume(runID string) error {
+	if h.lifecycle != nil {
+		if !h.lifecycle.IsWaitingForInput() {
+			return fmt.Errorf("%w: run is not in WAITING_FOR_INPUT state: %s", shared.ErrInvalidStateTransition, h.lifecycle.GetStatus())
+		}
+		h.lifecycle.AcknowledgeInput()
+		return nil
+	}
 	sess, err := h.store.Get(runID)
 	if err != nil {
-		return err
+		return fmt.Errorf("getting session: %w", err)
 	}
-
 	if sess.Status != types.RunStateWaitingInput {
 		return fmt.Errorf("%w: run is not in WAITING_FOR_INPUT state: %s", shared.ErrInvalidStateTransition, sess.Status)
 	}
-
 	sess.Status = types.RunStateRunning
 	return h.store.Save(sess)
 }
@@ -196,7 +224,7 @@ func (h *CommandHandlers) SkipFlow(runID, flowID string) error {
 func (h *CommandHandlers) RetryFlow(runID, flowID string) error {
 	sess, err := h.store.Get(runID)
 	if err != nil {
-		return err
+		return fmt.Errorf("loading session %s for flow retry: %w", runID, err)
 	}
 
 	found := false
@@ -212,7 +240,10 @@ func (h *CommandHandlers) RetryFlow(runID, flowID string) error {
 		return fmt.Errorf("%w: flow %q not found in run %s", shared.ErrFlowNotFound, flowID, runID)
 	}
 
-	return h.store.Save(sess)
+	if err := h.store.Save(sess); err != nil {
+		return fmt.Errorf("saving session %s after setting flow %s to retrying: %w", runID, flowID, err)
+	}
+	return nil
 }
 
 func (h *CommandHandlers) MarkFlowWaitingInput(runID, flowID string) error {

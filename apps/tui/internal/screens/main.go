@@ -121,6 +121,7 @@ func (m *MainScreen) SetRunCreatedChannel(ch chan string) {
 
 func (m *MainScreen) SetLifecycleController(lc *runtime.LifecycleController) {
 	m.lifecycle = lc
+	m.handlers.SetLifecycleController(lc)
 }
 
 func (m *MainScreen) currentRunID() string {
