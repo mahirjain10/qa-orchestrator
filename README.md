@@ -172,6 +172,40 @@ Main controls:
 
 To maintain a clean root directory, all transient files (e.g., `MIDWORK.md`, `session-*.md`) are periodically archived to `docs/history/sessions/`. Large execution logs are managed in `logs/` and should be cleared using `make clean` if disk space is a concern.
 
+## Core Features
+
+### 1. High-Performance Terminal Interface (TUI)
+- **Live Dashboard:** Real-time visualization of campaign progress and metrics.
+- **Multi-View Navigation:** Specialized screens for Dashboard, Flows, Traces, and Reports.
+- **Trace Streaming:** Live, filterable logs with "follow-tail" mode for instant debugging.
+
+### 2. Advanced Orchestration
+- **Parallel Execution:** Worker pool and semaphore system for concurrent flow execution.
+- **Dependency Graph:** Topological scheduling ensuring upstream requirements are met.
+- **Session Inheritance:** Persistence of cookies/localStorage across dependent flows.
+
+### 3. Agentic Execution Engine
+- **Hybrid Modes:** Supports both `guided` (deterministic) and `autonomous` (LLM-powered) flows.
+- **Grounded Observations:** Custom `observe_ui` tool providing exact selectors to the LLM.
+- **Safety Nets:** Intelligent loop detection, 404 interception, and automated selector repair.
+
+### 4. Reliability
+- **Checkpoint/Resume:** Pause and resume any run from the last successful step.
+- **LLM Fallback:** Automatic model switching during provider downtime.
+- **Dynamic Sync:** Intelligent waiting for modern frontend state updates (React/Vue).
+
+## Current Limitations & Known Issues (The "Why")
+
+While the system is robust, several areas are still in "experimental" or "evolving" states:
+
+| Issue | Description | The "Why" |
+|-------|-------------|-----------|
+| **LLM Latency** | Autonomous planning steps can take 5–15 seconds. | Caused by high-token "Thinking" modes and network round-trips to providers like OpenRouter/Gemini. |
+| **Complex Iframes** | Interactions inside nested iframes may occasionally fail. | The `observe_ui` crawler currently prioritizes the top-level document; deep cross-origin iframe traversal is computationally expensive. |
+| **TUI Memory Pressure** | TUI may slow down during massive campaigns (50+ parallel flows). | Radical DOM payload streaming to the terminal puts pressure on the TUI's refresh loop despite clone optimizations. |
+| **Fuzzy Selector Reliability** | Automated selector repair is "best-effort". | UI elements with identical text but different functional roles can confuse the fuzzy matcher. |
+| **Shadow DOM Support** | Elements inside closed Shadow Roots are currently invisible. | Standard `TreeWalker` and `querySelector` APIs used in `observe_ui` cannot penetrate closed shadow boundaries without specialized handling. |
+
 ## Agent Hand-off Experiment (Experimental)
 
 This repository implements an experimental "Run Summary" hand-off mechanism for AI agents. Instead of agents traversing the entire codebase to guess previous progress, we use `docs/history/run-summaries/` to provide high-context, surgical summaries of past work. 
